@@ -189,7 +189,8 @@ app.post('/api/admin/events', requireAdmin, (req, res) => {
     tickets: tickets.map(t => ({
       type: t.type,
       price: parseInt(t.price),
-      currency: t.currency || 'EUR'
+      currency: t.currency || 'EUR',
+      maxQuantity: t.maxQuantity ? parseInt(t.maxQuantity) : 10
     })),
     available: available !== false
   };
@@ -210,7 +211,8 @@ app.put('/api/admin/events/:id', requireAdmin, (req, res) => {
     updated.tickets = req.body.tickets.map(t => ({
       type: t.type,
       price: parseInt(t.price),
-      currency: t.currency || 'EUR'
+      currency: t.currency || 'EUR',
+      maxQuantity: t.maxQuantity ? parseInt(t.maxQuantity) : 10
     }));
   }
 
@@ -228,6 +230,77 @@ app.delete('/api/admin/events/:id', requireAdmin, (req, res) => {
   events.splice(idx, 1);
   writeEvents(events);
   res.json({ success: true });
+});
+
+// POST /api/cart-checkout — paiement panier multi-produits
+app.post('/api/cart-checkout', async (req, res) => {
+  const { items, customerEmail } = req.body;
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: 'Panier vide' });
+  }
+
+  const events = readEvents();
+  const products = [];
+  let currency = 'EUR';
+
+  for (const item of items) {
+    const event = events.find(e => e.id === parseInt(item.eventId));
+    if (!event) return res.status(404).json({ error: `Événement introuvable` });
+    if (!event.available) return res.status(400).json({ error: `${event.name} est complet` });
+
+    const ticket = event.tickets[parseInt(item.ticketTypeIndex)];
+    if (!ticket) return res.status(400).json({ error: 'Type de billet invalide' });
+
+    const maxQty = ticket.maxQuantity || 10;
+    if (parseInt(item.quantity) > maxQty) {
+      return res.status(400).json({ error: `Maximum ${maxQty} billets pour ${event.name}` });
+    }
+
+    currency = ticket.currency;
+    products.push({
+      name: `${event.name} — ${ticket.type}`,
+      price: ticket.price,
+      quantity: parseInt(item.quantity)
+    });
+  }
+
+  const payload = {
+    currency,
+    successUrl: `${BASE_URL}/success.html`,
+    cancelUrl: `${BASE_URL}/cart.html`,
+    products,
+    sessionCustomization: {
+      merchantName: "ViteTonBillet",
+      bgColor: "#f8fafc",
+      fontColor: "#0f172a"
+    }
+  };
+
+  if (customerEmail) payload.customerEmail = customerEmail;
+
+  try {
+    const response = await fetch(`${INFLOW_API_BASE}/api/payment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Inflow-Api-Key': INFLOW_API_KEY
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Inflow API error:', data);
+      return res.status(response.status).json({ error: data.message || 'Erreur de paiement' });
+    }
+
+    res.json({ purchaseUrl: data.purchaseUrl });
+  } catch (err) {
+    console.error('Server error:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
 });
 
 app.listen(PORT, () => {

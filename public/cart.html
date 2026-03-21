@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mon panier — ViteTonBillet</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <!-- Microsoft Clarity -->
+  <script type="text/javascript">(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "vz6srijzc9");</script>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header" id="header">
+    <div class="container header-inner">
+      <a href="/" class="logo">
+        <img src="/images/logo.png" alt="ViteTonBillet" class="logo-mark-img" />
+        <span class="logo-text">ViteTonBillet</span>
+      </a>
+      <nav class="nav">
+        <a href="/#events">Événements</a>
+        <a href="/#reviews">Avis clients</a>
+        <a href="/#trust">Pourquoi nous</a>
+        <a href="/#contact">Contact</a>
+      </nav>
+      <a href="https://x.com/Vitetonbillet" target="_blank" rel="noopener" class="header-twitter">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      </a>
+      <a href="/cart.html" class="header-cart" id="headerCart" aria-label="Mon panier">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span class="header-cart-count" id="cartCount" style="display:none">0</span>
+      </a>
+      <a href="/#events" class="header-cta">Réserver</a>
+    </div>
+  </header>
+
+  <div class="cart-page">
+    <div class="container">
+      <div class="cart-layout">
+
+        <a href="/" style="display:inline-flex;align-items:center;gap:6px;color:var(--gray-500);font-size:0.88rem;font-weight:500;margin-bottom:24px;transition:color 0.2s" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--gray-500)'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Retour aux événements
+        </a>
+
+        <h1 style="font-size:1.6rem;font-weight:800;color:var(--gray-900);margin-bottom:24px">Mon panier</h1>
+
+        <!-- EMPTY STATE -->
+        <div class="cart-empty" id="cartEmpty" style="display:none">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          <h2>Votre panier est vide</h2>
+          <p>Parcourez nos événements et ajoutez des billets à votre panier.</p>
+          <a href="/" class="btn btn-primary">Voir les événements</a>
+        </div>
+
+        <!-- CART CONTENT -->
+        <div id="cartContent" style="display:none">
+          <div class="cart-items" id="cartItems"></div>
+
+          <div class="cart-summary">
+            <h3>Récapitulatif</h3>
+            <div id="cartSummaryRows"></div>
+            <div class="cart-summary-total">
+              <span>Total</span>
+              <span id="cartTotal">—</span>
+            </div>
+
+            <div class="cart-email-section">
+              <label for="cartEmail">E-mail (pour recevoir vos billets)</label>
+              <input type="email" id="cartEmail" placeholder="votre@email.com" />
+            </div>
+
+            <button class="cart-checkout-btn" id="cartCheckoutBtn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span id="checkoutText">Payer maintenant</span>
+              <div class="pay-spin hidden" id="checkoutSpin" style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite"></div>
+            </button>
+
+            <div class="cart-secure-line">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Paiement 100% sécurisé via Inflow
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hidden { display: none !important; }
+  </style>
+
+  <script>
+    function formatPrice(cents, currency = 'EUR') {
+      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency, minimumFractionDigits: 2 }).format(cents / 100);
+    }
+
+    function getCart() {
+      try { return JSON.parse(localStorage.getItem('vtbCart') || '{"items":[]}'); } catch { return { items: [] }; }
+    }
+
+    function saveCart(cart) {
+      localStorage.setItem('vtbCart', JSON.stringify(cart));
+      render();
+    }
+
+    function updateCartCount() {
+      const cart = getCart();
+      const count = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+      const el = document.getElementById('cartCount');
+      if (el) { if (count > 0) { el.textContent = count; el.style.display = 'flex'; } else { el.style.display = 'none'; } }
+    }
+
+    function render() {
+      const cart = getCart();
+      updateCartCount();
+
+      if (cart.items.length === 0) {
+        document.getElementById('cartEmpty').style.display = 'block';
+        document.getElementById('cartContent').style.display = 'none';
+        return;
+      }
+
+      document.getElementById('cartEmpty').style.display = 'none';
+      document.getElementById('cartContent').style.display = 'block';
+
+      // Render items
+      document.getElementById('cartItems').innerHTML = cart.items.map((item, idx) => `
+        <div class="cart-item">
+          <img class="cart-item-img" src="${item.eventImage || ''}" alt="${item.eventName}" onerror="this.style.display='none'" />
+          <div class="cart-item-info">
+            <div class="cart-item-name">${item.eventName}</div>
+            <div class="cart-item-type">${item.ticketType}</div>
+            <div class="cart-item-price">${formatPrice(item.price * item.quantity, item.currency)}</div>
+          </div>
+          <div class="cart-item-qty">
+            <button class="cart-qty-btn" onclick="changeQty(${idx}, -1)">−</button>
+            <span class="cart-qty-val">${item.quantity}</span>
+            <button class="cart-qty-btn" onclick="changeQty(${idx}, 1)">+</button>
+          </div>
+          <button class="cart-item-remove" onclick="removeItem(${idx})" aria-label="Supprimer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          </button>
+        </div>
+      `).join('');
+
+      // Summary rows
+      document.getElementById('cartSummaryRows').innerHTML = cart.items.map(item => `
+        <div class="cart-summary-row">
+          <span>${item.eventName} × ${item.quantity}</span>
+          <span>${formatPrice(item.price * item.quantity, item.currency)}</span>
+        </div>
+      `).join('');
+
+      // Total
+      const total = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      const currency = cart.items[0]?.currency || 'EUR';
+      document.getElementById('cartTotal').textContent = formatPrice(total, currency);
+    }
+
+    function changeQty(idx, delta) {
+      const cart = getCart();
+      const item = cart.items[idx];
+      if (!item) return;
+      const max = item.maxQuantity || 10;
+      item.quantity = Math.max(1, Math.min(item.quantity + delta, max));
+      saveCart(cart);
+    }
+
+    function removeItem(idx) {
+      const cart = getCart();
+      cart.items.splice(idx, 1);
+      saveCart(cart);
+    }
+
+    document.getElementById('cartCheckoutBtn').addEventListener('click', async () => {
+      const cart = getCart();
+      if (cart.items.length === 0) return;
+
+      const btn = document.getElementById('cartCheckoutBtn');
+      const text = document.getElementById('checkoutText');
+      const spin = document.getElementById('checkoutSpin');
+      const email = document.getElementById('cartEmail').value.trim();
+
+      btn.disabled = true;
+      text.classList.add('hidden');
+      spin.classList.remove('hidden');
+
+      try {
+        const res = await fetch('/api/cart-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: cart.items.map(item => ({
+              eventId: item.eventId,
+              ticketTypeIndex: item.ticketTypeIndex,
+              quantity: item.quantity
+            })),
+            customerEmail: email || undefined
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) { alert('Erreur : ' + (data.error || 'Une erreur est survenue.')); return; }
+
+        // Clear cart and redirect
+        localStorage.removeItem('vtbCart');
+        window.location.href = data.purchaseUrl;
+      } catch { alert('Erreur de connexion.'); }
+      finally {
+        btn.disabled = false;
+        text.classList.remove('hidden');
+        spin.classList.add('hidden');
+      }
+    });
+
+    window.addEventListener('scroll', () => {
+      document.getElementById('header').classList.toggle('scrolled', window.scrollY > 10);
+    });
+
+    render();
+  </script>
+</body>
+</html>

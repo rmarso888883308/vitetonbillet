@@ -403,6 +403,10 @@
       <a href="https://x.com/Vitetonbillet" target="_blank" rel="noopener" class="header-twitter">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
       </a>
+      <a href="/cart.html" class="header-cart" id="headerCart" aria-label="Mon panier">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span class="header-cart-count" id="cartCount" style="display:none">0</span>
+      </a>
       <a href="/#events" class="header-cta">Réserver</a>
     </div>
   </header>
@@ -462,6 +466,8 @@
                 </div>
               </div>
 
+              <p class="max-qty-label" id="maxQtyLabel"></p>
+
               <div class="total-bar">
                 <span>Total</span>
                 <strong id="totalPrice">—</strong>
@@ -470,6 +476,11 @@
               <button class="pay-btn" id="payBtn">
                 <span id="payText">Payer maintenant</span>
                 <div class="pay-spin hidden" id="paySpin"></div>
+              </button>
+
+              <button class="add-cart-btn" id="addCartBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                Ajouter au panier
               </button>
 
               <div class="secure-line">
@@ -536,17 +547,43 @@
       return new Intl.NumberFormat('fr-FR', { style: 'currency', currency, minimumFractionDigits: 2 }).format(cents / 100);
     }
 
+    // ─── CART ───
+    function getCart() {
+      try { return JSON.parse(localStorage.getItem('vtbCart') || '{"items":[]}'); } catch { return { items: [] }; }
+    }
+    function saveCart(cart) {
+      localStorage.setItem('vtbCart', JSON.stringify(cart));
+      updateCartCount();
+    }
+    function updateCartCount() {
+      const cart = getCart();
+      const count = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+      const el = document.getElementById('cartCount');
+      if (el) { if (count > 0) { el.textContent = count; el.style.display = 'flex'; } else { el.style.display = 'none'; } }
+    }
+
+    // ─── LOAD EVENT ───
     async function loadEvent() {
       const params = new URLSearchParams(window.location.search);
       const id = params.get('id');
       if (!id) { window.location.href = '/'; return; }
-
       try {
         const res = await fetch(`/api/events/${id}`);
         if (!res.ok) { window.location.href = '/'; return; }
         event = await res.json();
         render();
+        updateCartCount();
       } catch { window.location.href = '/'; }
+    }
+
+    function getMaxQty() {
+      return (event && event.tickets[selectedTicket].maxQuantity) || 10;
+    }
+
+    function updateMaxLabel() {
+      const max = getMaxQty();
+      const el = document.getElementById('maxQtyLabel');
+      if (el) el.textContent = `Maximum ${max} billet${max > 1 ? 's' : ''} par commande`;
     }
 
     function render() {
@@ -579,13 +616,17 @@
       ticketsEl.querySelectorAll('input[type="radio"]').forEach(r => {
         r.addEventListener('change', () => {
           selectedTicket = parseInt(r.value);
+          const max = getMaxQty();
+          if (quantity > max) { quantity = max; document.getElementById('qtyVal').textContent = quantity; }
           ticketsEl.querySelectorAll('.eticket').forEach(e => e.classList.remove('selected'));
           r.closest('.eticket').classList.add('selected');
           updateTotal();
+          updateMaxLabel();
         });
       });
 
       updateTotal();
+      updateMaxLabel();
     }
 
     function updateTotal() {
@@ -598,9 +639,11 @@
       if (quantity > 1) { quantity--; document.getElementById('qtyVal').textContent = quantity; updateTotal(); }
     });
     document.getElementById('qtyPlus').addEventListener('click', () => {
-      if (quantity < 10) { quantity++; document.getElementById('qtyVal').textContent = quantity; updateTotal(); }
+      const max = getMaxQty();
+      if (quantity < max) { quantity++; document.getElementById('qtyVal').textContent = quantity; updateTotal(); }
     });
 
+    // ─── PAY NOW ───
     document.getElementById('payBtn').addEventListener('click', async () => {
       if (!event) return;
       const btn = document.getElementById('payBtn');
@@ -616,12 +659,7 @@
         const res = await fetch('/api/checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            eventId: event.id,
-            ticketTypeIndex: selectedTicket,
-            quantity,
-            customerEmail: email || undefined
-          })
+          body: JSON.stringify({ eventId: event.id, ticketTypeIndex: selectedTicket, quantity, customerEmail: email || undefined })
         });
         const data = await res.json();
         if (!res.ok) { alert('Erreur : ' + (data.error || 'Une erreur est survenue.')); return; }
@@ -632,6 +670,39 @@
         text.classList.remove('hidden');
         spin.classList.add('hidden');
       }
+    });
+
+    // ─── ADD TO CART ───
+    document.getElementById('addCartBtn').addEventListener('click', () => {
+      if (!event) return;
+      const cart = getCart();
+      const ticket = event.tickets[selectedTicket];
+      const maxQty = ticket.maxQuantity || 10;
+      const existing = cart.items.find(item => item.eventId === event.id && item.ticketTypeIndex === selectedTicket);
+
+      if (existing) {
+        existing.quantity = Math.min(existing.quantity + quantity, maxQty);
+      } else {
+        cart.items.push({
+          eventId: event.id,
+          eventName: event.name,
+          eventImage: event.image,
+          ticketType: ticket.type,
+          ticketTypeIndex: selectedTicket,
+          price: ticket.price,
+          currency: ticket.currency,
+          quantity,
+          maxQuantity: maxQty
+        });
+      }
+
+      saveCart(cart);
+
+      const btn = document.getElementById('addCartBtn');
+      const orig = btn.innerHTML;
+      btn.innerHTML = '✓ Ajouté au panier !';
+      btn.style.background = 'var(--primary-50)';
+      setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 2000);
     });
 
     window.addEventListener('scroll', () => {

@@ -788,7 +788,7 @@
       ticketCount = 0;
 
       if (event && event.tickets) {
-        event.tickets.forEach(t => addTicketRow(t.type, t.price));
+        event.tickets.forEach(t => addTicketRow(t.type, t.price, t.maxQuantity || 10));
       } else {
         addTicketRow('', '');
       }
@@ -796,7 +796,7 @@
       document.getElementById('formOverlay').classList.add('open');
     }
 
-    function addTicketRow(type = '', price = '') {
+    function addTicketRow(type = '', price = '', maxQuantity = 10) {
       ticketCount++;
       const row = document.createElement('div');
       row.className = 'ticket-form-row';
@@ -808,6 +808,10 @@
         <div class="form-group">
           <label>Prix (€)</label>
           <input type="number" step="0.01" class="ticket-price" value="${price ? price / 100 : ''}" placeholder="Ex: 35" />
+        </div>
+        <div class="form-group" style="max-width:90px">
+          <label>Max billets</label>
+          <input type="number" class="ticket-maxqty" value="${maxQuantity}" placeholder="10" min="1" max="100" />
         </div>
         <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()" style="margin-top:22px" type="button">✕</button>
       `;
@@ -864,12 +868,14 @@
 
       const ticketTypes = document.querySelectorAll('.ticket-type');
       const ticketPrices = document.querySelectorAll('.ticket-price');
+      const ticketMaxQtys = document.querySelectorAll('.ticket-maxqty');
       const tickets = [];
       ticketTypes.forEach((el, i) => {
         const type = el.value.trim();
         const priceEur = parseFloat(ticketPrices[i].value);
+        const maxQty = parseInt(ticketMaxQtys[i]?.value) || 10;
         if (type && priceEur > 0) {
-          tickets.push({ type, price: Math.round(priceEur * 100), currency: 'EUR' });
+          tickets.push({ type, price: Math.round(priceEur * 100), currency: 'EUR', maxQuantity: maxQty });
         }
       });
 
