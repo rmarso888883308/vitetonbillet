@@ -60,6 +60,17 @@ function getNextId(events) {
   return Math.max(...events.map(e => e.id)) + 1;
 }
 
+// Générer un slug SEO depuis un événement
+function generateEventSlug(event) {
+  const text = (event.artist || event.name) + '-' + event.location;
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 // Middleware d'auth admin simple
 function requireAdmin(req, res, next) {
   const password = req.headers['x-admin-password'];
@@ -76,7 +87,18 @@ function requireAdmin(req, res, next) {
 // GET /api/events — liste publique
 app.get('/api/events', (req, res) => {
   const events = readEvents();
-  res.json(events);
+  const eventsWithSlugs = events.map(e => ({ ...e, slug: e.slug || generateEventSlug(e) }));
+  res.json(eventsWithSlugs);
+});
+
+// GET /api/events/by-slug/:slug — lookup par slug SEO
+app.get('/api/events/by-slug/:slug', (req, res) => {
+  const events = readEvents();
+  const slug = req.params.slug;
+  let event = events.find(e => e.slug === slug);
+  if (!event) event = events.find(e => generateEventSlug(e) === slug);
+  if (!event) return res.status(404).json({ error: 'Événement introuvable' });
+  res.json({ ...event, slug: event.slug || generateEventSlug(event) });
 });
 
 // GET /api/events/:id
@@ -84,7 +106,7 @@ app.get('/api/events/:id', (req, res) => {
   const events = readEvents();
   const event = events.find(e => e.id === parseInt(req.params.id));
   if (!event) return res.status(404).json({ error: 'Événement introuvable' });
-  res.json(event);
+  res.json({ ...event, slug: event.slug || generateEventSlug(event) });
 });
 
 // POST /api/checkout — paiement Inflow
@@ -307,6 +329,22 @@ app.post('/api/cart-checkout', async (req, res) => {
     console.error('Server error:', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
+});
+
+// Route SEO : /concert-[slug] → event.html
+app.get('/concert-:slug', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'event.html'));
+});
+
+// Routes pages légales
+app.get('/mentions-legales', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'mentions-legales.html'));
+});
+app.get('/cgv', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'cgv.html'));
+});
+app.get('/confidentialite', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'confidentialite.html'));
 });
 
 app.listen(PORT, () => {

@@ -639,17 +639,55 @@
     }
 
     // ─── LOAD EVENT ───
+    function trackClarity(key, val) {
+      try { if (typeof window.clarity === 'function') window.clarity('set', key, val); } catch {} }
+
     async function loadEvent() {
       const params = new URLSearchParams(window.location.search);
       const id = params.get('id');
-      if (!id) { window.location.href = '/'; return; }
+      const pathMatch = window.location.pathname.match(/^\/concert-(.+)$/);
+
+      let apiUrl;
+      if (pathMatch) {
+        apiUrl = `/api/events/by-slug/${pathMatch[1]}`;
+      } else if (id) {
+        apiUrl = `/api/events/${id}`;
+      } else { window.location.href = '/'; return; }
+
       try {
-        const res = await fetch(`/api/events/${id}`);
+        const res = await fetch(apiUrl);
         if (!res.ok) { window.location.href = '/'; return; }
         event = await res.json();
         render();
+        injectStructuredData(event);
+        trackClarity('funnel', 'reached_checkout');
         updateCartCount();
       } catch { window.location.href = '/'; }
+    }
+
+    function injectStructuredData(ev) {
+      const minPrice = Math.min(...ev.tickets.map(t => t.price)) / 100;
+      const schema = {
+        "@context": "https://schema.org",
+        "@type": "Event",
+        "name": ev.name,
+        "description": ev.description || `Billets ${ev.name} - Revente sécurisée via ViteTonBillet`,
+        "location": { "@type": "Place", "name": ev.location },
+        "organizer": { "@type": "Organization", "name": "ViteTonBillet", "url": "https://vitetonbillet.com" },
+        "offers": {
+          "@type": "Offer",
+          "url": window.location.href,
+          "price": minPrice,
+          "priceCurrency": "EUR",
+          "availability": ev.available ? "https://schema.org/InStock" : "https://schema.org/SoldOut",
+          "seller": { "@type": "Organization", "name": "ViteTonBillet" }
+        },
+        "image": ev.image
+      };
+      const s = document.createElement('script');
+      s.type = 'application/ld+json';
+      s.textContent = JSON.stringify(schema);
+      document.head.appendChild(s);
     }
 
     function getMaxQty() {
@@ -663,7 +701,18 @@
     }
 
     function render() {
-      document.title = `${event.name} — ViteTonBillet`;
+      const artistPart = event.artist ? event.artist : event.name;
+      document.title = `Billets ${artistPart} ${event.location} - Achat Sécurisé | ViteTonBillet`;
+      // Meta description dynamique
+      let metaDesc = document.querySelector('meta[name="description"]');
+      if (!metaDesc) { metaDesc = document.createElement('meta'); metaDesc.name = 'description'; document.head.appendChild(metaDesc); }
+      metaDesc.content = `Place de concert sold out pour ${artistPart} à ${event.location}. Billet 100% vérifié, accès garanti à la salle ou remboursé.`;
+      // Canonical SEO URL
+      if (event.slug) {
+        let canonical = document.querySelector('link[rel="canonical"]');
+        if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical); }
+        canonical.href = `https://vitetonbillet.com/concert-${event.slug}`;
+      }
       document.getElementById('evImage').src = event.image;
       document.getElementById('evImage').alt = event.name;
       document.getElementById('evCategory').textContent = event.category;
@@ -737,6 +786,7 @@
       const phone = document.getElementById('phone').value.trim();
 
       if (!firstName || !lastName || !email || !phone) {
+        trackClarity('form_error', 'fields_incomplete');
         alert('Veuillez remplir tous les champs obligatoires (prénom, nom, email, téléphone).');
         return;
       }
@@ -745,6 +795,7 @@
       const text = document.getElementById('payText');
       const spin = document.getElementById('paySpin');
 
+      trackClarity('funnel', 'payment_initiated');
       btn.disabled = true;
       text.classList.add('hidden');
       spin.classList.remove('hidden');
@@ -763,7 +814,11 @@
           })
         });
         const data = await res.json();
-        if (!res.ok) { alert('Erreur : ' + (data.error || 'Une erreur est survenue.')); return; }
+        if (!res.ok) {
+          trackClarity('payment_status', 'failed');
+          alert('Erreur : ' + (data.error || 'Une erreur est survenue.')); return;
+        }
+        trackClarity('funnel', 'purchase_success');
         window.location.href = data.purchaseUrl;
       } catch { alert('Erreur de connexion.'); }
       finally {
@@ -775,6 +830,7 @@
 
     // ─── ADD TO CART ───
     document.getElementById('addCartBtn').addEventListener('click', () => {
+      trackClarity('funnel', 'added_to_cart');
       if (!event) return;
       const cart = getCart();
       const ticket = event.tickets[selectedTicket];

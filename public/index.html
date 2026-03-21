@@ -3,7 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ViteTonBillet — Billetterie en ligne</title>
+  <title>ViteTonBillet : Revente de Billets de Concerts Sécurisée (100% Vérifié)</title>
+  <meta name="description" content="Achetez vos places pour des concerts complets en toute sécurité. Billets vérifiés, paiement crypté par Inflow et service client réactif." />
+  <meta property="og:title" content="ViteTonBillet : Revente de Billets Sécurisée" />
+  <meta property="og:description" content="Billets vérifiés, paiement crypté, accès garanti à la salle." />
+  <meta property="og:url" content="https://vitetonbillet.com/" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://vitetonbillet.com/" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -89,7 +95,7 @@
   <section class="section events-section" id="events">
     <div class="container">
       <div class="section-header">
-        <h2>🎤 Événements à venir</h2>
+        <h2>Événements à venir</h2>
         <p>Sélectionnez une catégorie pour filtrer les résultats</p>
       </div>
       <div class="filters" id="filters">
@@ -120,10 +126,6 @@
         <div class="about-stat">
           <span class="about-stat-num">100+</span>
           <span class="about-stat-label">Clients satisfaits</span>
-        </div>
-        <div class="about-stat">
-          <span class="about-stat-num">0</span>
-          <span class="about-stat-label">Arnaques</span>
         </div>
         <div class="about-stat">
           <span class="about-stat-num">⚡</span>
@@ -423,6 +425,12 @@
           </a>
           <a href="https://x.com/Vitetonbillet/status/1865848542910353599" target="_blank" rel="noopener" class="footer-reviews-link">Voir les avis clients</a>
         </div>
+        <div class="footer-col">
+          <h4>Informations légales</h4>
+          <a href="/mentions-legales.html">Mentions légales</a>
+          <a href="/cgv.html">Conditions générales de vente</a>
+          <a href="/confidentialite.html">Politique de confidentialité</a>
+        </div>
       </div>
       <div class="footer-bottom">
         <p>&copy; 2026 ViteTonBillet — Tous droits réservés</p>
@@ -461,8 +469,18 @@
       const item = btn.closest('.faq-item');
       const isOpen = item.classList.contains('open');
       document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
-      if (!isOpen) item.classList.add('open');
+      if (!isOpen) {
+        item.classList.add('open');
+        try { if (typeof window.clarity === 'function') window.clarity('set', 'interaction', 'checked_trust_elements'); } catch {}
+      }
     }
+
+    // Clarity on Twitter/about links
+    document.querySelectorAll('a[href*="x.com"], a[href*="twitter.com"]').forEach(el => {
+      el.addEventListener('click', () => {
+        try { if (typeof window.clarity === 'function') window.clarity('set', 'interaction', 'checked_trust_elements'); } catch {}
+      });
+    });
   </script>
 </body>
 </html>

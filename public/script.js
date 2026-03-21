@@ -67,10 +67,12 @@ function renderEvents(events) {
     return Math.min(...prices);
   };
 
-  grid.innerHTML = events.map(event => `
-    <div class="card${event.available ? '' : ' sold-out'}" onclick="${event.available ? `openEvent(${event.id})` : ''}">
+  grid.innerHTML = events.map(event => {
+    const slug = event.slug || event.id;
+    return `
+    <div class="card${event.available ? '' : ' sold-out'}" onclick="${event.available ? `openEvent('${slug}')` : ''}">
       <div class="card-img-wrap">
-        <img class="card-img" src="${event.image}" alt="${event.name}" loading="lazy" />
+        <img class="card-img" src="${event.image}" alt="Affiche du concert de ${event.artist || event.name}" loading="lazy" />
         <div class="card-img-overlay"></div>
         <span class="card-cat">${event.category}</span>
         ${!event.available ? '<div class="sold-out-label">Complet</div>' : ''}
@@ -93,12 +95,13 @@ function renderEvents(events) {
             <span class="card-price-value">${formatPrice(minPrice(event.tickets), event.tickets[0].currency)}</span>
           </div>
           ${event.available
-            ? `<button class="card-cta" onclick="event.stopPropagation(); openEvent(${event.id})">Réserver</button>`
+            ? `<button class="card-cta" onclick="event.stopPropagation(); openEvent('${slug}')">Réserver</button>`
             : `<button class="card-cta" disabled>Complet</button>`}
         </div>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 // =====================
@@ -116,8 +119,9 @@ document.getElementById('filters').addEventListener('click', (e) => {
 // =====================
 // NAVIGATION VERS PAGE ÉVÉNEMENT
 // =====================
-function openEvent(eventId) {
-  window.location.href = '/event.html?id=' + eventId;
+function openEvent(slug) {
+  try { if (typeof window.clarity === 'function') window.clarity('set', 'funnel', 'clicked_reserve'); } catch {}
+  window.location.href = '/concert-' + slug;
 }
 
 // =====================
