@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paiement confirmé — ViteTonBillet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 48px 40px;
+      max-width: 460px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    .check {
+      width: 64px; height: 64px;
+      background: #dcfce7;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .check svg { color: #22c55e; }
+    h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: 8px; }
+    .sub { color: #64748b; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.6; }
+    .event-name {
+      background: #eef8fc;
+      border: 1px solid #d5effa;
+      color: #1e7a9e;
+      font-weight: 600;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 24px;
+      font-size: 0.95rem;
+    }
+    .info { color: #94a3b8; font-size: 0.85rem; margin-bottom: 28px; line-height: 1.6; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      background: #2a8cb5;
+      color: white;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn:hover { background: #1e7a9e; box-shadow: 0 4px 16px rgba(42,140,181,0.3); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="check">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <h1>Paiement confirmé !</h1>
+    <p class="sub">Merci pour votre achat sur ViteTonBillet.</p>
+    <div class="event-name" id="eventName" style="display:none"></div>
+    <p class="info">Votre billet a été enregistré. Un email de confirmation vous sera envoyé si vous avez fourni votre adresse.</p>
+    <a href="/" class="btn">Retour aux événements</a>
+  </div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const name = params.get('event');
+    if (name) {
+      const el = document.getElementById('eventName');
+      el.textContent = name;
+      el.style.display = 'block';
+    }
+  </script>
+</body>
+</html>

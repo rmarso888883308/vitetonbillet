@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — ViteTonBillet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --white: #fff;
+      --gray-50: #f8fafc;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-300: #cbd5e1;
+      --gray-400: #94a3b8;
+      --gray-500: #64748b;
+      --gray-600: #475569;
+      --gray-700: #334155;
+      --gray-800: #1e293b;
+      --gray-900: #0f172a;
+      --primary: #2a8cb5;
+      --primary-light: #3ba3cf;
+      --primary-dark: #1e7a9e;
+      --primary-50: #eef8fc;
+      --primary-100: #d5effa;
+      --danger: #ef4444;
+      --danger-bg: #fef2f2;
+      --success: #22c55e;
+      --radius: 12px;
+      --shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-800);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* LOGIN */
+    .login-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .login-card {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .login-card .logo-mark {
+      width: 48px; height: 48px;
+      background: var(--primary);
+      color: white;
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 1.4rem;
+      margin-bottom: 16px;
+    }
+
+    .login-card h1 {
+      font-size: 1.3rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .login-card p {
+      color: var(--gray-500);
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+    }
+
+    .login-card input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      margin-bottom: 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .login-card input:focus { border-color: var(--primary-light); }
+
+    .login-error {
+      color: var(--danger);
+      font-size: 0.85rem;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    /* LAYOUT */
+    .app { display: none; }
+
+    .topbar {
+      background: white;
+      border-bottom: 1px solid var(--gray-200);
+      padding: 0 32px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      font-size: 1.05rem;
+    }
+
+    .topbar-left .logo-mark {
+      width: 32px; height: 32px;
+      background: var(--primary);
+      color: white;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 0.9rem;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    /* BUTTONS */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-outline {
+      background: white;
+      border: 1.5px solid var(--gray-200);
+      color: var(--gray-600);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--gray-300);
+      background: var(--gray-50);
+    }
+
+    .btn-danger {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border: 1px solid rgba(239,68,68,0.2);
+    }
+
+    .btn-danger:hover {
+      background: #fee2e2;
+    }
+
+    .btn-sm {
+      padding: 7px 14px;
+      font-size: 0.82rem;
+    }
+
+    .btn-full { width: 100%; }
+
+    /* HEADER SECTION */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .page-header h2 {
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+
+    .stats {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .stat-card .stat-label {
+      font-size: 0.8rem;
+      color: var(--gray-500);
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .stat-card .stat-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--gray-900);
+    }
+
+    /* EVENT LIST */
+    .event-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .event-row {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: all 0.2s;
+    }
+
+    .event-row:hover {
+      border-color: var(--primary-100);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    }
+
+    .event-row-img {
+      width: 64px;
+      height: 64px;
+      border-radius: 10px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .event-row-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .event-row-name {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--gray-900);
+      margin-bottom: 2px;
+    }
+
+    .event-row-meta {
+      font-size: 0.82rem;
+      color: var(--gray-500);
+    }
+
+    .event-row-badge {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+
+    .badge-available {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .badge-soldout {
+      background: var(--gray-100);
+      color: var(--gray-500);
+    }
+
+    .event-row-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    /* FORM MODAL */
+    .form-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,0.4);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .form-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .form-modal {
+      background: white;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+      padding: 32px;
+      transform: translateY(12px);
+      transition: transform 0.2s;
+    }
+
+    .form-overlay.open .form-modal {
+      transform: translateY(0);
+    }
+
+    .form-modal h3 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin-bottom: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--gray-600);
+      margin-bottom: 6px;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+      background: white;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      border-color: var(--primary-light);
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* TICKETS FORM */
+    .tickets-section h4 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .ticket-form-row {
+      display: flex;
+      gap: 8px;
+      align-items: end;
+      margin-bottom: 8px;
+    }
+
+    .ticket-form-row .form-group { flex: 1; margin-bottom: 0; }
+
+    .ticket-form-row .btn-danger { margin-bottom: 0; align-self: end; height: 40px; }
+
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .form-actions .btn { flex: 1; }
+
+    /* TOGGLE */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toggle {
+      width: 44px;
+      height: 24px;
+      background: var(--gray-300);
+      border-radius: 100px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.2s;
+      border: none;
+    }
+
+    .toggle.active {
+      background: var(--success);
+    }
+
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    .toggle.active::after {
+      transform: translateX(20px);
+    }
+
+    /* UPLOAD ZONE */
+    .upload-zone {
+      border: 2px dashed var(--gray-200);
+      border-radius: 10px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--gray-50);
+    }
+
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--primary);
+      background: var(--primary-50);
+    }
+
+    .upload-zone.has-image {
+      border-style: solid;
+      border-color: var(--primary);
+    }
+
+    /* CATEGORY PRESETS */
+    .category-presets {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    .preset-btn {
+      padding: 4px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--gray-200);
+      background: white;
+      color: var(--gray-600);
+      font-size: 0.78rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+
+    .preset-btn:hover {
+      border-color: var(--primary-light);
+      color: var(--primary);
+      background: var(--primary-50);
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 640px) {
+      .stats { flex-direction: column; }
+      .form-row { grid-template-columns: 1fr; }
+      .event-row { flex-wrap: wrap; }
+      .event-row-actions { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div class="login-page" id="loginPage">
+    <div class="login-card">
+      <div class="logo-mark">V</div>
+      <h1>Administration</h1>
+      <p>Connectez-vous pour gérer vos événements</p>
+      <p class="login-error" id="loginError">Mot de passe incorrect</p>
+      <input type="password" id="loginPassword" placeholder="Mot de passe" />
+      <button class="btn btn-primary btn-full" id="loginBtn">Se connecter</button>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div class="app" id="app">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="logo-mark">V</div>
+        <span>ViteTonBillet — Admin</span>
+      </div>
+      <div class="topbar-right">
+        <a href="/" class="btn btn-outline btn-sm">Voir le site</a>
+        <button class="btn btn-outline btn-sm" id="logoutBtn">Déconnexion</button>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="stats" id="stats"></div>
+
+      <div class="page-header">
+        <h2>Événements</h2>
+        <button class="btn btn-primary" id="addEventBtn">+ Nouvel événement</button>
+      </div>
+
+      <div class="event-list" id="eventList"></div>
+    </div>
+  </div>
+
+  <!-- FORM MODAL -->
+  <div class="form-overlay" id="formOverlay">
+    <div class="form-modal">
+      <h3 id="formTitle">Nouvel événement</h3>
+      <input type="hidden" id="formEventId" value="" />
+
+      <div class="form-group">
+        <label>Nom de l'événement *</label>
+        <input type="text" id="fName" placeholder="Ex: PSG vs OM, Concert Ninho..." />
+      </div>
+
+      <div class="form-group">
+        <label>Artiste / Équipes (facultatif)</label>
+        <input type="text" id="fArtist" placeholder="Ex: Ninho, PSG vs Marseille..." />
+      </div>
+
+      <div class="form-group">
+        <label>Catégorie *</label>
+        <input type="text" id="fCategory" placeholder="Ex: Concert, Football, Festival..." />
+        <div class="category-presets">
+          <button class="preset-btn" onclick="document.getElementById('fCategory').value='Concert'">Concert</button>
+          <button class="preset-btn" onclick="document.getElementById('fCategory').value='Football'">Football</button>
+          <button class="preset-btn" onclick="document.getElementById('fCategory').value='Festival'">Festival</button>
+          <button class="preset-btn" onclick="document.getElementById('fCategory').value='Conférence'">Conférence</button>
+          <button class="preset-btn" onclick="document.getElementById('fCategory').value='Spectacle'">Spectacle</button>
+          <button class="preset-btn" onclick="document.getElementById('fCategory').value='Sport'">Sport</button>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date *</label>
+          <input type="text" id="fDate" placeholder="Ex: Samedi 5 avril 2026" />
+        </div>
+        <div class="form-group">
+          <label>Heure</label>
+          <input type="text" id="fTime" placeholder="Ex: 20h30" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Lieu *</label>
+        <input type="text" id="fLocation" placeholder="Ex: Accor Arena, Paris" />
+      </div>
+
+      <div class="form-group">
+        <label>Image de l'événement</label>
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="fImageFile" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none" />
+          <img id="uploadPreview" src="" alt="" style="display:none; max-height:140px; border-radius:8px; margin-bottom:10px;" />
+          <div id="uploadPlaceholder">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gray-400);margin-bottom:8px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+            <p style="color:var(--gray-500);font-size:0.85rem;margin-bottom:4px">Cliquez ou glissez une image ici</p>
+            <p style="color:var(--gray-400);font-size:0.75rem">JPG, PNG, WebP — max 5 Mo</p>
+          </div>
+          <div id="uploadSpinner" style="display:none;color:var(--gray-400);font-size:0.85rem">Upload en cours...</div>
+        </div>
+        <input type="hidden" id="fImage" />
+        <div style="text-align:center;color:var(--gray-400);font-size:0.78rem;margin-top:6px">ou collez une URL :</div>
+        <input type="text" id="fImageUrl" placeholder="https://..." style="margin-top:6px" />
+      </div>
+
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="fDescription" placeholder="Décrivez l'événement..."></textarea>
+      </div>
+
+      <div class="form-group toggle-row">
+        <label style="margin:0">Disponible à la vente</label>
+        <button class="toggle active" id="fAvailable" type="button"></button>
+      </div>
+
+      <!-- BILLETS -->
+      <div class="tickets-section">
+        <h4>Billets / Tarifs *</h4>
+        <div id="ticketRows"></div>
+        <button class="btn btn-outline btn-sm" id="addTicketBtn" type="button">+ Ajouter un tarif</button>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-outline" id="formCancel">Annuler</button>
+        <button class="btn btn-primary" id="formSave">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =====================
+    // STATE
+    // =====================
+    let adminPassword = '';
+    let events = [];
+
+    // =====================
+    // AUTH
+    // =====================
+    document.getElementById('loginBtn').addEventListener('click', login);
+    document.getElementById('loginPassword').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') login();
+    });
+
+    async function login() {
+      const pw = document.getElementById('loginPassword').value;
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pw })
+        });
+        if (res.ok) {
+          adminPassword = pw;
+          document.getElementById('loginPage').style.display = 'none';
+          document.getElementById('app').style.display = 'block';
+          loadAdmin();
+        } else {
+          document.getElementById('loginError').style.display = 'block';
+        }
+      } catch {
+        alert('Erreur de connexion au serveur');
+      }
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      adminPassword = '';
+      document.getElementById('loginPage').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('loginPassword').value = '';
+      document.getElementById('loginError').style.display = 'none';
+    });
+
+    // =====================
+    // LOAD
+    // =====================
+    async function loadAdmin() {
+      const res = await fetch('/api/events');
+      events = await res.json();
+      renderStats();
+      renderList();
+    }
+
+    function renderStats() {
+      const total = events.length;
+      const available = events.filter(e => e.available).length;
+      const cats = [...new Set(events.map(e => e.category))].length;
+      document.getElementById('stats').innerHTML = `
+        <div class="stat-card"><div class="stat-label">Total événements</div><div class="stat-value">${total}</div></div>
+        <div class="stat-card"><div class="stat-label">En vente</div><div class="stat-value">${available}</div></div>
+        <div class="stat-card"><div class="stat-label">Catégories</div><div class="stat-value">${cats}</div></div>
+      `;
+    }
+
+    function renderList() {
+      const list = document.getElementById('eventList');
+      if (events.length === 0) {
+        list.innerHTML = '<p style="text-align:center;color:var(--gray-400);padding:40px">Aucun événement. Cliquez sur "+ Nouvel événement" pour commencer.</p>';
+        return;
+      }
+      list.innerHTML = events.map(ev => `
+        <div class="event-row">
+          <img class="event-row-img" src="${ev.image}" alt="${ev.name}" />
+          <div class="event-row-info">
+            <div class="event-row-name">${ev.name}</div>
+            <div class="event-row-meta">${ev.category} · ${ev.date} · ${ev.location}${ev.artist ? ' · ' + ev.artist : ''}</div>
+          </div>
+          <span class="event-row-badge ${ev.available ? 'badge-available' : 'badge-soldout'}">${ev.available ? 'En vente' : 'Complet'}</span>
+          <div class="event-row-actions">
+            <button class="btn btn-outline btn-sm" onclick="editEvent(${ev.id})">Modifier</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteEvent(${ev.id})">Supprimer</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // =====================
+    // FORM
+    // =====================
+    let ticketCount = 0;
+
+    function openForm(event = null) {
+      document.getElementById('formTitle').textContent = event ? 'Modifier l\'événement' : 'Nouvel événement';
+      document.getElementById('formEventId').value = event ? event.id : '';
+      document.getElementById('fName').value = event ? event.name : '';
+      document.getElementById('fArtist').value = event ? (event.artist || '') : '';
+      document.getElementById('fCategory').value = event ? event.category : '';
+      document.getElementById('fDate').value = event ? event.date : '';
+      document.getElementById('fTime').value = event ? (event.time || '') : '';
+      document.getElementById('fLocation').value = event ? event.location : '';
+      document.getElementById('fImage').value = event ? event.image : '';
+      document.getElementById('fImageUrl').value = '';
+      document.getElementById('fDescription').value = event ? (event.description || '') : '';
+
+      // Reset upload preview
+      const preview = document.getElementById('uploadPreview');
+      const placeholder = document.getElementById('uploadPlaceholder');
+      const zone = document.getElementById('uploadZone');
+      if (event && event.image) {
+        preview.src = event.image;
+        preview.style.display = 'block';
+        placeholder.style.display = 'none';
+        zone.classList.add('has-image');
+      } else {
+        preview.style.display = 'none';
+        placeholder.style.display = 'block';
+        zone.classList.remove('has-image');
+      }
+
+      const toggle = document.getElementById('fAvailable');
+      if (event && !event.available) {
+        toggle.classList.remove('active');
+      } else {
+        toggle.classList.add('active');
+      }
+
+      // Tickets
+      const ticketRows = document.getElementById('ticketRows');
+      ticketRows.innerHTML = '';
+      ticketCount = 0;
+
+      if (event && event.tickets) {
+        event.tickets.forEach(t => addTicketRow(t.type, t.price));
+      } else {
+        addTicketRow('', '');
+      }
+
+      document.getElementById('formOverlay').classList.add('open');
+    }
+
+    function addTicketRow(type = '', price = '') {
+      ticketCount++;
+      const row = document.createElement('div');
+      row.className = 'ticket-form-row';
+      row.innerHTML = `
+        <div class="form-group">
+          <label>Type de billet</label>
+          <input type="text" class="ticket-type" value="${type}" placeholder="Ex: Tribune, Fosse, VIP..." />
+        </div>
+        <div class="form-group">
+          <label>Prix (€)</label>
+          <input type="number" step="0.01" class="ticket-price" value="${price ? price / 100 : ''}" placeholder="Ex: 35" />
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()" style="margin-top:22px" type="button">✕</button>
+      `;
+      document.getElementById('ticketRows').appendChild(row);
+    }
+
+    document.getElementById('addTicketBtn').addEventListener('click', () => addTicketRow());
+
+    document.getElementById('fAvailable').addEventListener('click', function() {
+      this.classList.toggle('active');
+    });
+
+    function closeForm() {
+      document.getElementById('formOverlay').classList.remove('open');
+    }
+
+    document.getElementById('formCancel').addEventListener('click', closeForm);
+    document.getElementById('formOverlay').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('formOverlay')) closeForm();
+    });
+
+    document.getElementById('addEventBtn').addEventListener('click', () => openForm());
+
+    // EDIT
+    function editEvent(id) {
+      const ev = events.find(e => e.id === id);
+      if (ev) openForm(ev);
+    }
+
+    // DELETE
+    async function deleteEvent(id) {
+      const ev = events.find(e => e.id === id);
+      if (!confirm(`Supprimer "${ev.name}" ?`)) return;
+
+      await fetch(`/api/admin/events/${id}`, {
+        method: 'DELETE',
+        headers: { 'X-Admin-Password': adminPassword }
+      });
+      loadAdmin();
+    }
+
+    // SAVE
+    document.getElementById('formSave').addEventListener('click', async () => {
+      const id = document.getElementById('formEventId').value;
+      const name = document.getElementById('fName').value.trim();
+      const category = document.getElementById('fCategory').value.trim();
+      const date = document.getElementById('fDate').value.trim();
+      const location = document.getElementById('fLocation').value.trim();
+
+      if (!name || !category || !date || !location) {
+        alert('Remplissez les champs obligatoires (nom, catégorie, date, lieu)');
+        return;
+      }
+
+      const ticketTypes = document.querySelectorAll('.ticket-type');
+      const ticketPrices = document.querySelectorAll('.ticket-price');
+      const tickets = [];
+      ticketTypes.forEach((el, i) => {
+        const type = el.value.trim();
+        const priceEur = parseFloat(ticketPrices[i].value);
+        if (type && priceEur > 0) {
+          tickets.push({ type, price: Math.round(priceEur * 100), currency: 'EUR' });
+        }
+      });
+
+      if (tickets.length === 0) {
+        alert('Ajoutez au moins un type de billet avec un prix.');
+        return;
+      }
+
+      const payload = {
+        name,
+        artist: document.getElementById('fArtist').value.trim(),
+        category,
+        date,
+        time: document.getElementById('fTime').value.trim(),
+        location,
+        image: document.getElementById('fImageUrl').value.trim() || document.getElementById('fImage').value.trim() || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80',
+        description: document.getElementById('fDescription').value.trim(),
+        available: document.getElementById('fAvailable').classList.contains('active'),
+        tickets
+      };
+
+      const method = id ? 'PUT' : 'POST';
+      const url = id ? `/api/admin/events/${id}` : '/api/admin/events';
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Password': adminPassword
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        closeForm();
+        loadAdmin();
+      } else {
+        const data = await res.json();
+        alert('Erreur : ' + (data.error || 'Échec de l\'enregistrement'));
+      }
+    });
+
+    // =====================
+    // IMAGE UPLOAD
+    // =====================
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fImageFile');
+    const uploadPreview = document.getElementById('uploadPreview');
+    const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+    const uploadSpinner = document.getElementById('uploadSpinner');
+
+    uploadZone.addEventListener('click', () => fileInput.click());
+
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', () => {
+      uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        uploadFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        uploadFile(fileInput.files[0]);
+      }
+    });
+
+    async function uploadFile(file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image trop lourde (max 5 Mo)');
+        return;
+      }
+
+      uploadPlaceholder.style.display = 'none';
+      uploadPreview.style.display = 'none';
+      uploadSpinner.style.display = 'block';
+
+      const formData = new FormData();
+      formData.append('image', file);
+
+      try {
+        const res = await fetch('/api/admin/upload', {
+          method: 'POST',
+          headers: { 'X-Admin-Password': adminPassword },
+          body: formData
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          document.getElementById('fImage').value = data.url;
+          uploadPreview.src = data.url;
+          uploadPreview.style.display = 'block';
+          uploadZone.classList.add('has-image');
+        } else {
+          alert('Erreur upload : ' + (data.error || 'Échec'));
+          uploadPlaceholder.style.display = 'block';
+        }
+      } catch {
+        alert('Erreur de connexion');
+        uploadPlaceholder.style.display = 'block';
+      } finally {
+        uploadSpinner.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+[
+  {
+    "id": 1,
+    "name": "L2B",
+    "artist": "",
+    "date": "Samedi 26 mars, Paris",
+    "time": "20h00",
+    "location": "Accord Arena, Paris",
+    "image": "/uploads/1774057819860-21356.jpeg",
+    "category": "Concert",
+    "description": "",
+    "tickets": [
+      {
+        "type": "Fosse",
+        "price": 8500,
+        "currency": "EUR"
+      }
+    ],
+    "available": true
+  }
+]

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ViteTonBillet — Billetterie en ligne</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header" id="header">
+    <div class="container header-inner">
+      <a href="/" class="logo">
+        <img src="/images/logo.png" alt="ViteTonBillet" class="logo-mark-img" />
+        <span class="logo-text">ViteTonBillet</span>
+      </a>
+      <nav class="nav">
+        <a href="#events">Événements</a>
+        <a href="#reviews">Avis clients</a>
+        <a href="#trust">Pourquoi nous</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <a href="https://x.com/Vitetonbillet" target="_blank" rel="noopener" class="header-twitter">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      </a>
+      <a href="#events" class="header-cta">Réserver</a>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-glow"></div>
+    <div class="container hero-content">
+      <div class="hero-left">
+        <div class="hero-pill">Billetterie 100% sécurisée</div>
+        <h1>Réservez vos places en <span class="highlight">quelques clics</span></h1>
+        <p class="hero-sub">Concerts, festivals, conférences, spectacles — découvrez les événements à venir et achetez vos billets en toute confiance.</p>
+        <div class="hero-actions">
+          <a href="#events" class="btn btn-primary btn-lg">Voir les événements</a>
+          <a href="https://x.com/Vitetonbillet" target="_blank" rel="noopener" class="btn btn-twitter btn-lg">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            Suivez-nous
+          </a>
+        </div>
+        <div class="hero-trust">
+          <div class="trust-item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>Paiement sécurisé</span>
+          </div>
+          <div class="trust-item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Places garanties</span>
+          </div>
+          <div class="trust-item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Support réactif</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EVENTS -->
+  <section class="section events-section" id="events">
+    <div class="container">
+      <div class="section-header">
+        <h2>Événements à venir</h2>
+        <p>Sélectionnez une catégorie pour filtrer les résultats</p>
+      </div>
+      <div class="filters" id="filters">
+        <button class="filter-btn active" data-category="all">Tous</button>
+      </div>
+      <div class="events-grid" id="eventsGrid">
+        <div class="loader"><div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AVIS CLIENTS -->
+  <section class="section reviews-section" id="reviews">
+    <div class="container">
+      <div class="section-header">
+        <h2>Ce que disent nos clients</h2>
+        <p>Des dizaines d'avis vérifiés — en voici quelques-uns. <a href="https://x.com/Vitetonbillet/status/1865848542910353599" target="_blank" rel="noopener" class="reviews-see-more">Voir tous les avis sur X &rarr;</a></p>
+      </div>
+    </div>
+
+    <!-- Carrousel horizontal infini -->
+    <div class="carousel-wrapper">
+      <div class="carousel-fade carousel-fade-left"></div>
+      <div class="carousel-fade carousel-fade-right"></div>
+      <div class="carousel-track" id="carouselTrack">
+        <div class="carousel-slide">
+          <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
+            <a href="https://x.com/Vitetonbillet/status/1865848542910353599"></a>
+          </blockquote>
+        </div>
+        <div class="carousel-slide">
+          <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
+            <p lang="fr" dir="ltr">En place, merci vite ton billet pas de chinoiserie et très réactif 👍👍 <a href="https://t.co/QfZhDB9VXN">pic.twitter.com/QfZhDB9VXN</a></p>&mdash; Shevaaa (@Boscdetp) <a href="https://twitter.com/Boscdetp/status/1914043927537045878?ref_src=twsrc%5Etfw">April 20, 2025</a>
+          </blockquote>
+        </div>
+        <div class="carousel-slide">
+          <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
+            <p lang="fr" dir="ltr">encore une fois grâce à Romain j'ai pu assister au concert de Sabrina Carpenter à la dernière minute, ce mec est un sauveur !!! <a href="https://t.co/paI7P4KolF">pic.twitter.com/paI7P4KolF</a></p>&mdash; n°1 girl (@kasswiftie_) <a href="https://twitter.com/kasswiftie_/status/1902842936657649665?ref_src=twsrc%5Etfw">March 20, 2025</a>
+          </blockquote>
+        </div>
+        <div class="carousel-slide">
+          <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
+            <p lang="fr" dir="ltr">Simple et efficace si vous voulez vos places n'hésitez pas à passer par lui! <br>Merci encore ! <a href="https://t.co/poGnME95F8">pic.twitter.com/poGnME95F8</a></p>&mdash; Jerzy (@jeremynumero94) <a href="https://twitter.com/jeremynumero94/status/1993787346026942688?ref_src=twsrc%5Etfw">November 26, 2025</a>
+          </blockquote>
+        </div>
+        <div class="carousel-slide">
+          <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
+            <p lang="fr" dir="ltr">j'ai réussi à voir Gracie Abrams grâce à Romain, et c'était une des meilleures soirées de ma vie, c'est vraiment un vendeur au top !!! <a href="https://t.co/SASH5TLuVa">pic.twitter.com/SASH5TLuVa</a></p>&mdash; n°1 girl (@kasswiftie_) <a href="https://twitter.com/kasswiftie_/status/1895463033469907053?ref_src=twsrc%5Etfw">February 28, 2025</a>
+          </blockquote>
+        </div>
+        <div class="carousel-slide">
+          <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
+            <p lang="fr" dir="ltr">Au top,serieux et fiable ! <a href="https://t.co/LL39Cuccru">pic.twitter.com/LL39Cuccru</a></p>&mdash; Joanito (@Jooanito) <a href="https://twitter.com/Jooanito/status/1954564170570985703?ref_src=twsrc%5Etfw">August 10, 2025</a>
+          </blockquote>
+        </div>
+        <div class="carousel-slide">
+          <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
+            <p lang="fr" dir="ltr">J'ai acheté 6 billets dans la fosse et j'ai eu 0 problème!! Encore merciii pour les billets <a href="https://t.co/Mm4B7E19AD">pic.twitter.com/Mm4B7E19AD</a></p>&mdash; Agnesa (@Agnesa25_) <a href="https://twitter.com/Agnesa25_/status/1926887860872921303?ref_src=twsrc%5Etfw">May 26, 2025</a>
+          </blockquote>
+        </div>
+        <div class="carousel-slide">
+          <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
+            <p lang="fr" dir="ltr">Merci à toi ! <a href="https://t.co/Rb0HWlax58">pic.twitter.com/Rb0HWlax58</a></p>&mdash; Arthur (@arthurcllt_) <a href="https://twitter.com/arthurcllt_/status/1928058360605151503?ref_src=twsrc%5Etfw">May 29, 2025</a>
+          </blockquote>
+        </div>
+        <div class="carousel-slide">
+          <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
+            <p lang="fr" dir="ltr">J'ai pu voir PITBULL grâce à lui ! Merci encore <a href="https://t.co/FrEIBCqzcY">pic.twitter.com/FrEIBCqzcY</a></p>&mdash; ✨ 𝑆𝑢𝑛𝑛𝑦 ✨| ALL EYES ON ME 🖤💖 fan acc (@jjk_rina) <a href="https://twitter.com/jjk_rina/status/1933499765146132619?ref_src=twsrc%5Etfw">June 13, 2025</a>
+          </blockquote>
+        </div>
+        <div class="carousel-slide">
+          <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
+            <p lang="fr" dir="ltr">Aucun souci, très dispo, je recommande ! <a href="https://t.co/PxYECo9TTE">pic.twitter.com/PxYECo9TTE</a></p>&mdash; Seiku (@SeikuLoL) <a href="https://twitter.com/SeikuLoL/status/1929158251230163114?ref_src=twsrc%5Etfw">June 1, 2025</a>
+          </blockquote>
+        </div>
+        <div class="carousel-slide">
+          <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
+            <p lang="fr" dir="ltr">Vendeur réactif et fiable ! <a href="https://t.co/8TltWb9L8R">pic.twitter.com/8TltWb9L8R</a></p>&mdash; O'Trak (@NkVd_MARS7) <a href="https://twitter.com/NkVd_MARS7/status/1914084259205464337?ref_src=twsrc%5Etfw">April 20, 2025</a>
+          </blockquote>
+        </div>
+        <div class="carousel-slide">
+          <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
+            <p lang="fr" dir="ltr">Mercii franchement une soirée incroyable et ça grâce à vous 💙❤️ <a href="https://t.co/d7G2BflxYr">pic.twitter.com/d7G2BflxYr</a></p>&mdash; Mariana (@mariana_avec) <a href="https://twitter.com/mariana_avec/status/1928950123775586604?ref_src=twsrc%5Etfw">May 31, 2025</a>
+          </blockquote>
+        </div>
+        <div class="carousel-slide">
+          <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
+            <p lang="fr" dir="ltr">j'ai acheter 2 places en fosse or pour le concert de ninho on a réussi à passer sans problème,vendeur top !! <a href="https://t.co/NrDKkpJZRZ">pic.twitter.com/NrDKkpJZRZ</a></p>&mdash; nahila (@nahilaab7) <a href="https://twitter.com/nahilaab7/status/1919039025593176299?ref_src=twsrc%5Etfw">May 4, 2025</a>
+          </blockquote>
+        </div>
+        <div class="carousel-slide">
+          <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
+            <p lang="fr" dir="ltr">Merci à <a href="https://twitter.com/Vitetonbillet?ref_src=twsrc%5Etfw">@Vitetonbillet</a> pour la place, super rapide et fiable je recommande ✅✅ <a href="https://t.co/HLgGzJfvxk">pic.twitter.com/HLgGzJfvxk</a></p>&mdash; BE (@plyblef) <a href="https://twitter.com/plyblef/status/1922379244010668240?ref_src=twsrc%5Etfw">May 13, 2025</a>
+          </blockquote>
+        </div>
+        <div class="carousel-slide">
+          <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
+            <p lang="fr" dir="ltr">Achat de 2 places pour le concert de Ed Sheeran a paris ce jour<br>Tout s'est bien passé, vendeur hyper fiable et très reactif <br>Je recommande fortement ❤️</p>&mdash; Thomas🇹🇭💙❤️ (@Thomasflp93) <a href="https://twitter.com/Thomasflp93/status/1995555860001456218?ref_src=twsrc%5Etfw">December 1, 2025</a>
+          </blockquote>
+        </div>
+        <div class="carousel-slide">
+          <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
+            <p lang="fr" dir="ltr">Fiable 100% merci beaucoup 🙏🏻 <a href="https://t.co/EIzyjgAL5g">pic.twitter.com/EIzyjgAL5g</a></p>&mdash; Noémie (@noerln_) <a href="https://twitter.com/noerln_/status/2005753989909102807?ref_src=twsrc%5Etfw">December 29, 2025</a>
+          </blockquote>
+        </div>
+        <div class="carousel-slide">
+          <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
+            <p lang="fr" dir="ltr">Dinos 22/12 ! Parfait <a href="https://t.co/UVzmDL5uVz">pic.twitter.com/UVzmDL5uVz</a></p>&mdash; Tommy (@tombllgr2) <a href="https://twitter.com/tombllgr2/status/2006786482166452428?ref_src=twsrc%5Etfw">January 1, 2026</a>
+          </blockquote>
+        </div>
+        <div class="carousel-slide">
+          <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
+            <p lang="fr" dir="ltr">Revendeur fiable et super sympa ! J'ai trouvé une place pour Sabrina Carpenter le 16 mars grâce à lui ! C'était top ! <a href="https://t.co/D7l6RMZ4PU">pic.twitter.com/D7l6RMZ4PU</a></p>&mdash; Inès Watelet (@InesWatelet08) <a href="https://twitter.com/InesWatelet08/status/1901579567375978574?ref_src=twsrc%5Etfw">March 17, 2025</a>
+          </blockquote>
+        </div>
+        <div class="carousel-slide">
+          <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
+            <p lang="fr" dir="ltr">Concert de DINOS le 21/12/2025 catégorie or parfait 🙌🏼 <a href="https://t.co/6FYSBubD13">pic.twitter.com/6FYSBubD13</a></p>&mdash; Tilleurs (@tileurs435553) <a href="https://twitter.com/tileurs435553/status/2003149199203008829?ref_src=twsrc%5Etfw">December 22, 2025</a>
+          </blockquote>
+        </div>
+      </div>
+      <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+    </div>
+
+    <!-- Contrôles -->
+    <div class="container">
+      <div class="carousel-controls">
+        <button class="carousel-btn" id="carouselPrev" aria-label="Précédent">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="carousel-dots" id="carouselDots"></div>
+        <button class="carousel-btn" id="carouselNext" aria-label="Suivant">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+
+      <div class="reviews-actions">
+        <a href="https://x.com/Vitetonbillet/status/1865848542910353599" target="_blank" rel="noopener" class="btn btn-reviews-follow">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          Voir tous les avis sur X
+        </a>
+        <a href="https://x.com/Vitetonbillet" target="_blank" rel="noopener" class="btn btn-reviews-all">
+          Suivre @Vitetonbillet
+        </a>
+      </div>
+
+      <div class="reviews-subtext">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Tous les avis sont publics et consultables librement sur <a href="https://x.com/Vitetonbillet" target="_blank" rel="noopener">@Vitetonbillet</a></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRUST -->
+  <section class="section trust-section" id="trust">
+    <div class="container">
+      <div class="section-header">
+        <h2>Pourquoi ViteTonBillet ?</h2>
+        <p>La confiance de nos clients est notre priorité absolue</p>
+      </div>
+      <div class="trust-grid">
+        <div class="trust-card">
+          <div class="trust-card-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3>Paiement ultra-sécurisé</h3>
+          <p>Vos transactions sont protégées par Inflow, plateforme de paiement avec cryptage bancaire et authentification forte.</p>
+        </div>
+        <div class="trust-card">
+          <div class="trust-card-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <h3>Places garanties</h3>
+          <p>Toutes nos places sont vérifiées et garanties. Pas de mauvaises surprises, pas de frais cachés.</p>
+        </div>
+        <div class="trust-card">
+          <div class="trust-card-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <h3>Support dédié</h3>
+          <p>Une question ? Notre équipe est joignable par email et sur les réseaux pour vous accompagner.</p>
+        </div>
+        <div class="trust-card">
+          <div class="trust-card-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <h3>Événements vérifiés</h3>
+          <p>Chaque événement est vérifié et validé par notre équipe avant d'être mis en ligne.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT / FOOTER -->
+  <footer class="footer" id="contact">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="logo footer-logo">
+            <img src="/images/logo.png" alt="ViteTonBillet" class="logo-mark-img" />
+            <span class="logo-text">ViteTonBillet</span>
+          </div>
+          <p class="footer-desc">La billetterie en ligne simple, rapide et sécurisée pour tous vos événements.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <a href="#events">Événements</a>
+          <a href="#trust">Pourquoi nous</a>
+        </div>
+        <div class="footer-col">
+          <h4>Contact</h4>
+          <a href="mailto:vitetonbillet@gmail.com">vitetonbillet@gmail.com</a>
+          <a href="https://x.com/Vitetonbillet" target="_blank" rel="noopener" class="footer-twitter-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            @Vitetonbillet
+          </a>
+          <a href="https://x.com/Vitetonbillet/status/1865848542910353599" target="_blank" rel="noopener" class="footer-reviews-link">Voir les avis clients</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 ViteTonBillet — Tous droits réservés</p>
+        <div class="footer-badges">
+          <span class="footer-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            SSL Sécurisé
+          </span>
+          <span class="footer-badge">Propulsé par Inflow</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
