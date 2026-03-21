@@ -1042,6 +1042,76 @@ img { display: block; max-width: 100%; }
 }
 
 /* ===========================
+   ABOUT / QUI SUIS-JE
+=========================== */
+.about-section {
+  background: var(--white);
+}
+
+.about-card {
+  max-width: 680px;
+  margin: 0 auto;
+  text-align: center;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-100);
+  border-radius: 20px;
+  padding: 40px 36px;
+}
+
+.about-icon {
+  width: 60px;
+  height: 60px;
+  background: var(--primary-100);
+  color: var(--primary);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
+.about-card h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--gray-900);
+  margin-bottom: 16px;
+}
+
+.about-text {
+  color: var(--gray-600);
+  font-size: 0.92rem;
+  line-height: 1.7;
+  margin-bottom: 12px;
+}
+
+.about-text:last-of-type {
+  margin-bottom: 24px;
+}
+
+.about-text strong {
+  color: var(--gray-800);
+}
+
+.about-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  background: var(--navy);
+  color: white;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: all var(--transition);
+}
+
+.about-cta:hover {
+  background: var(--navy-light);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  transform: translateY(-1px);
+}
+
+/* ===========================
    EMPTY STATE
 =========================== */
 .empty-state {
@@ -1063,76 +1133,105 @@ img { display: block; max-width: 100%; }
   .nav { display: none; }
   .menu-toggle { display: flex; align-items: center; justify-content: center; }
   .mobile-nav { display: flex; }
-  .header-inner { height: 56px; gap: 8px; }
-  .logo { font-size: 1rem; gap: 6px; }
-  .logo-mark-img { width: 30px; height: 30px; }
-  .header-twitter { width: 34px; height: 34px; }
+  .header-inner { height: 52px; gap: 8px; }
+  .logo { font-size: 0.95rem; gap: 6px; }
+  .logo-mark-img { width: 28px; height: 28px; }
+  .header-twitter { width: 32px; height: 32px; }
+  .header-twitter svg { width: 14px; height: 14px; }
+  .menu-toggle { width: 36px; height: 36px; }
 
-  /* HERO mobile */
-  .hero { padding: 90px 0 50px; }
-  .hero h1 { font-size: 1.7rem; }
-  .hero-sub { font-size: 0.95rem; margin-bottom: 24px; }
-  .hero-pill { font-size: 0.72rem; padding: 5px 12px; margin-bottom: 16px; }
-  .hero-trust { gap: 12px; flex-direction: column; }
-  .hero-actions { flex-direction: column; align-items: stretch; gap: 10px; }
-  .btn-lg { padding: 14px 24px; font-size: 0.9rem; }
+  /* HERO mobile — compact */
+  .hero { padding: 72px 0 32px; }
+  .hero-glow { display: none; }
+  .hero-pill { font-size: 0.68rem; padding: 4px 10px; margin-bottom: 12px; }
+  .hero h1 { font-size: 1.5rem; margin-bottom: 10px; }
+  .hero-sub { font-size: 0.85rem; line-height: 1.5; margin-bottom: 20px; }
+  .hero-actions { flex-direction: row; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .hero-actions .btn { flex: 1; }
+  .btn-lg { padding: 11px 16px; font-size: 0.82rem; border-radius: 10px; }
+  .hero-trust { gap: 6px; flex-direction: row; flex-wrap: wrap; }
+  .trust-item { font-size: 0.75rem; gap: 5px; }
+  .trust-item svg { width: 14px; height: 14px; }
 
   /* SECTION */
-  .section { padding: 50px 0; }
-  .section-header { margin-bottom: 28px; }
-  .section-header h2 { font-size: 1.5rem; }
-  .section-header p { font-size: 0.88rem; }
+  .section { padding: 40px 0; }
+  .section-header { margin-bottom: 20px; }
+  .section-header h2 { font-size: 1.3rem; }
+  .section-header p { font-size: 0.82rem; line-height: 1.5; }
 
   /* EVENTS GRID mobile */
-  .events-grid { grid-template-columns: 1fr; gap: 16px; }
-  .card { height: 320px; border-radius: 14px; }
-  .card-body { padding: 16px; }
-  .card-title { font-size: 1.1rem; }
-  .card-details { gap: 8px; margin-bottom: 12px; }
-  .card-detail { font-size: 0.78rem; }
-  .card-price-value { font-size: 1.1rem; }
-  .card-cta { padding: 9px 18px; font-size: 0.82rem; }
-  .card-cat { top: 12px; left: 12px; font-size: 0.65rem; padding: 4px 10px; }
-  .filters { gap: 6px; margin-bottom: 20px; }
-  .filter-btn { padding: 6px 14px; font-size: 0.78rem; }
+  .events-grid { grid-template-columns: 1fr; gap: 14px; }
+  .card { height: 300px; border-radius: 14px; }
+  .card-body { padding: 14px 16px 16px; }
+  .card-title { font-size: 1.05rem; }
+  .card-artist { font-size: 0.8rem; margin-bottom: 8px; }
+  .card-details { gap: 10px; margin-bottom: 10px; }
+  .card-detail { font-size: 0.75rem; }
+  .card-footer { padding-top: 10px; }
+  .card-price-from { font-size: 0.65rem; }
+  .card-price-value { font-size: 1.05rem; }
+  .card-cta { padding: 8px 16px; font-size: 0.8rem; border-radius: 8px; }
+  .card-cat { top: 10px; left: 10px; font-size: 0.62rem; padding: 4px 8px; border-radius: 6px; }
+  .filters { gap: 6px; margin-bottom: 16px; }
+  .filter-btn { padding: 6px 12px; font-size: 0.75rem; }
 
   /* REVIEWS mobile */
-  .carousel-wrapper { padding: 4px 0 16px; }
-  .carousel-slide { flex: 0 0 300px; }
-  .carousel-track { padding: 0 16px; gap: 12px; }
-  .carousel-controls { gap: 10px; margin-bottom: 20px; }
-  .carousel-btn { width: 38px; height: 38px; }
-  .carousel-fade { width: 40px; }
-  .reviews-actions { flex-direction: column; gap: 10px; }
+  .carousel-wrapper { padding: 0 0 12px; }
+  .carousel-slide { flex: 0 0 280px; }
+  .carousel-track { padding: 0 16px; gap: 10px; }
+  .carousel-fade { width: 30px; }
+  .carousel-controls { gap: 8px; margin-bottom: 16px; }
+  .carousel-btn { width: 34px; height: 34px; }
+  .carousel-btn svg { width: 16px; height: 16px; }
+  .carousel-dots { display: none; }
+  .reviews-actions { flex-direction: row; gap: 8px; margin-bottom: 16px; }
   .btn-reviews-follow, .btn-reviews-all {
-    width: 100%;
+    flex: 1;
     justify-content: center;
-    padding: 12px 20px;
-    font-size: 0.88rem;
+    padding: 10px 12px;
+    font-size: 0.78rem;
+    border-radius: 10px;
   }
-  .reviews-subtext { font-size: 0.78rem; }
+  .btn-reviews-follow svg, .btn-reviews-all svg { width: 14px; height: 14px; }
+  .reviews-subtext { font-size: 0.75rem; margin-top: 12px; }
 
-  /* TRUST mobile */
-  .trust-grid { grid-template-columns: 1fr; gap: 12px; }
-  .trust-card { padding: 20px 18px; border-radius: 12px; }
-  .trust-card-icon { width: 44px; height: 44px; border-radius: 12px; margin-bottom: 12px; }
-  .trust-card h3 { font-size: 0.92rem; }
-  .trust-card p { font-size: 0.82rem; }
+  /* TRUST mobile — horizontal compact */
+  .trust-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .trust-card { padding: 16px 14px; border-radius: 12px; }
+  .trust-card-icon { width: 40px; height: 40px; border-radius: 10px; margin-bottom: 10px; }
+  .trust-card-icon svg { width: 20px; height: 20px; }
+  .trust-card h3 { font-size: 0.82rem; margin-bottom: 4px; }
+  .trust-card p { font-size: 0.75rem; line-height: 1.45; }
+
+  /* ABOUT mobile */
+  .about-card { padding: 28px 20px; border-radius: 16px; }
+  .about-card h2 { font-size: 1.2rem; margin-bottom: 12px; }
+  .about-icon { width: 48px; height: 48px; margin-bottom: 14px; }
+  .about-icon svg { width: 24px; height: 24px; }
+  .about-text { font-size: 0.84rem; line-height: 1.6; margin-bottom: 10px; }
+  .about-cta { padding: 10px 20px; font-size: 0.82rem; }
 
   /* FOOTER mobile */
-  .footer { padding: 40px 0 0; }
-  .footer-grid { grid-template-columns: 1fr; gap: 28px; padding-bottom: 28px; }
-  .footer-desc { font-size: 0.85rem; }
-  .footer-bottom { font-size: 0.75rem; padding: 16px 0; }
+  .footer { padding: 32px 0 0; }
+  .footer-grid { grid-template-columns: 1fr; gap: 20px; padding-bottom: 20px; }
+  .footer-desc { font-size: 0.82rem; }
+  .footer-col h4 { font-size: 0.78rem; margin-bottom: 10px; }
+  .footer-col a { font-size: 0.82rem; margin-bottom: 8px; }
+  .footer-bottom { font-size: 0.72rem; padding: 14px 0; flex-direction: column; align-items: center; text-align: center; }
 }
 
 @media (max-width: 380px) {
-  .card { height: 280px; }
-  .card-body { padding: 14px; }
-  .card-title { font-size: 1rem; }
-  .card-footer { gap: 8px; padding-top: 10px; }
-  .card-price-value { font-size: 1rem; }
-  .card-cta { padding: 8px 14px; font-size: 0.78rem; }
-  .hero h1 { font-size: 1.5rem; }
-  .carousel-slide { flex: 0 0 270px; }
+  .hero h1 { font-size: 1.35rem; }
+  .hero-sub { font-size: 0.8rem; }
+  .card { height: 270px; }
+  .card-body { padding: 12px 14px 14px; }
+  .card-title { font-size: 0.95rem; }
+  .card-details { gap: 6px; }
+  .card-detail { font-size: 0.72rem; }
+  .card-footer { gap: 8px; padding-top: 8px; }
+  .card-price-value { font-size: 0.95rem; }
+  .card-cta { padding: 7px 12px; font-size: 0.75rem; }
+  .carousel-slide { flex: 0 0 260px; }
+  .trust-grid { grid-template-columns: 1fr; }
+  .section-header h2 { font-size: 1.15rem; }
 }

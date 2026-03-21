@@ -141,7 +141,8 @@ function initCarousel() {
 
   let current = 0;
   let autoplayTimer;
-  const slideWidth = 420; // 400px + 20px gap
+  const isMobile = window.innerWidth <= 768;
+  const slideWidth = isMobile ? 290 : 420;
 
   // Créer les dots
   slides.forEach((_, i) => {
