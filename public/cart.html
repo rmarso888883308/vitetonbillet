@@ -67,8 +67,21 @@
             </div>
 
             <div class="cart-email-section">
-              <label for="cartEmail">E-mail (pour recevoir vos billets)</label>
-              <input type="email" id="cartEmail" placeholder="votre@email.com" />
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+                <div>
+                  <label for="cartFirstName" style="display:block;font-size:0.82rem;font-weight:600;color:var(--gray-600);margin-bottom:5px">Prénom <span style="color:#ef4444">*</span></label>
+                  <input type="text" id="cartFirstName" placeholder="Prénom" required style="width:100%;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:10px;font-size:0.9rem;font-family:inherit;outline:none" />
+                </div>
+                <div>
+                  <label for="cartLastName" style="display:block;font-size:0.82rem;font-weight:600;color:var(--gray-600);margin-bottom:5px">Nom <span style="color:#ef4444">*</span></label>
+                  <input type="text" id="cartLastName" placeholder="Nom" required style="width:100%;padding:10px 14px;border:1.5px solid var(--gray-200);border-radius:10px;font-size:0.9rem;font-family:inherit;outline:none" />
+                </div>
+              </div>
+              <label for="cartEmail" style="display:block;font-size:0.82rem;font-weight:600;color:var(--gray-600);margin-bottom:5px">Email <span style="color:#ef4444">*</span></label>
+              <input type="email" id="cartEmail" placeholder="votre@email.com" required />
+              <label for="cartPhone" style="display:block;font-size:0.82rem;font-weight:600;color:var(--gray-600);margin:12px 0 5px">Téléphone <span style="color:#ef4444">*</span></label>
+              <input type="tel" id="cartPhone" placeholder="+33 6 XX XX XX XX" required style="width:100%;padding:12px 14px;border:1.5px solid var(--gray-200);border-radius:10px;font-size:0.9rem;font-family:inherit;outline:none" />
+              <p style="font-size:0.75rem;color:var(--gray-400);margin-top:8px">* Champs obligatoires</p>
             </div>
 
             <button class="cart-checkout-btn" id="cartCheckoutBtn">
@@ -183,7 +196,15 @@
       const btn = document.getElementById('cartCheckoutBtn');
       const text = document.getElementById('checkoutText');
       const spin = document.getElementById('checkoutSpin');
+      const firstName = document.getElementById('cartFirstName').value.trim();
+      const lastName = document.getElementById('cartLastName').value.trim();
       const email = document.getElementById('cartEmail').value.trim();
+      const phone = document.getElementById('cartPhone').value.trim();
+
+      if (!firstName || !lastName || !email || !phone) {
+        alert('Veuillez remplir tous les champs obligatoires (prénom, nom, email, téléphone).');
+        return;
+      }
 
       btn.disabled = true;
       text.classList.add('hidden');
@@ -199,7 +220,9 @@
               ticketTypeIndex: item.ticketTypeIndex,
               quantity: item.quantity
             })),
-            customerEmail: email || undefined
+            customerEmail: email,
+            customerName: `${firstName} ${lastName}`,
+            customerPhone: phone
           })
         });
 

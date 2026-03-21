@@ -6,6 +6,8 @@
   <title>Réserver — ViteTonBillet</title>
   <link rel="stylesheet" href="styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <!-- Microsoft Clarity -->
+  <script type="text/javascript">(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "vz6srijzc9");</script>
   <style>
     body { background: var(--gray-50); }
 
@@ -360,6 +362,58 @@
 
     .hidden { display: none !important; }
 
+    /* FORM FIELDS */
+    .form-inline-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .form-inline-group label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--gray-600);
+      margin-bottom: 5px;
+    }
+    .form-inline-group input,
+    .purchase-form input[type="text"],
+    .purchase-form input[type="tel"] {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--gray-50);
+      border: 1.5px solid var(--gray-200);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      color: var(--gray-800);
+      transition: border-color 0.2s;
+    }
+    .form-inline-group input:focus,
+    .purchase-form input[type="text"]:focus,
+    .purchase-form input[type="tel"]:focus {
+      border-color: var(--primary);
+    }
+    .req-star { color: #ef4444; }
+    .form-required-note {
+      font-size: 0.75rem;
+      color: var(--gray-400);
+      margin-top: 10px;
+    }
+    .seats-note {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: var(--primary-dark);
+      background: var(--primary-50);
+      border: 1px solid var(--primary-100);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-top: 8px;
+      font-weight: 500;
+    }
+
     /* RESPONSIVE */
     @media (max-width: 840px) {
       .event-page { padding: 70px 0 40px; }
@@ -383,6 +437,7 @@
       .reviews-card { padding: 18px; border-radius: 14px; }
       .reviews-scroll { max-height: 360px; }
       .reviews-card-cta { padding: 10px; font-size: 0.84rem; }
+      .form-inline-row { grid-template-columns: 1fr; gap: 10px; }
     }
   </style>
 </head>
@@ -448,10 +503,31 @@
 
             <h3 class="tickets-title">Choisissez vos billets</h3>
             <div class="event-tickets" id="evTickets"></div>
+            <p class="seats-note" id="seatsNote" style="display:none">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Les places sont côte à côte
+            </p>
 
             <div class="purchase-form">
-              <label for="email">E-mail (pour recevoir votre billet)</label>
-              <input type="email" id="email" placeholder="votre@email.com" />
+              <div class="form-inline-row">
+                <div class="form-inline-group">
+                  <label for="firstName">Prénom <span class="req-star">*</span></label>
+                  <input type="text" id="firstName" placeholder="Prénom" required />
+                </div>
+                <div class="form-inline-group">
+                  <label for="lastName">Nom <span class="req-star">*</span></label>
+                  <input type="text" id="lastName" placeholder="Nom" required />
+                </div>
+              </div>
+              <div class="form-inline-group" style="margin-top:12px">
+                <label for="email">Email <span class="req-star">*</span></label>
+                <input type="email" id="email" placeholder="votre@email.com" required />
+              </div>
+              <div class="form-inline-group" style="margin-top:12px">
+                <label for="phone">Téléphone <span class="req-star">*</span></label>
+                <input type="tel" id="phone" placeholder="+33 6 XX XX XX XX" required />
+              </div>
+              <p class="form-required-note">* Champs obligatoires</p>
 
               <div class="qty-section">
                 <label>Quantité</label>
@@ -622,11 +698,20 @@
           r.closest('.eticket').classList.add('selected');
           updateTotal();
           updateMaxLabel();
+          updateSeatsNote();
         });
       });
 
       updateTotal();
       updateMaxLabel();
+      updateSeatsNote();
+    }
+
+    function updateSeatsNote() {
+      const ticket = event.tickets[selectedTicket];
+      const isFloor = /fosse|floor|debout/i.test(ticket.type);
+      const noteEl = document.getElementById('seatsNote');
+      if (noteEl) noteEl.style.display = isFloor ? 'none' : 'flex';
     }
 
     function updateTotal() {
@@ -646,10 +731,19 @@
     // ─── PAY NOW ───
     document.getElementById('payBtn').addEventListener('click', async () => {
       if (!event) return;
+      const firstName = document.getElementById('firstName').value.trim();
+      const lastName = document.getElementById('lastName').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+
+      if (!firstName || !lastName || !email || !phone) {
+        alert('Veuillez remplir tous les champs obligatoires (prénom, nom, email, téléphone).');
+        return;
+      }
+
       const btn = document.getElementById('payBtn');
       const text = document.getElementById('payText');
       const spin = document.getElementById('paySpin');
-      const email = document.getElementById('email').value.trim();
 
       btn.disabled = true;
       text.classList.add('hidden');
@@ -659,7 +753,14 @@
         const res = await fetch('/api/checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ eventId: event.id, ticketTypeIndex: selectedTicket, quantity, customerEmail: email || undefined })
+          body: JSON.stringify({
+            eventId: event.id,
+            ticketTypeIndex: selectedTicket,
+            quantity,
+            customerEmail: email,
+            customerName: `${firstName} ${lastName}`,
+            customerPhone: phone
+          })
         });
         const data = await res.json();
         if (!res.ok) { alert('Erreur : ' + (data.error || 'Une erreur est survenue.')); return; }

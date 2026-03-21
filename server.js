@@ -89,7 +89,7 @@ app.get('/api/events/:id', (req, res) => {
 
 // POST /api/checkout — paiement Inflow
 app.post('/api/checkout', async (req, res) => {
-  const { eventId, ticketTypeIndex, quantity, customerEmail } = req.body;
+  const { eventId, ticketTypeIndex, quantity, customerEmail, customerName, customerPhone } = req.body;
 
   if (!eventId || ticketTypeIndex === undefined || !quantity) {
     return res.status(400).json({ error: 'Paramètres manquants' });
@@ -111,7 +111,8 @@ app.post('/api/checkout', async (req, res) => {
       {
         name: `${event.name} — ${ticket.type}`,
         price: ticket.price,
-        quantity: parseInt(quantity)
+        quantity: parseInt(quantity),
+        taxRatePercentage: 0
       }
     ],
     sessionCustomization: {
@@ -122,6 +123,8 @@ app.post('/api/checkout', async (req, res) => {
   };
 
   if (customerEmail) payload.customerEmail = customerEmail;
+  if (customerName) payload.customerName = customerName;
+  if (customerPhone) payload.customerPhone = customerPhone;
 
   try {
     const response = await fetch(`${INFLOW_API_BASE}/api/payment`, {
@@ -234,7 +237,7 @@ app.delete('/api/admin/events/:id', requireAdmin, (req, res) => {
 
 // POST /api/cart-checkout — paiement panier multi-produits
 app.post('/api/cart-checkout', async (req, res) => {
-  const { items, customerEmail } = req.body;
+  const { items, customerEmail, customerName, customerPhone } = req.body;
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'Panier vide' });
@@ -261,7 +264,8 @@ app.post('/api/cart-checkout', async (req, res) => {
     products.push({
       name: `${event.name} — ${ticket.type}`,
       price: ticket.price,
-      quantity: parseInt(item.quantity)
+      quantity: parseInt(item.quantity),
+      taxRatePercentage: 0
     });
   }
 
@@ -278,6 +282,8 @@ app.post('/api/cart-checkout', async (req, res) => {
   };
 
   if (customerEmail) payload.customerEmail = customerEmail;
+  if (customerName) payload.customerName = customerName;
+  if (customerPhone) payload.customerPhone = customerPhone;
 
   try {
     const response = await fetch(`${INFLOW_API_BASE}/api/payment`, {
