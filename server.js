@@ -266,6 +266,14 @@ app.delete('/api/admin/events/:id', requireAdmin, (req, res) => {
   res.json({ success: true });
 });
 
+// POST /api/admin/import-events — import temporaire (à supprimer après usage)
+app.post('/api/admin/import-events', requireAdmin, (req, res) => {
+  const events = req.body;
+  if (!Array.isArray(events)) return res.status(400).json({ error: 'JSON array attendu' });
+  writeEvents(events);
+  res.json({ success: true, count: events.length });
+});
+
 // POST /api/cart-checkout — paiement panier multi-produits
 app.post('/api/cart-checkout', async (req, res) => {
   const { items, customerEmail, customerName, customerPhone } = req.body;
