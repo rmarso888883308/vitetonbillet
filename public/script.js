@@ -2,6 +2,8 @@
 // STATE
 // =====================
 let allEvents = [];
+let currentCategory = 'all';
+let currentSearch = '';
 
 // =====================
 // HELPERS
@@ -32,7 +34,7 @@ async function loadEvents() {
     const res = await fetch('/api/events');
     allEvents = await res.json();
     buildFilters();
-    renderEvents(allEvents);
+    filterAndRender();
   } catch {
     document.getElementById('eventsGrid').innerHTML =
       '<div class="empty-state">Impossible de charger les événements. Vérifiez que le serveur est lancé.</div>';
@@ -58,7 +60,11 @@ function renderEvents(events) {
   const grid = document.getElementById('eventsGrid');
 
   if (events.length === 0) {
-    grid.innerHTML = '<div class="empty-state">Aucun événement dans cette catégorie.</div>';
+    grid.innerHTML = `<div class="empty-state">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gray-300);margin-bottom:12px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <p style="color:var(--gray-500);font-weight:500">Aucun résultat trouvé</p>
+      <p style="color:var(--gray-400);font-size:0.85rem">Essayez un autre terme de recherche ou une autre catégorie</p>
+    </div>`;
     return;
   }
 
@@ -85,9 +91,9 @@ function renderEvents(events) {
         <h3 class="card-title">${event.name}</h3>
         ${event.artist ? `<span class="card-artist">${event.artist}</span>` : ''}
         <div class="card-details">
-          <div class="card-detail">${icon('calendar')} <span>${event.date}</span></div>
-          <div class="card-detail">${icon('clock')} <span>${event.time}</span></div>
-          <div class="card-detail">${icon('pin')} <span>${event.location}</span></div>
+          <div class="card-detail">${icon('calendar')} <span>${event.dates && event.dates.length > 1 ? event.dates.length + ' dates disponibles' : event.date}</span></div>
+          <div class="card-detail">${icon('clock')} <span>${event.dates && event.dates.length > 1 ? (event.dates[0].time || event.time) : event.time}</span></div>
+          <div class="card-detail">${icon('pin')} <span>${event.dates && event.dates.length > 1 ? (event.dates[0].location || event.location) : event.location}</span></div>
         </div>
         <div class="card-footer">
           <div class="card-price-tag">
@@ -95,7 +101,7 @@ function renderEvents(events) {
             <span class="card-price-value">${formatPrice(minPrice(event.tickets), event.tickets[0].currency)}</span>
           </div>
           ${event.available
-            ? `<button class="card-cta" onclick="event.stopPropagation(); openEvent('${slug}')">Réserver</button>`
+            ? `<button class="card-cta" onclick="event.stopPropagation(); openEvent('${slug}')">Voir les billets</button>`
             : `<button class="card-cta" disabled>Complet</button>`}
         </div>
       </div>
@@ -105,15 +111,72 @@ function renderEvents(events) {
 }
 
 // =====================
-// FILTRES
+// SEARCH + FILTRES
 // =====================
+function normalize(str) {
+  return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function filterAndRender() {
+  let filtered = allEvents;
+
+  // Category filter
+  if (currentCategory !== 'all') {
+    filtered = filtered.filter(ev => ev.category === currentCategory);
+  }
+
+  // Search filter
+  if (currentSearch) {
+    const q = normalize(currentSearch);
+    filtered = filtered.filter(ev => {
+      const text = normalize([ev.name, ev.artist, ev.location, ev.date, ev.category].join(' '));
+      return text.includes(q);
+    });
+  }
+
+  renderEvents(filtered);
+
+  // Update results count
+  const countEl = document.getElementById('resultsCount');
+  if (countEl) {
+    if (currentSearch || currentCategory !== 'all') {
+      countEl.textContent = `${filtered.length} résultat${filtered.length !== 1 ? 's' : ''}`;
+    } else {
+      countEl.textContent = '';
+    }
+  }
+}
+
+// Search input
+const searchInput = document.getElementById('searchInput');
+const searchClear = document.getElementById('searchClear');
+
+if (searchInput) {
+  searchInput.addEventListener('input', () => {
+    currentSearch = searchInput.value.trim();
+    searchClear.style.display = currentSearch ? 'flex' : 'none';
+    filterAndRender();
+  });
+}
+
+if (searchClear) {
+  searchClear.addEventListener('click', () => {
+    searchInput.value = '';
+    currentSearch = '';
+    searchClear.style.display = 'none';
+    searchInput.focus();
+    filterAndRender();
+  });
+}
+
+// Category filter buttons
 document.getElementById('filters').addEventListener('click', (e) => {
   const btn = e.target.closest('.filter-btn');
   if (!btn) return;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  const cat = btn.dataset.category;
-  renderEvents(cat === 'all' ? allEvents : allEvents.filter(ev => ev.category === cat));
+  currentCategory = btn.dataset.category;
+  filterAndRender();
 });
 
 // =====================

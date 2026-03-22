@@ -426,6 +426,18 @@
 
     .ticket-form-row .btn-danger { margin-bottom: 0; align-self: end; height: 40px; }
 
+    /* DATES MULTI FORM */
+    .dates-section { margin-top: 20px; margin-bottom: 16px; }
+    .dates-section h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; }
+    .dates-section .dates-hint { font-size: 0.78rem; color: var(--gray-400); margin-bottom: 12px; }
+    .date-form-row {
+      display: flex;
+      gap: 8px;
+      align-items: end;
+      margin-bottom: 8px;
+    }
+    .date-form-row .form-group { flex: 1; margin-bottom: 0; }
+
     .form-actions {
       display: flex;
       gap: 12px;
@@ -641,6 +653,14 @@
         <button class="toggle active" id="fAvailable" type="button"></button>
       </div>
 
+      <!-- DATES MULTIPLES -->
+      <div class="dates-section">
+        <h4>Dates multiples (optionnel)</h4>
+        <p class="dates-hint">Si l'artiste a plusieurs dates, ajoutez-les ici. L'acheteur choisira la date sur la page de l'événement.</p>
+        <div id="dateRows"></div>
+        <button class="btn btn-outline btn-sm" id="addDateBtn" type="button">+ Ajouter une date</button>
+      </div>
+
       <!-- BILLETS -->
       <div class="tickets-section">
         <h4>Billets / Tarifs *</h4>
@@ -746,6 +766,31 @@
     // FORM
     // =====================
     let ticketCount = 0;
+    let dateCount = 0;
+
+    function addDateRow(label = '', time = '', location = '') {
+      dateCount++;
+      const row = document.createElement('div');
+      row.className = 'date-form-row';
+      row.innerHTML = `
+        <div class="form-group">
+          <label>Label</label>
+          <input type="text" class="date-label" value="${label}" placeholder="Ex: Samedi 26 mars, Paris" />
+        </div>
+        <div class="form-group" style="max-width:100px">
+          <label>Heure</label>
+          <input type="text" class="date-time" value="${time}" placeholder="20h00" />
+        </div>
+        <div class="form-group">
+          <label>Lieu</label>
+          <input type="text" class="date-location" value="${location}" placeholder="Accor Arena, Paris" />
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()" style="margin-top:22px" type="button">✕</button>
+      `;
+      document.getElementById('dateRows').appendChild(row);
+    }
+
+    document.getElementById('addDateBtn').addEventListener('click', () => addDateRow());
 
     function openForm(event = null) {
       document.getElementById('formTitle').textContent = event ? 'Modifier l\'événement' : 'Nouvel événement';
@@ -791,6 +836,14 @@
         event.tickets.forEach(t => addTicketRow(t.type, t.price, t.maxQuantity || 10));
       } else {
         addTicketRow('', '');
+      }
+
+      // Dates multiples
+      const dateRows = document.getElementById('dateRows');
+      dateRows.innerHTML = '';
+      dateCount = 0;
+      if (event && event.dates && event.dates.length > 0) {
+        event.dates.forEach(d => addDateRow(d.label || '', d.time || '', d.location || ''));
       }
 
       document.getElementById('formOverlay').classList.add('open');
@@ -884,6 +937,22 @@
         return;
       }
 
+      // Collect dates
+      const dateLabels = document.querySelectorAll('.date-label');
+      const dateTimes = document.querySelectorAll('.date-time');
+      const dateLocations = document.querySelectorAll('.date-location');
+      const dates = [];
+      dateLabels.forEach((el, i) => {
+        const label = el.value.trim();
+        if (label) {
+          dates.push({
+            label,
+            time: dateTimes[i] ? dateTimes[i].value.trim() : '',
+            location: dateLocations[i] ? dateLocations[i].value.trim() : ''
+          });
+        }
+      });
+
       const payload = {
         name,
         artist: document.getElementById('fArtist').value.trim(),
@@ -894,7 +963,8 @@
         image: document.getElementById('fImageUrl').value.trim() || document.getElementById('fImage').value.trim() || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80',
         description: document.getElementById('fDescription').value.trim(),
         available: document.getElementById('fAvailable').classList.contains('active'),
-        tickets
+        tickets,
+        dates: dates.length > 0 ? dates : undefined
       };
 
       const method = id ? 'PUT' : 'POST';

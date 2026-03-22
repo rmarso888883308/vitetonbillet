@@ -112,6 +112,48 @@
       border-bottom: 1px solid var(--gray-100);
     }
 
+    /* DATE SELECTOR */
+    .dates-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-bottom: 12px;
+    }
+
+    .event-dates {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .edate {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 18px;
+      background: var(--gray-50);
+      border: 1.5px solid var(--gray-200);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .edate:hover, .edate.selected {
+      border-color: var(--primary);
+      background: var(--primary-50);
+    }
+
+    .edate input[type="radio"] {
+      accent-color: var(--primary);
+      width: 18px; height: 18px;
+      flex-shrink: 0;
+    }
+
+    .edate-info { flex: 1; }
+    .edate-label { font-weight: 600; font-size: 0.95rem; color: var(--gray-800); }
+    .edate-meta { font-size: 0.84rem; color: var(--gray-500); margin-top: 2px; }
+
     /* TICKETS */
     .tickets-title {
       font-size: 1rem;
@@ -426,6 +468,9 @@
       .event-info-grid { gap: 12px; margin-bottom: 16px; }
       .event-info-item { font-size: 0.84rem; }
       .event-desc { font-size: 0.88rem; margin-bottom: 20px; padding-bottom: 20px; }
+      .dates-title { font-size: 0.92rem; }
+      .edate { padding: 12px 14px; gap: 10px; }
+      .edate-label { font-size: 0.88rem; }
       .tickets-title { font-size: 0.92rem; }
       .eticket { padding: 12px 14px; gap: 10px; }
       .eticket-name { font-size: 0.88rem; }
@@ -500,6 +545,11 @@
             </div>
 
             <p class="event-desc" id="evDesc"></p>
+
+            <div id="dateSelector" style="display:none">
+              <h3 class="dates-title">Choisissez votre date</h3>
+              <div class="event-dates" id="evDates"></div>
+            </div>
 
             <h3 class="tickets-title">Choisissez vos billets</h3>
             <div class="event-tickets" id="evTickets"></div>
@@ -617,6 +667,7 @@
   <script>
     let event = null;
     let selectedTicket = 0;
+    let selectedDate = 0;
     let quantity = 1;
 
     function formatPrice(cents, currency = 'EUR') {
@@ -726,6 +777,41 @@
       if (event.artist) { artistEl.textContent = event.artist; }
       else { artistEl.style.display = 'none'; }
 
+      // Multi-date selector
+      if (event.dates && event.dates.length > 1) {
+        selectedDate = 0;
+        const dateSel = document.getElementById('dateSelector');
+        dateSel.style.display = 'block';
+        const datesEl = document.getElementById('evDates');
+        datesEl.innerHTML = event.dates.map((d, i) => `
+          <label class="edate${i === 0 ? ' selected' : ''}" data-index="${i}">
+            <input type="radio" name="eventdate" value="${i}" ${i === 0 ? 'checked' : ''} />
+            <div class="edate-info">
+              <div class="edate-label">${d.label}</div>
+              <div class="edate-meta">${d.time ? d.time + ' — ' : ''}${d.location || event.location}</div>
+            </div>
+          </label>
+        `).join('');
+
+        datesEl.querySelectorAll('input[type="radio"]').forEach(r => {
+          r.addEventListener('change', () => {
+            selectedDate = parseInt(r.value);
+            datesEl.querySelectorAll('.edate').forEach(e => e.classList.remove('selected'));
+            r.closest('.edate').classList.add('selected');
+            const d = event.dates[selectedDate];
+            document.getElementById('evDate').textContent = d.label;
+            document.getElementById('evTime').textContent = d.time || event.time;
+            document.getElementById('evLocation').textContent = d.location || event.location;
+          });
+        });
+
+        // Set initial display to first date
+        const firstDate = event.dates[0];
+        document.getElementById('evDate').textContent = firstDate.label;
+        if (firstDate.time) document.getElementById('evTime').textContent = firstDate.time;
+        if (firstDate.location) document.getElementById('evLocation').textContent = firstDate.location;
+      }
+
       const ticketsEl = document.getElementById('evTickets');
       ticketsEl.innerHTML = event.tickets.map((t, i) => `
         <label class="eticket${i === 0 ? ' selected' : ''}" data-index="${i}">
@@ -810,7 +896,8 @@
             quantity,
             customerEmail: email,
             customerName: `${firstName} ${lastName}`,
-            customerPhone: phone
+            customerPhone: phone,
+            dateIndex: (event.dates && event.dates.length > 1) ? selectedDate : undefined
           })
         });
         const data = await res.json();
@@ -835,12 +922,17 @@
       const cart = getCart();
       const ticket = event.tickets[selectedTicket];
       const maxQty = ticket.maxQuantity || 10;
-      const existing = cart.items.find(item => item.eventId === event.id && item.ticketTypeIndex === selectedTicket);
+      const hasMultiDates = event.dates && event.dates.length > 1;
+      const existing = cart.items.find(item =>
+        item.eventId === event.id &&
+        item.ticketTypeIndex === selectedTicket &&
+        (!hasMultiDates || item.dateIndex === selectedDate)
+      );
 
       if (existing) {
         existing.quantity = Math.min(existing.quantity + quantity, maxQty);
       } else {
-        cart.items.push({
+        const cartItem = {
           eventId: event.id,
           eventName: event.name,
           eventImage: event.image,
@@ -850,7 +942,12 @@
           currency: ticket.currency,
           quantity,
           maxQuantity: maxQty
-        });
+        };
+        if (hasMultiDates) {
+          cartItem.dateIndex = selectedDate;
+          cartItem.dateLabel = event.dates[selectedDate].label;
+        }
+        cart.items.push(cartItem);
       }
 
       saveCart(cart);

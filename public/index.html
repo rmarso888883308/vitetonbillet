@@ -59,7 +59,7 @@
     <div class="hero-glow"></div>
     <div class="container hero-content">
       <div class="hero-left">
-        <div class="hero-pill">🎟️ Billetterie 100% sécurisée</div>
+        <div class="hero-pill">Billetterie 100% sécurisée</div>
         <h1>Votre place de concert, <span class="highlight">sans la peur de l'arnaque.</span></h1>
         <p class="hero-sub">Le marché du billet est très connu pour les arnaques. ViteTonBillet vérifie et sécurise chaque place. Ne pensez qu'à une seule chose : profiter de votre concert.</p>
         <div class="hero-actions">
@@ -94,9 +94,15 @@
   <!-- EVENTS -->
   <section class="section events-section" id="events">
     <div class="container">
-      <div class="section-header">
-        <h2>Événements à venir</h2>
-        <p>Sélectionnez une catégorie pour filtrer les résultats</p>
+      <div class="search-bar-wrap">
+        <div class="search-bar">
+          <svg class="search-bar-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchInput" placeholder="Rechercher un artiste, un événement, un lieu..." autocomplete="off" />
+          <button class="search-bar-clear" id="searchClear" style="display:none" aria-label="Effacer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="search-results-count" id="resultsCount"></div>
       </div>
       <div class="filters" id="filters">
         <button class="filter-btn active" data-category="all">Tous</button>
@@ -117,7 +123,7 @@
           <div class="about-avatar-badge">✓</div>
         </div>
         <div class="about-header-text">
-          <h2>Romain — Votre concierge billetterie 🎟️</h2>
+          <h2>Romain — Votre concierge billetterie</h2>
           <p class="about-role">Fondateur de ViteTonBillet · Actif depuis 2023</p>
         </div>
       </div>
@@ -128,32 +134,32 @@
           <span class="about-stat-label">Clients satisfaits</span>
         </div>
         <div class="about-stat">
-          <span class="about-stat-num">⚡</span>
+          <span class="about-stat-num">24h</span>
           <span class="about-stat-label">Réponse rapide</span>
         </div>
         <div class="about-stat">
-          <span class="about-stat-num">🔒</span>
+          <span class="about-stat-num">100%</span>
           <span class="about-stat-label">Paiement sécurisé</span>
         </div>
       </div>
 
       <div class="about-story">
         <div class="about-story-item">
-          <div class="about-story-icon">🎵</div>
+          <div class="about-story-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
           <div class="about-story-content">
             <h4>Ce que je fais</h4>
             <p>Je suis une sorte de <strong>concierge dans l'événementiel</strong> — je trouve des places pour foot, concerts, festivals et bien plus. Ce que vous ne trouvez plus nulle part, je l'ai souvent.</p>
           </div>
         </div>
         <div class="about-story-item">
-          <div class="about-story-icon">🐦</div>
+          <div class="about-story-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></div>
           <div class="about-story-content">
             <h4>Mon histoire</h4>
             <p>Je me suis d'abord lancé sur <strong>Twitter en exclusivité</strong>. Face au succès, j'ai créé ce site pour que ce soit plus simple et compréhensible pour tout le monde.</p>
           </div>
         </div>
         <div class="about-story-item">
-          <div class="about-story-icon">✅</div>
+          <div class="about-story-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
           <div class="about-story-content">
             <h4>Ma garantie</h4>
             <p>Toutes les places sont <strong>100% authentiques</strong>. Consultez nos avis clients. Si vous avez le moindre doute, <strong>on peut s'appeler — aucun souci.</strong></p>
@@ -179,7 +185,7 @@
   <section class="section reviews-section" id="reviews">
     <div class="container">
       <div class="section-header">
-        <h2>⭐ Ils ont évité les arnaques grâce à nous.</h2>
+        <h2>Ils ont évité les arnaques grâce à nous.</h2>
         <p>Ne nous croyez pas sur parole. Lisez les avis publics de nos clients sur X (Twitter). Des dizaines de personnes qui ont pu voir leur artiste préféré en toute sérénité. <a href="https://x.com/Vitetonbillet/status/1865848542910353599" target="_blank" rel="noopener" class="reviews-see-more">Voir tous les avis →</a></p>
       </div>
     </div>
@@ -321,7 +327,7 @@
   <section class="section trust-section" id="trust">
     <div class="container">
       <div class="section-header">
-        <h2>🛡️ Pourquoi ViteTonBillet ?</h2>
+        <h2>Pourquoi ViteTonBillet ?</h2>
         <p>Dans un marché rempli d'arnaques, voici ce qui nous rend différents.</p>
       </div>
       <div class="trust-grid">

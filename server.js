@@ -120,7 +120,7 @@ app.get('/api/events/:id', (req, res) => {
 
 // POST /api/checkout — paiement Inflow
 app.post('/api/checkout', async (req, res) => {
-  const { eventId, ticketTypeIndex, quantity, customerEmail, customerName, customerPhone } = req.body;
+  const { eventId, ticketTypeIndex, quantity, customerEmail, customerName, customerPhone, dateIndex } = req.body;
 
   if (!eventId || ticketTypeIndex === undefined || !quantity) {
     return res.status(400).json({ error: 'Paramètres manquants' });
@@ -134,13 +134,18 @@ app.post('/api/checkout', async (req, res) => {
   const ticket = event.tickets[parseInt(ticketTypeIndex)];
   if (!ticket) return res.status(400).json({ error: 'Type de billet invalide' });
 
+  let productName = `${event.name} — ${ticket.type}`;
+  if (event.dates && event.dates.length > 1 && dateIndex !== undefined && event.dates[dateIndex]) {
+    productName = `${event.name} — ${event.dates[dateIndex].label} — ${ticket.type}`;
+  }
+
   const payload = {
     currency: ticket.currency,
     successUrl: `${BASE_URL}/success.html?event=${encodeURIComponent(event.name)}`,
     cancelUrl: `${BASE_URL}/index.html`,
     products: [
       {
-        name: `${event.name} — ${ticket.type}`,
+        name: productName,
         price: ticket.price,
         quantity: parseInt(quantity),
         taxRatePercentage: 0
@@ -204,7 +209,7 @@ app.post('/api/admin/upload', requireAdmin, upload.single('image'), (req, res) =
 // POST /api/admin/events — créer un événement
 app.post('/api/admin/events', requireAdmin, (req, res) => {
   const events = readEvents();
-  const { name, artist, date, time, location, image, category, description, tickets, available } = req.body;
+  const { name, artist, date, time, location, image, category, description, tickets, available, dates } = req.body;
 
   if (!name || !date || !location || !category || !tickets || tickets.length === 0) {
     return res.status(400).json({ error: 'Champs obligatoires manquants' });
@@ -229,6 +234,14 @@ app.post('/api/admin/events', requireAdmin, (req, res) => {
     available: available !== false
   };
 
+  if (dates && Array.isArray(dates) && dates.length > 0) {
+    newEvent.dates = dates.map(d => ({
+      label: d.label || '',
+      time: d.time || '',
+      location: d.location || ''
+    }));
+  }
+
   events.push(newEvent);
   writeEvents(events);
   res.status(201).json(newEvent);
@@ -248,6 +261,15 @@ app.put('/api/admin/events/:id', requireAdmin, (req, res) => {
       currency: t.currency || 'EUR',
       maxQuantity: t.maxQuantity ? parseInt(t.maxQuantity) : 10
     }));
+  }
+  if (req.body.dates && Array.isArray(req.body.dates) && req.body.dates.length > 0) {
+    updated.dates = req.body.dates.map(d => ({
+      label: d.label || '',
+      time: d.time || '',
+      location: d.location || ''
+    }));
+  } else if ('dates' in req.body) {
+    delete updated.dates;
   }
 
   events[idx] = updated;
@@ -291,9 +313,14 @@ app.post('/api/cart-checkout', async (req, res) => {
       return res.status(400).json({ error: `Maximum ${maxQty} billets pour ${event.name}` });
     }
 
+    let cartProductName = `${event.name} — ${ticket.type}`;
+    if (event.dates && event.dates.length > 1 && item.dateIndex !== undefined && event.dates[item.dateIndex]) {
+      cartProductName = `${event.name} — ${event.dates[item.dateIndex].label} — ${ticket.type}`;
+    }
+
     currency = ticket.currency;
     products.push({
-      name: `${event.name} — ${ticket.type}`,
+      name: cartProductName,
       price: ticket.price,
       quantity: parseInt(item.quantity),
       taxRatePercentage: 0
