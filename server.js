@@ -47,11 +47,20 @@ app.use(express.static(path.join(__dirname, 'public')));
 // HELPERS
 // =====================
 function readEvents() {
-  const data = fs.readFileSync(EVENTS_FILE, 'utf-8');
-  return JSON.parse(data);
+  if (!fs.existsSync(EVENTS_FILE)) {
+    fs.mkdirSync(path.dirname(EVENTS_FILE), { recursive: true });
+    fs.writeFileSync(EVENTS_FILE, '[]', 'utf-8');
+    return [];
+  }
+  try {
+    return JSON.parse(fs.readFileSync(EVENTS_FILE, 'utf-8'));
+  } catch {
+    return [];
+  }
 }
 
 function writeEvents(events) {
+  fs.mkdirSync(path.dirname(EVENTS_FILE), { recursive: true });
   fs.writeFileSync(EVENTS_FILE, JSON.stringify(events, null, 2), 'utf-8');
 }
 
