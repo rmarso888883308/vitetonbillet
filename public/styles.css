@@ -1400,8 +1400,8 @@ img { display: block; max-width: 100%; }
   .btn-reviews-follow svg, .btn-reviews-all svg { width: 14px; height: 14px; }
   .reviews-subtext { font-size: 0.75rem; margin-top: 12px; }
 
-  /* TRUST mobile — horizontal compact */
-  .trust-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  /* TRUST mobile — stack all 3 evenly */
+  .trust-grid { grid-template-columns: 1fr; gap: 12px; }
   .trust-card { padding: 16px 14px; border-radius: 12px; }
   .trust-card-icon { width: 40px; height: 40px; border-radius: 10px; margin-bottom: 10px; }
   .trust-card-icon svg { width: 20px; height: 20px; }
