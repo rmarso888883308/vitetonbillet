@@ -61,9 +61,9 @@ function renderEvents(events) {
 
   if (events.length === 0) {
     grid.innerHTML = `<div class="empty-state">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gray-300);margin-bottom:12px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <p style="color:var(--gray-500);font-weight:500">Aucun résultat trouvé</p>
-      <p style="color:var(--gray-400);font-size:0.85rem">Essayez un autre terme de recherche ou une autre catégorie</p>
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:rgba(255,255,255,0.25);margin-bottom:12px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <p style="color:rgba(255,255,255,0.5);font-weight:500">Aucun résultat trouvé</p>
+      <p style="color:rgba(255,255,255,0.35);font-size:0.85rem">Essayez un autre terme de recherche ou une autre catégorie</p>
     </div>`;
     return;
   }

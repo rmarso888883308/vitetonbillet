@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ViteTonBillet : Revente de Billets de Concerts Sécurisée (100% Vérifié)</title>
-  <meta name="description" content="Achetez vos places pour des concerts complets en toute sécurité. Billets vérifiés, paiement crypté par Inflow et service client réactif." />
-  <meta property="og:title" content="ViteTonBillet : Revente de Billets Sécurisée" />
-  <meta property="og:description" content="Billets vérifiés, paiement crypté, accès garanti à la salle." />
+  <title>ViteTonBillet — Billetterie Concerts & Spectacles</title>
+  <meta name="description" content="Trouvez vos places de concerts, festivals et spectacles. Billetterie en ligne avec des places verifiees et un service reactif." />
+  <meta property="og:title" content="ViteTonBillet — Billetterie Concerts & Spectacles" />
+  <meta property="og:description" content="Trouvez vos places pour les evenements sold out. Concerts, festivals, spectacles." />
   <meta property="og:url" content="https://vitetonbillet.com/" />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://vitetonbillet.com/" />
@@ -26,9 +26,8 @@
         <span class="logo-text">ViteTonBillet</span>
       </a>
       <nav class="nav">
-        <a href="#events">Événements</a>
-        <a href="#reviews">Avis clients</a>
-        <a href="#trust">Pourquoi nous</a>
+        <a href="#events">Programme</a>
+        <a href="#reviews">Avis</a>
         <a href="#contact">Contact</a>
       </nav>
       <a href="https://x.com/Vitetonbillet" target="_blank" rel="noopener" class="header-twitter">
@@ -38,7 +37,6 @@
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
         <span class="header-cart-count" id="cartCount" style="display:none">0</span>
       </a>
-      <a href="#events" class="header-cta">Réserver</a>
       <button class="menu-toggle" id="menuToggle" aria-label="Menu">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
@@ -47,57 +45,41 @@
 
   <!-- MOBILE NAV -->
   <nav class="mobile-nav" id="mobileNav">
-    <a href="#events" onclick="closeMobileNav()">Événements</a>
-    <a href="#reviews" onclick="closeMobileNav()">Avis clients</a>
-    <a href="#trust" onclick="closeMobileNav()">Pourquoi nous</a>
+    <a href="#events" onclick="closeMobileNav()">Programme</a>
+    <a href="#reviews" onclick="closeMobileNav()">Avis</a>
     <a href="#contact" onclick="closeMobileNav()">Contact</a>
-    <a href="#events" class="mobile-nav-cta" onclick="closeMobileNav()">Réserver maintenant</a>
+    <a href="#events" class="mobile-nav-cta" onclick="closeMobileNav()">Voir les concerts</a>
   </nav>
 
   <!-- HERO -->
   <section class="hero">
     <div class="hero-overlay"></div>
-    <div class="container hero-content">
-      <div class="hero-left">
-        <h1>Vos places pour les <span class="highlight">événements sold out.</span></h1>
-        <p class="hero-sub">Concerts, festivals, spectacles — retrouvez les places introuvables. Billets vérifiés, paiement sécurisé, accès garanti.</p>
-        <div class="hero-actions">
-          <a href="#events" class="btn btn-primary btn-lg">Voir les événements</a>
-          <a href="https://x.com/Vitetonbillet" target="_blank" rel="noopener" class="btn btn-outline-light btn-lg">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-            Suivez-nous
-          </a>
-        </div>
-        <div class="hero-trust">
-          <div class="trust-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            <span>Billets vérifiés</span>
-          </div>
-          <div class="trust-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            <span>Paiement sécurisé</span>
-          </div>
-          <div class="trust-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span>Support réactif</span>
-          </div>
-        </div>
+    <div class="hero-content">
+      <h1>Vos places de <span class="highlight">concerts</span> et <span class="highlight">spectacles</span></h1>
+      <p class="hero-sub">Retrouvez les billets introuvables pour les events sold out.</p>
+      <div class="hero-search">
+        <svg class="hero-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="heroSearchInput" placeholder="Rechercher un artiste, un concert, un lieu..." autocomplete="off" />
       </div>
+      <a href="#events" class="hero-cta-link">Voir le programme</a>
     </div>
   </section>
 
   <!-- EVENTS -->
   <section class="section events-section" id="events">
     <div class="container">
-      <div class="search-bar-wrap">
-        <div class="search-bar">
-          <svg class="search-bar-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="searchInput" placeholder="Rechercher un artiste, un événement, un lieu..." autocomplete="off" />
-          <button class="search-bar-clear" id="searchClear" style="display:none" aria-label="Effacer">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
+      <div class="events-header">
+        <h2>Programme</h2>
+        <div class="search-bar-wrap">
+          <div class="search-bar">
+            <svg class="search-bar-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="searchInput" placeholder="Rechercher un artiste, un concert, un lieu..." autocomplete="off" />
+            <button class="search-bar-clear" id="searchClear" style="display:none" aria-label="Effacer">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="search-results-count" id="resultsCount"></div>
         </div>
-        <div class="search-results-count" id="resultsCount"></div>
       </div>
       <div class="filters" id="filters">
         <button class="filter-btn active" data-category="all">Tous</button>
@@ -108,84 +90,16 @@
     </div>
   </section>
 
-  <!-- QUI SUIS-JE -->
-  <section class="section about-section" id="about">
-    <div class="container">
-
-      <div class="about-header">
-        <div class="about-avatar-wrap">
-          <div class="about-avatar">R</div>
-          <div class="about-avatar-badge">✓</div>
-        </div>
-        <div class="about-header-text">
-          <h2>Romain — Votre concierge billetterie</h2>
-          <p class="about-role">Fondateur de ViteTonBillet · Actif depuis 2023</p>
-        </div>
-      </div>
-
-      <div class="about-stats">
-        <div class="about-stat">
-          <span class="about-stat-num">100+</span>
-          <span class="about-stat-label">Clients satisfaits</span>
-        </div>
-        <div class="about-stat">
-          <span class="about-stat-num">24h</span>
-          <span class="about-stat-label">Réponse rapide</span>
-        </div>
-        <div class="about-stat">
-          <span class="about-stat-num">100%</span>
-          <span class="about-stat-label">Paiement sécurisé</span>
-        </div>
-      </div>
-
-      <div class="about-story">
-        <div class="about-story-item">
-          <div class="about-story-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
-          <div class="about-story-content">
-            <h4>Ce que je fais</h4>
-            <p>Je suis une sorte de <strong>concierge dans l'événementiel</strong> — je trouve des places pour foot, concerts, festivals et bien plus. Ce que vous ne trouvez plus nulle part, je l'ai souvent.</p>
-          </div>
-        </div>
-        <div class="about-story-item">
-          <div class="about-story-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></div>
-          <div class="about-story-content">
-            <h4>Mon histoire</h4>
-            <p>Je me suis d'abord lancé sur <strong>Twitter en exclusivité</strong>. Face au succès, j'ai créé ce site pour que ce soit plus simple et compréhensible pour tout le monde.</p>
-          </div>
-        </div>
-        <div class="about-story-item">
-          <div class="about-story-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
-          <div class="about-story-content">
-            <h4>Ma garantie</h4>
-            <p>Toutes les places sont <strong>100% authentiques</strong>. Consultez nos avis clients. Si vous avez le moindre doute, <strong>on peut s'appeler — aucun souci.</strong></p>
-          </div>
-        </div>
-      </div>
-
-      <div class="about-actions">
-        <a href="https://x.com/Vitetonbillet" target="_blank" rel="noopener" class="about-cta">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-          Me contacter sur X
-        </a>
-        <a href="mailto:vitetonbillet@gmail.com" class="about-email-btn">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-          Envoyer un email
-        </a>
-      </div>
-
-    </div>
-  </section>
-
   <!-- AVIS CLIENTS -->
   <section class="section reviews-section" id="reviews">
     <div class="container">
       <div class="section-header">
-        <h2>Ils ont évité les arnaques grâce à nous.</h2>
-        <p>Ne nous croyez pas sur parole. Lisez les avis publics de nos clients sur X (Twitter). Des dizaines de personnes qui ont pu voir leur artiste préféré en toute sérénité. <a href="https://x.com/Vitetonbillet/status/1865848542910353599" target="_blank" rel="noopener" class="reviews-see-more">Voir tous les avis →</a></p>
+        <h2>Avis clients</h2>
+        <p>Des dizaines de clients satisfaits partagent leur experience sur X (Twitter). <a href="https://x.com/Vitetonbillet/status/1865848542910353599" target="_blank" rel="noopener" class="reviews-see-more">Voir tous les avis</a></p>
       </div>
     </div>
 
-    <!-- Carrousel horizontal infini -->
+    <!-- Carrousel horizontal -->
     <div class="carousel-wrapper">
       <div class="carousel-fade carousel-fade-left"></div>
       <div class="carousel-fade carousel-fade-right"></div>
@@ -197,22 +111,22 @@
         </div>
         <div class="carousel-slide">
           <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
-            <p lang="fr" dir="ltr">En place, merci vite ton billet pas de chinoiserie et très réactif 👍👍 <a href="https://t.co/QfZhDB9VXN">pic.twitter.com/QfZhDB9VXN</a></p>&mdash; Shevaaa (@Boscdetp) <a href="https://twitter.com/Boscdetp/status/1914043927537045878?ref_src=twsrc%5Etfw">April 20, 2025</a>
+            <p lang="fr" dir="ltr">En place, merci vite ton billet pas de chinoiserie et tres reactif <a href="https://t.co/QfZhDB9VXN">pic.twitter.com/QfZhDB9VXN</a></p>&mdash; Shevaaa (@Boscdetp) <a href="https://twitter.com/Boscdetp/status/1914043927537045878?ref_src=twsrc%5Etfw">April 20, 2025</a>
           </blockquote>
         </div>
         <div class="carousel-slide">
           <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
-            <p lang="fr" dir="ltr">encore une fois grâce à Romain j'ai pu assister au concert de Sabrina Carpenter à la dernière minute, ce mec est un sauveur !!! <a href="https://t.co/paI7P4KolF">pic.twitter.com/paI7P4KolF</a></p>&mdash; n°1 girl (@kasswiftie_) <a href="https://twitter.com/kasswiftie_/status/1902842936657649665?ref_src=twsrc%5Etfw">March 20, 2025</a>
+            <p lang="fr" dir="ltr">encore une fois grace a Romain j'ai pu assister au concert de Sabrina Carpenter a la derniere minute, ce mec est un sauveur !!! <a href="https://t.co/paI7P4KolF">pic.twitter.com/paI7P4KolF</a></p>&mdash; n°1 girl (@kasswiftie_) <a href="https://twitter.com/kasswiftie_/status/1902842936657649665?ref_src=twsrc%5Etfw">March 20, 2025</a>
           </blockquote>
         </div>
         <div class="carousel-slide">
           <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
-            <p lang="fr" dir="ltr">Simple et efficace si vous voulez vos places n'hésitez pas à passer par lui! <br>Merci encore ! <a href="https://t.co/poGnME95F8">pic.twitter.com/poGnME95F8</a></p>&mdash; Jerzy (@jeremynumero94) <a href="https://twitter.com/jeremynumero94/status/1993787346026942688?ref_src=twsrc%5Etfw">November 26, 2025</a>
+            <p lang="fr" dir="ltr">Simple et efficace si vous voulez vos places n'hesitez pas a passer par lui! <br>Merci encore ! <a href="https://t.co/poGnME95F8">pic.twitter.com/poGnME95F8</a></p>&mdash; Jerzy (@jeremynumero94) <a href="https://twitter.com/jeremynumero94/status/1993787346026942688?ref_src=twsrc%5Etfw">November 26, 2025</a>
           </blockquote>
         </div>
         <div class="carousel-slide">
           <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
-            <p lang="fr" dir="ltr">j'ai réussi à voir Gracie Abrams grâce à Romain, et c'était une des meilleures soirées de ma vie, c'est vraiment un vendeur au top !!! <a href="https://t.co/SASH5TLuVa">pic.twitter.com/SASH5TLuVa</a></p>&mdash; n°1 girl (@kasswiftie_) <a href="https://twitter.com/kasswiftie_/status/1895463033469907053?ref_src=twsrc%5Etfw">February 28, 2025</a>
+            <p lang="fr" dir="ltr">j'ai reussi a voir Gracie Abrams grace a Romain, et c'etait une des meilleures soirees de ma vie, c'est vraiment un vendeur au top !!! <a href="https://t.co/SASH5TLuVa">pic.twitter.com/SASH5TLuVa</a></p>&mdash; n°1 girl (@kasswiftie_) <a href="https://twitter.com/kasswiftie_/status/1895463033469907053?ref_src=twsrc%5Etfw">February 28, 2025</a>
           </blockquote>
         </div>
         <div class="carousel-slide">
@@ -222,52 +136,52 @@
         </div>
         <div class="carousel-slide">
           <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
-            <p lang="fr" dir="ltr">J'ai acheté 6 billets dans la fosse et j'ai eu 0 problème!! Encore merciii pour les billets <a href="https://t.co/Mm4B7E19AD">pic.twitter.com/Mm4B7E19AD</a></p>&mdash; Agnesa (@Agnesa25_) <a href="https://twitter.com/Agnesa25_/status/1926887860872921303?ref_src=twsrc%5Etfw">May 26, 2025</a>
+            <p lang="fr" dir="ltr">J'ai achete 6 billets dans la fosse et j'ai eu 0 probleme!! Encore merciii pour les billets <a href="https://t.co/Mm4B7E19AD">pic.twitter.com/Mm4B7E19AD</a></p>&mdash; Agnesa (@Agnesa25_) <a href="https://twitter.com/Agnesa25_/status/1926887860872921303?ref_src=twsrc%5Etfw">May 26, 2025</a>
           </blockquote>
         </div>
         <div class="carousel-slide">
           <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
-            <p lang="fr" dir="ltr">Merci à toi ! <a href="https://t.co/Rb0HWlax58">pic.twitter.com/Rb0HWlax58</a></p>&mdash; Arthur (@arthurcllt_) <a href="https://twitter.com/arthurcllt_/status/1928058360605151503?ref_src=twsrc%5Etfw">May 29, 2025</a>
+            <p lang="fr" dir="ltr">Merci a toi ! <a href="https://t.co/Rb0HWlax58">pic.twitter.com/Rb0HWlax58</a></p>&mdash; Arthur (@arthurcllt_) <a href="https://twitter.com/arthurcllt_/status/1928058360605151503?ref_src=twsrc%5Etfw">May 29, 2025</a>
           </blockquote>
         </div>
         <div class="carousel-slide">
           <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
-            <p lang="fr" dir="ltr">J'ai pu voir PITBULL grâce à lui ! Merci encore <a href="https://t.co/FrEIBCqzcY">pic.twitter.com/FrEIBCqzcY</a></p>&mdash; ✨ 𝑆𝑢𝑛𝑛𝑦 ✨| ALL EYES ON ME 🖤💖 fan acc (@jjk_rina) <a href="https://twitter.com/jjk_rina/status/1933499765146132619?ref_src=twsrc%5Etfw">June 13, 2025</a>
+            <p lang="fr" dir="ltr">J'ai pu voir PITBULL grace a lui ! Merci encore <a href="https://t.co/FrEIBCqzcY">pic.twitter.com/FrEIBCqzcY</a></p>&mdash; jjk_rina (@jjk_rina) <a href="https://twitter.com/jjk_rina/status/1933499765146132619?ref_src=twsrc%5Etfw">June 13, 2025</a>
           </blockquote>
         </div>
         <div class="carousel-slide">
           <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
-            <p lang="fr" dir="ltr">Aucun souci, très dispo, je recommande ! <a href="https://t.co/PxYECo9TTE">pic.twitter.com/PxYECo9TTE</a></p>&mdash; Seiku (@SeikuLoL) <a href="https://twitter.com/SeikuLoL/status/1929158251230163114?ref_src=twsrc%5Etfw">June 1, 2025</a>
+            <p lang="fr" dir="ltr">Aucun souci, tres dispo, je recommande ! <a href="https://t.co/PxYECo9TTE">pic.twitter.com/PxYECo9TTE</a></p>&mdash; Seiku (@SeikuLoL) <a href="https://twitter.com/SeikuLoL/status/1929158251230163114?ref_src=twsrc%5Etfw">June 1, 2025</a>
           </blockquote>
         </div>
         <div class="carousel-slide">
           <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
-            <p lang="fr" dir="ltr">Vendeur réactif et fiable ! <a href="https://t.co/8TltWb9L8R">pic.twitter.com/8TltWb9L8R</a></p>&mdash; O'Trak (@NkVd_MARS7) <a href="https://twitter.com/NkVd_MARS7/status/1914084259205464337?ref_src=twsrc%5Etfw">April 20, 2025</a>
+            <p lang="fr" dir="ltr">Vendeur reactif et fiable ! <a href="https://t.co/8TltWb9L8R">pic.twitter.com/8TltWb9L8R</a></p>&mdash; O'Trak (@NkVd_MARS7) <a href="https://twitter.com/NkVd_MARS7/status/1914084259205464337?ref_src=twsrc%5Etfw">April 20, 2025</a>
           </blockquote>
         </div>
         <div class="carousel-slide">
           <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
-            <p lang="fr" dir="ltr">Mercii franchement une soirée incroyable et ça grâce à vous 💙❤️ <a href="https://t.co/d7G2BflxYr">pic.twitter.com/d7G2BflxYr</a></p>&mdash; Mariana (@mariana_avec) <a href="https://twitter.com/mariana_avec/status/1928950123775586604?ref_src=twsrc%5Etfw">May 31, 2025</a>
+            <p lang="fr" dir="ltr">Mercii franchement une soiree incroyable et ca grace a vous <a href="https://t.co/d7G2BflxYr">pic.twitter.com/d7G2BflxYr</a></p>&mdash; Mariana (@mariana_avec) <a href="https://twitter.com/mariana_avec/status/1928950123775586604?ref_src=twsrc%5Etfw">May 31, 2025</a>
           </blockquote>
         </div>
         <div class="carousel-slide">
           <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
-            <p lang="fr" dir="ltr">j'ai acheter 2 places en fosse or pour le concert de ninho on a réussi à passer sans problème,vendeur top !! <a href="https://t.co/NrDKkpJZRZ">pic.twitter.com/NrDKkpJZRZ</a></p>&mdash; nahila (@nahilaab7) <a href="https://twitter.com/nahilaab7/status/1919039025593176299?ref_src=twsrc%5Etfw">May 4, 2025</a>
+            <p lang="fr" dir="ltr">j'ai acheter 2 places en fosse or pour le concert de ninho on a reussi a passer sans probleme,vendeur top !! <a href="https://t.co/NrDKkpJZRZ">pic.twitter.com/NrDKkpJZRZ</a></p>&mdash; nahila (@nahilaab7) <a href="https://twitter.com/nahilaab7/status/1919039025593176299?ref_src=twsrc%5Etfw">May 4, 2025</a>
           </blockquote>
         </div>
         <div class="carousel-slide">
           <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
-            <p lang="fr" dir="ltr">Merci à <a href="https://twitter.com/Vitetonbillet?ref_src=twsrc%5Etfw">@Vitetonbillet</a> pour la place, super rapide et fiable je recommande ✅✅ <a href="https://t.co/HLgGzJfvxk">pic.twitter.com/HLgGzJfvxk</a></p>&mdash; BE (@plyblef) <a href="https://twitter.com/plyblef/status/1922379244010668240?ref_src=twsrc%5Etfw">May 13, 2025</a>
+            <p lang="fr" dir="ltr">Merci a <a href="https://twitter.com/Vitetonbillet?ref_src=twsrc%5Etfw">@Vitetonbillet</a> pour la place, super rapide et fiable je recommande <a href="https://t.co/HLgGzJfvxk">pic.twitter.com/HLgGzJfvxk</a></p>&mdash; BE (@plyblef) <a href="https://twitter.com/plyblef/status/1922379244010668240?ref_src=twsrc%5Etfw">May 13, 2025</a>
           </blockquote>
         </div>
         <div class="carousel-slide">
           <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
-            <p lang="fr" dir="ltr">Achat de 2 places pour le concert de Ed Sheeran a paris ce jour<br>Tout s'est bien passé, vendeur hyper fiable et très reactif <br>Je recommande fortement ❤️</p>&mdash; Thomas🇹🇭💙❤️ (@Thomasflp93) <a href="https://twitter.com/Thomasflp93/status/1995555860001456218?ref_src=twsrc%5Etfw">December 1, 2025</a>
+            <p lang="fr" dir="ltr">Achat de 2 places pour le concert de Ed Sheeran a paris ce jour<br>Tout s'est bien passe, vendeur hyper fiable et tres reactif <br>Je recommande fortement</p>&mdash; Thomas (@Thomasflp93) <a href="https://twitter.com/Thomasflp93/status/1995555860001456218?ref_src=twsrc%5Etfw">December 1, 2025</a>
           </blockquote>
         </div>
         <div class="carousel-slide">
           <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
-            <p lang="fr" dir="ltr">Fiable 100% merci beaucoup 🙏🏻 <a href="https://t.co/EIzyjgAL5g">pic.twitter.com/EIzyjgAL5g</a></p>&mdash; Noémie (@noerln_) <a href="https://twitter.com/noerln_/status/2005753989909102807?ref_src=twsrc%5Etfw">December 29, 2025</a>
+            <p lang="fr" dir="ltr">Fiable 100% merci beaucoup <a href="https://t.co/EIzyjgAL5g">pic.twitter.com/EIzyjgAL5g</a></p>&mdash; Noemie (@noerln_) <a href="https://twitter.com/noerln_/status/2005753989909102807?ref_src=twsrc%5Etfw">December 29, 2025</a>
           </blockquote>
         </div>
         <div class="carousel-slide">
@@ -277,22 +191,22 @@
         </div>
         <div class="carousel-slide">
           <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
-            <p lang="fr" dir="ltr">Revendeur fiable et super sympa ! J'ai trouvé une place pour Sabrina Carpenter le 16 mars grâce à lui ! C'était top ! <a href="https://t.co/D7l6RMZ4PU">pic.twitter.com/D7l6RMZ4PU</a></p>&mdash; Inès Watelet (@InesWatelet08) <a href="https://twitter.com/InesWatelet08/status/1901579567375978574?ref_src=twsrc%5Etfw">March 17, 2025</a>
+            <p lang="fr" dir="ltr">Revendeur fiable et super sympa ! J'ai trouve une place pour Sabrina Carpenter le 16 mars grace a lui ! C'etait top ! <a href="https://t.co/D7l6RMZ4PU">pic.twitter.com/D7l6RMZ4PU</a></p>&mdash; Ines Watelet (@InesWatelet08) <a href="https://twitter.com/InesWatelet08/status/1901579567375978574?ref_src=twsrc%5Etfw">March 17, 2025</a>
           </blockquote>
         </div>
         <div class="carousel-slide">
           <blockquote class="twitter-tweet" data-theme="dark" data-lang="fr" data-width="400" data-conversation="none">
-            <p lang="fr" dir="ltr">Concert de DINOS le 21/12/2025 catégorie or parfait 🙌🏼 <a href="https://t.co/6FYSBubD13">pic.twitter.com/6FYSBubD13</a></p>&mdash; Tilleurs (@tileurs435553) <a href="https://twitter.com/tileurs435553/status/2003149199203008829?ref_src=twsrc%5Etfw">December 22, 2025</a>
+            <p lang="fr" dir="ltr">Concert de DINOS le 21/12/2025 categorie or parfait <a href="https://t.co/6FYSBubD13">pic.twitter.com/6FYSBubD13</a></p>&mdash; Tilleurs (@tileurs435553) <a href="https://twitter.com/tileurs435553/status/2003149199203008829?ref_src=twsrc%5Etfw">December 22, 2025</a>
           </blockquote>
         </div>
       </div>
       <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
     </div>
 
-    <!-- Contrôles -->
+    <!-- Controles -->
     <div class="container">
       <div class="carousel-controls">
-        <button class="carousel-btn" id="carouselPrev" aria-label="Précédent">
+        <button class="carousel-btn" id="carouselPrev" aria-label="Precedent">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
         <div class="carousel-dots" id="carouselDots"></div>
@@ -310,98 +224,10 @@
           Suivre @Vitetonbillet
         </a>
       </div>
-
-      <div class="reviews-subtext">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <span>Tous les avis sont publics et consultables librement sur <a href="https://x.com/Vitetonbillet" target="_blank" rel="noopener">@Vitetonbillet</a></span>
-      </div>
     </div>
   </section>
 
-  <!-- TRUST -->
-  <section class="section trust-section" id="trust">
-    <div class="container">
-      <div class="section-header">
-        <h2>Pourquoi ViteTonBillet ?</h2>
-        <p>Dans un marché rempli d'arnaques, voici ce qui nous rend différents.</p>
-      </div>
-      <div class="trust-grid">
-        <div class="trust-card">
-          <div class="trust-card-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          </div>
-          <h3>Billets vérifiés à la loupe.</h3>
-          <p>Chaque billet est contrôlé par notre équipe. Pas de faux, pas de double revente. Si vous achetez ici, vous rentrez dans la salle. Point.</p>
-        </div>
-        <div class="trust-card">
-          <div class="trust-card-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          </div>
-          <h3>Votre argent est protégé.</h3>
-          <p>Nous utilisons la technologie Inflow (cryptage bancaire et authentification forte). Votre argent ne disparaît jamais dans la nature.</p>
-        </div>
-        <div class="trust-card">
-          <div class="trust-card-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          </div>
-          <h3>Un vrai humain derrière l'écran.</h3>
-          <p>Pas de robot ni de réponses automatiques. Romain vous accompagne et répond en direct sur X (Twitter) ou par email jusqu'à ce que vous soyez devant la scène.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FAQ -->
-  <section class="section faq-section" id="faq">
-    <div class="container">
-      <div class="section-header">
-        <h2>Les questions que vous n'osez pas poser.</h2>
-      </div>
-      <div class="faq-list">
-        <div class="faq-item">
-          <button class="faq-question" onclick="toggleFaq(this)">
-            Et si mon billet ne passe pas à l'entrée ?
-            <span class="faq-question-icon">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            </span>
-          </button>
-          <div class="faq-answer">
-            <div class="faq-answer-inner">
-              Ça n'arrive pas car nous contrôlons la source de chaque billet. Mais si, par un concours de circonstances jugé impossible, cela devait arriver : vous êtes remboursé intégralement le jour même, sans avoir à nous relancer 10 fois.
-            </div>
-          </div>
-        </div>
-        <div class="faq-item">
-          <button class="faq-question" onclick="toggleFaq(this)">
-            Comment être sûr que votre site n'est pas une arnaque de plus ?
-            <span class="faq-question-icon">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            </span>
-          </button>
-          <div class="faq-answer">
-            <div class="faq-answer-inner">
-              C'est la bonne question à se poser. Regardez notre fil Twitter (<a href="https://x.com/Vitetonbillet" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600">@Vitetonbillet</a>). Tous nos clients témoignent publiquement depuis leurs vrais comptes. Romain gère les transactions et vous pouvez nous contacter à tout moment — nous vous répondrons avec de vraies preuves.
-            </div>
-          </div>
-        </div>
-        <div class="faq-item">
-          <button class="faq-question" onclick="toggleFaq(this)">
-            Comment se passe la livraison du billet ?
-            <span class="faq-question-icon">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            </span>
-          </button>
-          <div class="faq-answer">
-            <div class="faq-answer-inner">
-              Après votre paiement sécurisé, Romain vous envoie votre billet directement par email ou message. Pas d'attente de plusieurs jours — nous sommes disponibles et réactifs. Si vous avez une urgence, contactez-nous directement sur X.
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CONTACT / FOOTER -->
+  <!-- FOOTER -->
   <footer class="footer" id="contact">
     <div class="container">
       <div class="footer-grid">
@@ -410,12 +236,12 @@
             <img src="/images/logo.png" alt="ViteTonBillet" class="logo-mark-img" />
             <span class="logo-text">ViteTonBillet</span>
           </div>
-          <p class="footer-desc">La billetterie en ligne simple, rapide et sécurisée pour tous vos événements.</p>
+          <p class="footer-desc">Votre billetterie en ligne pour concerts, festivals et spectacles. Fonde par Romain.</p>
         </div>
         <div class="footer-col">
           <h4>Navigation</h4>
-          <a href="#events">Événements</a>
-          <a href="#trust">Pourquoi nous</a>
+          <a href="#events">Programme</a>
+          <a href="#reviews">Avis clients</a>
         </div>
         <div class="footer-col">
           <h4>Contact</h4>
@@ -424,24 +250,16 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
             @Vitetonbillet
           </a>
-          <a href="https://x.com/Vitetonbillet/status/1865848542910353599" target="_blank" rel="noopener" class="footer-reviews-link">Voir les avis clients</a>
         </div>
         <div class="footer-col">
-          <h4>Informations légales</h4>
-          <a href="/mentions-legales.html">Mentions légales</a>
-          <a href="/cgv.html">Conditions générales de vente</a>
-          <a href="/confidentialite.html">Politique de confidentialité</a>
+          <h4>Informations</h4>
+          <a href="/mentions-legales.html">Mentions legales</a>
+          <a href="/cgv.html">Conditions generales de vente</a>
+          <a href="/confidentialite.html">Politique de confidentialite</a>
         </div>
       </div>
       <div class="footer-bottom">
-        <p>&copy; 2026 ViteTonBillet — Tous droits réservés</p>
-        <div class="footer-badges">
-          <span class="footer-badge">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            SSL Sécurisé
-          </span>
-          <span class="footer-badge">Propulsé par Inflow</span>
-        </div>
+        <p>&copy; 2026 ViteTonBillet — Tous droits reserves</p>
       </div>
     </div>
   </footer>
@@ -465,23 +283,31 @@
     }
     updateCartCount();
 
-    // FAQ accordion
-    function toggleFaq(btn) {
-      const item = btn.closest('.faq-item');
-      const isOpen = item.classList.contains('open');
-      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
-      if (!isOpen) {
-        item.classList.add('open');
-        try { if (typeof window.clarity === 'function') window.clarity('set', 'interaction', 'checked_trust_elements'); } catch {}
-      }
-    }
-
     // Clarity on Twitter/about links
     document.querySelectorAll('a[href*="x.com"], a[href*="twitter.com"]').forEach(el => {
       el.addEventListener('click', () => {
         try { if (typeof window.clarity === 'function') window.clarity('set', 'interaction', 'checked_trust_elements'); } catch {}
       });
     });
+
+    // Hero search syncs with main search
+    const heroSearch = document.getElementById('heroSearchInput');
+    if (heroSearch) {
+      heroSearch.addEventListener('input', () => {
+        const mainSearch = document.getElementById('searchInput');
+        if (mainSearch) mainSearch.value = heroSearch.value;
+        currentSearch = heroSearch.value.trim();
+        const searchClear = document.getElementById('searchClear');
+        if (searchClear) searchClear.style.display = currentSearch ? 'flex' : 'none';
+        filterAndRender();
+      });
+      heroSearch.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          document.getElementById('events').scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    }
   </script>
 </body>
 </html>
