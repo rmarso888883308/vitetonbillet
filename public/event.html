@@ -744,8 +744,16 @@
       document.head.appendChild(s);
     }
 
+    function getActiveTickets() {
+      if (event.dates && event.dates.length > 1 && event.dates[selectedDate] && event.dates[selectedDate].tickets && event.dates[selectedDate].tickets.length > 0) {
+        return event.dates[selectedDate].tickets;
+      }
+      return event.tickets;
+    }
+
     function getMaxQty() {
-      return (event && event.tickets[selectedTicket].maxQuantity) || 10;
+      const tickets = getActiveTickets();
+      return (tickets[selectedTicket] && tickets[selectedTicket].maxQuantity) || 10;
     }
 
     function updateMaxLabel() {
@@ -799,12 +807,18 @@
         datesEl.querySelectorAll('input[type="radio"]').forEach(r => {
           r.addEventListener('change', () => {
             selectedDate = parseInt(r.value);
+            selectedTicket = 0;
             datesEl.querySelectorAll('.edate').forEach(e => e.classList.remove('selected'));
             r.closest('.edate').classList.add('selected');
             const d = event.dates[selectedDate];
             document.getElementById('evDate').textContent = d.label;
             document.getElementById('evTime').textContent = d.time || event.time;
             document.getElementById('evLocation').textContent = d.location || event.location;
+            // Afficher les billets spécifiques à cette date
+            renderTickets(getActiveTickets());
+            updateTotal();
+            updateMaxLabel();
+            updateSeatsNote();
           });
         });
 
@@ -815,8 +829,15 @@
         if (firstDate.location) document.getElementById('evLocation').textContent = firstDate.location;
       }
 
+      renderTickets(getActiveTickets());
+      updateTotal();
+      updateMaxLabel();
+      updateSeatsNote();
+    }
+
+    function renderTickets(tickets) {
       const ticketsEl = document.getElementById('evTickets');
-      ticketsEl.innerHTML = event.tickets.map((t, i) => `
+      ticketsEl.innerHTML = tickets.map((t, i) => `
         <label class="eticket${i === 0 ? ' selected' : ''}" data-index="${i}">
           <input type="radio" name="ticket" value="${i}" ${i === 0 ? 'checked' : ''} />
           <div class="eticket-info">
@@ -839,14 +860,11 @@
           updateSeatsNote();
         });
       });
-
-      updateTotal();
-      updateMaxLabel();
-      updateSeatsNote();
     }
 
     function updateSeatsNote() {
-      const ticket = event.tickets[selectedTicket];
+      const tickets = getActiveTickets();
+      const ticket = tickets[selectedTicket];
       const isFloor = /fosse|floor|debout/i.test(ticket.type);
       const noteEl = document.getElementById('seatsNote');
       if (noteEl) noteEl.style.display = isFloor ? 'none' : 'flex';
@@ -854,7 +872,9 @@
 
     function updateTotal() {
       if (!event) return;
-      const t = event.tickets[selectedTicket];
+      const tickets = getActiveTickets();
+      const t = tickets[selectedTicket];
+      if (!t) return;
       document.getElementById('totalPrice').textContent = formatPrice(t.price * quantity, t.currency);
     }
 

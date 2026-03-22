@@ -7,356 +7,115 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --white: #fff;
-      --gray-50: #f8fafc;
-      --gray-100: #f1f5f9;
-      --gray-200: #e2e8f0;
-      --gray-300: #cbd5e1;
-      --gray-400: #94a3b8;
-      --gray-500: #64748b;
-      --gray-600: #475569;
-      --gray-700: #334155;
-      --gray-800: #1e293b;
-      --gray-900: #0f172a;
-      --primary: #2a8cb5;
-      --primary-light: #3ba3cf;
-      --primary-dark: #1e7a9e;
-      --primary-50: #eef8fc;
-      --primary-100: #d5effa;
-      --danger: #ef4444;
-      --danger-bg: #fef2f2;
-      --success: #22c55e;
-      --radius: 12px;
-      --shadow: 0 4px 20px rgba(0,0,0,0.06);
+      --primary: #2a8cb5; --primary-dark: #1e7a9e; --primary-50: #eef8fc;
+      --gray-50: #f8fafc; --gray-100: #f1f5f9; --gray-200: #e2e8f0;
+      --gray-400: #94a3b8; --gray-500: #64748b; --gray-600: #475569;
+      --gray-700: #334155; --gray-800: #1e293b; --gray-900: #0f172a;
+      --danger: #ef4444; --success: #22c55e;
+      --radius: 12px; --shadow: 0 4px 20px rgba(0,0,0,0.06);
     }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--gray-50); color: var(--gray-800); line-height: 1.6; }
 
-    body {
-      font-family: 'Inter', system-ui, sans-serif;
-      background: var(--gray-50);
-      color: var(--gray-800);
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    .login-page {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-    }
-
-    .login-card {
-      background: white;
-      border: 1px solid var(--gray-200);
-      border-radius: 16px;
-      padding: 40px;
-      width: 100%;
-      max-width: 400px;
-      box-shadow: var(--shadow);
-      text-align: center;
-    }
-
-    .login-card .logo-mark {
-      width: 48px; height: 48px;
-      background: var(--primary);
-      color: white;
-      border-radius: 14px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
-      font-size: 1.4rem;
-      margin-bottom: 16px;
-    }
-
-    .login-card h1 {
-      font-size: 1.3rem;
-      font-weight: 800;
-      margin-bottom: 4px;
-    }
-
-    .login-card p {
-      color: var(--gray-500);
-      font-size: 0.9rem;
-      margin-bottom: 24px;
-    }
-
-    .login-card input {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1.5px solid var(--gray-200);
-      border-radius: 10px;
-      font-size: 0.9rem;
-      font-family: inherit;
-      margin-bottom: 16px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .login-card input:focus { border-color: var(--primary-light); }
-
-    .login-card button {
-      width: 100%;
-      padding: 12px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: background 0.2s;
-    }
-
+    /* LOGIN */
+    .login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .login-card { background: white; border: 1px solid var(--gray-200); border-radius: 16px; padding: 40px; width: 100%; max-width: 400px; box-shadow: var(--shadow); text-align: center; }
+    .login-card h1 { font-size: 1.3rem; font-weight: 800; margin-bottom: 4px; }
+    .login-card p { color: var(--gray-500); font-size: 0.9rem; margin-bottom: 24px; }
+    .login-card input { width: 100%; padding: 12px 14px; border: 1.5px solid var(--gray-200); border-radius: 10px; font-size: 0.9rem; font-family: inherit; margin-bottom: 16px; outline: none; }
+    .login-card input:focus { border-color: var(--primary); }
+    .login-card button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
     .login-card button:hover { background: var(--primary-dark); }
 
     /* DASHBOARD */
     .dashboard { display: none; }
     .dashboard.visible { display: block; }
+    .top-bar { background: var(--primary); color: white; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; }
+    .top-bar h1 { font-size: 1.4rem; }
+    .top-bar button { background: rgba(255,255,255,0.2); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .top-bar button:hover { background: rgba(255,255,255,0.3); }
 
-    .dashboard-header {
-      background: var(--primary);
-      color: white;
-      padding: 24px;
-      margin-bottom: 24px;
-      border-radius: 12px;
-    }
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
 
-    .dashboard-header h1 { font-size: 1.8rem; margin-bottom: 4px; }
-    .dashboard-header p { opacity: 0.9; font-size: 0.9rem; }
-
-    .tab-nav {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 24px;
-      border-bottom: 2px solid var(--gray-200);
-    }
-
-    .tab-btn {
-      padding: 12px 20px;
-      background: none;
-      border: none;
-      border-bottom: 3px solid transparent;
-      cursor: pointer;
-      font-weight: 600;
-      color: var(--gray-500);
-      transition: all 0.2s;
-      font-size: 0.95rem;
-    }
-
-    .tab-btn.active {
-      color: var(--primary);
-      border-bottom-color: var(--primary);
-    }
-
-    .tab-btn:hover { color: var(--gray-700); }
-
+    /* TABS */
+    .tab-nav { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 2px solid var(--gray-200); }
+    .tab-btn { padding: 12px 24px; background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--gray-400); font-size: 0.95rem; }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 10px 16px;
-      border: none;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: all 0.2s;
-    }
-
-    .btn-primary {
-      background: var(--primary);
-      color: white;
-    }
-
+    /* BUTTONS */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
+    .btn-primary { background: var(--primary); color: white; }
     .btn-primary:hover { background: var(--primary-dark); }
+    .btn-danger { background: var(--danger); color: white; font-size: 0.8rem; padding: 6px 12px; }
+    .btn-outline { background: white; color: var(--gray-600); border: 1.5px solid var(--gray-200); }
+    .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
 
-    .btn-danger {
-      background: var(--danger);
-      color: white;
-    }
-
-    .btn-danger:hover { background: #dc2626; }
-
-    .logout-btn {
-      display: inline-block;
-      margin-top: 20px;
-      padding: 10px 16px;
-      background: var(--danger);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    .logout-btn:hover { background: #dc2626; }
-
-    /* EVENTS SECTION */
-    .events-list { margin-top: 20px; }
-
-    .event-item {
-      background: white;
-      border: 1px solid var(--gray-200);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .event-info { flex: 1; }
-    .event-info h3 { font-size: 1rem; margin-bottom: 4px; }
+    /* EVENTS LIST */
+    .event-item { background: white; border: 1px solid var(--gray-200); border-radius: 12px; padding: 16px 20px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .event-info h3 { font-size: 1rem; margin-bottom: 2px; }
     .event-info p { color: var(--gray-500); font-size: 0.85rem; }
-
     .event-actions { display: flex; gap: 8px; }
 
-    /* ORDERS SECTION */
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .stat-card {
-      background: white;
-      border: 1px solid var(--gray-200);
-      border-radius: 12px;
-      padding: 20px;
-    }
-
+    /* STATS */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: white; border: 1px solid var(--gray-200); border-radius: 12px; padding: 20px; }
     .stat-label { color: var(--gray-500); font-size: 0.85rem; margin-bottom: 8px; }
     .stat-value { font-size: 2rem; font-weight: 700; color: var(--primary); }
 
-    .orders-table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: var(--shadow);
-    }
-
-    .orders-table th {
-      background: var(--gray-50);
-      padding: 12px;
-      text-align: left;
-      border-bottom: 1px solid var(--gray-200);
-      font-weight: 600;
-      color: var(--gray-700);
-    }
-
-    .orders-table td {
-      padding: 12px;
-      border-bottom: 1px solid var(--gray-200);
-    }
-
+    /* ORDERS TABLE */
+    .orders-table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+    .orders-table th { background: var(--gray-50); padding: 12px; text-align: left; border-bottom: 1px solid var(--gray-200); font-weight: 600; color: var(--gray-700); font-size: 0.85rem; }
+    .orders-table td { padding: 12px; border-bottom: 1px solid var(--gray-200); font-size: 0.9rem; }
     .orders-table tr:hover { background: var(--gray-50); }
-
     .order-row { cursor: pointer; }
-
-    .status-badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      background: rgba(34,197,94,0.1);
-      color: var(--success);
-    }
+    .status-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .status-completed { background: rgba(34,197,94,0.1); color: var(--success); }
+    .status-pending { background: rgba(234,179,8,0.1); color: #ca8a04; }
 
     /* MODAL */
-    .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-    }
-
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: flex-start; justify-content: center; padding: 24px; overflow-y: auto; }
     .modal.visible { display: flex; }
+    .modal-content { background: white; border-radius: 16px; padding: 28px; max-width: 700px; width: 100%; margin-top: 40px; box-shadow: var(--shadow); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .modal-header h2 { font-size: 1.2rem; }
+    .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--gray-400); }
 
-    .modal-content {
-      background: white;
-      border-radius: 16px;
-      padding: 32px;
-      max-width: 600px;
-      width: 100%;
-      max-height: 90vh;
-      overflow-y: auto;
-      box-shadow: var(--shadow);
+    /* FORM */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.85rem; color: var(--gray-700); }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1.5px solid var(--gray-200); border-radius: 8px; font-family: inherit; font-size: 0.9rem; outline: none; }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--primary); }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+
+    /* PRESETS */
+    .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .preset-btn { padding: 6px 14px; border: 1.5px solid var(--gray-200); border-radius: 20px; background: white; cursor: pointer; font-size: 0.8rem; font-weight: 500; color: var(--gray-600); }
+    .preset-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* DATE BLOCK */
+    .date-block { background: var(--gray-50); border: 1.5px solid var(--gray-200); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    .date-block-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .date-block-header h4 { font-size: 0.9rem; color: var(--gray-700); }
+    .ticket-row { display: grid; grid-template-columns: 2fr 1fr auto; gap: 8px; margin-bottom: 8px; align-items: end; }
+    .ticket-row input { padding: 8px; border: 1.5px solid var(--gray-200); border-radius: 6px; font-size: 0.85rem; outline: none; }
+    .ticket-row input:focus { border-color: var(--primary); }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--gray-400); }
+
+    .section-label { font-weight: 700; font-size: 0.9rem; color: var(--gray-700); margin: 20px 0 10px; display: flex; align-items: center; gap: 8px; }
+
+    .toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .toggle-row label { font-size: 0.85rem; color: var(--gray-600); font-weight: 500; cursor: pointer; }
+
+    @media (max-width: 640px) {
+      .form-row { grid-template-columns: 1fr; }
+      .ticket-row { grid-template-columns: 1fr 1fr auto; }
+      .event-item { flex-direction: column; gap: 12px; align-items: flex-start; }
     }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-
-    .modal-close {
-      background: none;
-      border: none;
-      font-size: 1.5rem;
-      cursor: pointer;
-      color: var(--gray-400);
-    }
-
-    .modal-close:hover { color: var(--gray-700); }
-
-    .form-group {
-      margin-bottom: 16px;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 6px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      color: var(--gray-700);
-    }
-
-    .form-group input,
-    .form-group textarea,
-    .form-group select {
-      width: 100%;
-      padding: 10px;
-      border: 1.5px solid var(--gray-200);
-      border-radius: 8px;
-      font-family: inherit;
-      font-size: 0.9rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .form-group input:focus,
-    .form-group textarea:focus,
-    .form-group select:focus {
-      border-color: var(--primary);
-    }
-
-    .form-group textarea { resize: vertical; min-height: 100px; }
-
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--gray-500);
-    }
-
-    .empty-state svg { margin-bottom: 16px; opacity: 0.3; }
   </style>
 </head>
 <body>
@@ -364,37 +123,30 @@
   <!-- LOGIN -->
   <div id="loginPage" class="login-page">
     <div class="login-card">
-      <div class="logo-mark">🔐</div>
       <h1>Admin ViteTonBillet</h1>
-      <p>Gestion complète de ta billetterie</p>
-      <input type="password" id="adminPassword" placeholder="Mot de passe admin" />
+      <p>Gestion de ta billetterie</p>
+      <input type="password" id="adminPassword" placeholder="Mot de passe admin" onkeydown="if(event.key==='Enter')login()" />
       <button onclick="login()">Se connecter</button>
     </div>
   </div>
 
   <!-- DASHBOARD -->
   <div id="dashboard" class="dashboard">
-    <div class="dashboard-header">
-      <h1>🎫 ViteTonBillet Admin</h1>
-      <p>Gestion des événements et commandes</p>
+    <div class="top-bar">
+      <h1>ViteTonBillet Admin</h1>
+      <button onclick="logout()">Deconnexion</button>
     </div>
 
     <div class="container">
       <div class="tab-nav">
-        <button class="tab-btn active" onclick="switchTab('events')">🎵 Événements</button>
-        <button class="tab-btn" onclick="switchTab('orders')">📦 Commandes</button>
-        <div style="flex: 1;"></div>
-        <button class="logout-btn" onclick="logout()">Déconnexion</button>
+        <button class="tab-btn active" onclick="switchTab('events', this)">Evenements</button>
+        <button class="tab-btn" onclick="switchTab('orders', this)">Commandes</button>
       </div>
 
       <!-- EVENTS TAB -->
       <div id="events" class="tab-content active">
-        <button class="btn btn-primary" onclick="openEventModal()" style="margin-bottom: 20px;">
-          ➕ Ajouter un événement
-        </button>
-        <div id="eventsList" class="events-list">
-          <div class="empty-state">Chargement...</div>
-        </div>
+        <button class="btn btn-primary" onclick="openEventModal()" style="margin-bottom: 16px;">+ Nouvel evenement</button>
+        <div id="eventsList"></div>
       </div>
 
       <!-- ORDERS TAB -->
@@ -406,32 +158,108 @@
           </div>
           <div class="stat-card">
             <div class="stat-label">Revenu total</div>
-            <div class="stat-value" id="totalRevenue">€0.00</div>
+            <div class="stat-value" id="totalRevenue">0,00 EUR</div>
           </div>
         </div>
-        <div id="ordersContainer">
-          <div class="empty-state">Chargement...</div>
-        </div>
+        <div id="ordersContainer"></div>
       </div>
     </div>
   </div>
 
   <!-- EVENT MODAL -->
-  <div id="eventModal" class="modal" onclick="if(event.target === this) closeEventModal()">
+  <div id="eventModal" class="modal" onclick="if(event.target===this)closeEventModal()">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 id="modalTitle">Ajouter un événement</h2>
+        <h2 id="modalTitle">Nouvel evenement</h2>
         <button class="modal-close" onclick="closeEventModal()">&times;</button>
       </div>
-      <div id="eventFormContainer"></div>
+
+      <!-- Quick presets -->
+      <div class="presets">
+        <button class="preset-btn" onclick="applyPreset('concert')">Concert</button>
+        <button class="preset-btn" onclick="applyPreset('festival')">Festival</button>
+        <button class="preset-btn" onclick="applyPreset('spectacle')">Spectacle</button>
+        <button class="preset-btn" onclick="applyPreset('sport')">Sport</button>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nom *</label>
+          <input type="text" id="fName" placeholder="Ex: Ninho Paris La Defense Arena" />
+        </div>
+        <div class="form-group">
+          <label>Artiste</label>
+          <input type="text" id="fArtist" placeholder="Ex: Ninho" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date *</label>
+          <input type="date" id="fDate" />
+        </div>
+        <div class="form-group">
+          <label>Heure</label>
+          <input type="time" id="fTime" value="20:00" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Lieu *</label>
+          <input type="text" id="fLocation" placeholder="Ex: AccorArena, Paris" />
+        </div>
+        <div class="form-group">
+          <label>Categorie *</label>
+          <input type="text" id="fCategory" placeholder="Concert" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="fDescription" placeholder="Optionnel..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Image (URL ou upload)</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="fImage" placeholder="https://..." style="flex:1" />
+          <label class="btn btn-outline" style="cursor:pointer; white-space:nowrap;">
+            Uploader
+            <input type="file" id="fImageUpload" accept="image/*" style="display:none" onchange="uploadImage(this)" />
+          </label>
+        </div>
+      </div>
+
+      <!-- MULTI-DATE TOGGLE -->
+      <div class="toggle-row">
+        <input type="checkbox" id="fMultiDate" onchange="toggleMultiDate()" />
+        <label for="fMultiDate">Plusieurs dates (billets differents par date)</label>
+      </div>
+
+      <!-- SINGLE DATE TICKETS -->
+      <div id="singleTicketsSection">
+        <div class="section-label">Billets</div>
+        <div id="singleTickets"></div>
+        <button class="btn btn-outline btn-sm" onclick="addTicketRow('singleTickets')" style="margin-top:8px">+ Ajouter un billet</button>
+      </div>
+
+      <!-- MULTI-DATE SECTION -->
+      <div id="multiDateSection" style="display:none">
+        <div class="section-label">Dates et billets</div>
+        <div id="datesContainer"></div>
+        <button class="btn btn-outline btn-sm" onclick="addDateBlock()" style="margin-top:8px">+ Ajouter une date</button>
+      </div>
+
+      <button class="btn btn-primary" onclick="saveEvent()" style="width:100%; margin-top:20px; padding:14px;" id="saveBtn">Creer l'evenement</button>
     </div>
   </div>
 
   <!-- ORDER MODAL -->
-  <div id="orderModal" class="modal" onclick="if(event.target === this) closeOrderModal()">
+  <div id="orderModal" class="modal" onclick="if(event.target===this)closeOrderModal()">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Détails de la commande</h2>
+        <h2>Details commande</h2>
         <button class="modal-close" onclick="closeOrderModal()">&times;</button>
       </div>
       <div id="orderModalBody"></div>
@@ -439,351 +267,346 @@
   </div>
 
   <script>
-    let isAuthenticated = false;
-    let allEvents = [];
-    let allOrders = [];
-    let currentEventId = null;
+    let allEvents = [], allOrders = [], currentEventId = null;
+    const pw = () => document.getElementById('adminPassword').value;
+    const authH = () => ({ 'x-admin-password': pw() });
 
-    function setAuthHeader() {
-      return { 'x-admin-password': document.getElementById('adminPassword').value };
-    }
-
-    // ============ AUTH ============
+    // ========== AUTH ==========
     async function login() {
-      const password = document.getElementById('adminPassword').value;
-      if (!password) {
-        alert('Veuillez entrer un mot de passe');
-        return;
-      }
-
+      const password = pw();
+      if (!password) return alert('Mot de passe requis');
       try {
-        const res = await fetch('/api/admin/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password })
-        });
-
-        if (!res.ok) {
-          alert('Mot de passe incorrect');
-          return;
-        }
-
-        isAuthenticated = true;
+        const res = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+        if (!res.ok) return alert('Mot de passe incorrect');
         document.getElementById('loginPage').style.display = 'none';
         document.getElementById('dashboard').classList.add('visible');
-        loadEvents();
-        loadOrders();
-      } catch (err) {
-        alert('Erreur : ' + err.message);
-      }
+        loadEvents(); loadOrders();
+      } catch(e) { alert('Erreur: ' + e.message); }
     }
 
     function logout() {
-      isAuthenticated = false;
       document.getElementById('loginPage').style.display = 'flex';
       document.getElementById('dashboard').classList.remove('visible');
       document.getElementById('adminPassword').value = '';
-      allEvents = [];
-      allOrders = [];
     }
 
-    // ============ TABS ============
-    function switchTab(tabName) {
+    // ========== TABS ==========
+    function switchTab(name, btn) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-      document.getElementById(tabName).classList.add('active');
-      event.target.classList.add('active');
+      document.getElementById(name).classList.add('active');
+      btn.classList.add('active');
     }
 
-    // ============ EVENTS ============
+    // ========== EVENTS ==========
     async function loadEvents() {
       try {
         const res = await fetch('/api/events');
         allEvents = await res.json();
-        renderEvents();
-      } catch (err) {
-        document.getElementById('eventsList').innerHTML = '<div class="empty-state">Erreur: ' + err.message + '</div>';
-      }
+        renderEventsList();
+      } catch(e) { document.getElementById('eventsList').innerHTML = '<div class="empty-state">Erreur</div>'; }
     }
 
-    function renderEvents() {
-      const container = document.getElementById('eventsList');
-      if (allEvents.length === 0) {
-        container.innerHTML = '<div class="empty-state">Aucun événement</div>';
-        return;
-      }
-
-      const html = allEvents.map(event => `
+    function renderEventsList() {
+      const el = document.getElementById('eventsList');
+      if (!allEvents.length) { el.innerHTML = '<div class="empty-state">Aucun evenement</div>'; return; }
+      el.innerHTML = allEvents.map(ev => `
         <div class="event-item">
           <div class="event-info">
-            <h3>${event.name}${event.artist ? ' — ' + event.artist : ''}</h3>
-            <p>${event.location} • ${event.date}</p>
+            <h3>${ev.name}</h3>
+            <p>${ev.location} - ${ev.date}${ev.dates && ev.dates.length > 1 ? ' (' + ev.dates.length + ' dates)' : ''}</p>
           </div>
           <div class="event-actions">
-            <button class="btn btn-primary" onclick="editEvent(${event.id})">✏️ Modifier</button>
-            <button class="btn btn-danger" onclick="deleteEvent(${event.id})">🗑️ Supprimer</button>
+            <button class="btn btn-outline btn-sm" onclick="editEvent(${ev.id})">Modifier</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteEvent(${ev.id})">Supprimer</button>
           </div>
         </div>
       `).join('');
-      container.innerHTML = html;
     }
 
-    function openEventModal(eventId = null) {
-      currentEventId = eventId;
-      const event = eventId ? allEvents.find(e => e.id === eventId) : null;
+    // ========== PRESETS ==========
+    function applyPreset(type) {
+      const presets = {
+        concert: { category: 'Concert', tickets: [{ type: 'Fosse', price: '' }, { type: 'Fosse Or', price: '' }, { type: 'Gradin', price: '' }] },
+        festival: { category: 'Festival', tickets: [{ type: 'Pass 1 jour', price: '' }, { type: 'Pass 2 jours', price: '' }, { type: 'Pass VIP', price: '' }] },
+        spectacle: { category: 'Spectacle', tickets: [{ type: 'Categorie 1', price: '' }, { type: 'Categorie 2', price: '' }, { type: 'Categorie 3', price: '' }] },
+        sport: { category: 'Sport', tickets: [{ type: 'Tribune', price: '' }, { type: 'Pelouse', price: '' }, { type: 'VIP', price: '' }] }
+      };
+      const p = presets[type];
+      document.getElementById('fCategory').value = p.category;
 
-      const form = `
-        <div class="form-group">
-          <label>Nom de l'événement *</label>
-          <input type="text" id="eventName" placeholder="Ex: Sabrina Carpenter" value="${event?.name || ''}" />
+      // Apply to single tickets section
+      const container = document.getElementById('singleTickets');
+      container.innerHTML = '';
+      p.tickets.forEach(t => addTicketRow('singleTickets', t.type, t.price));
+
+      // Also apply to any existing date blocks
+      document.querySelectorAll('.date-tickets').forEach(dt => {
+        dt.innerHTML = '';
+        p.tickets.forEach(t => addTicketRowTo(dt, t.type, t.price));
+      });
+    }
+
+    // ========== TICKET ROWS ==========
+    function addTicketRow(containerId, type = '', price = '') {
+      const container = document.getElementById(containerId);
+      addTicketRowTo(container, type, price);
+    }
+
+    function addTicketRowTo(container, type = '', price = '') {
+      const row = document.createElement('div');
+      row.className = 'ticket-row';
+      row.innerHTML = `
+        <input type="text" placeholder="Type (Fosse, VIP...)" value="${type}" class="t-type" />
+        <input type="number" placeholder="Prix en centimes" value="${price}" class="t-price" />
+        <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">x</button>
+      `;
+      container.appendChild(row);
+    }
+
+    function getTicketsFrom(container) {
+      return Array.from(container.querySelectorAll('.ticket-row')).map(row => ({
+        type: row.querySelector('.t-type').value.trim(),
+        price: parseInt(row.querySelector('.t-price').value) || 0,
+        currency: 'EUR'
+      })).filter(t => t.type && t.price > 0);
+    }
+
+    // ========== MULTI-DATE ==========
+    function toggleMultiDate() {
+      const multi = document.getElementById('fMultiDate').checked;
+      document.getElementById('singleTicketsSection').style.display = multi ? 'none' : 'block';
+      document.getElementById('multiDateSection').style.display = multi ? 'block' : 'none';
+
+      if (multi && document.getElementById('datesContainer').children.length === 0) {
+        addDateBlock();
+      }
+    }
+
+    let dateCounter = 0;
+    function addDateBlock(label = '', time = '', location = '', tickets = []) {
+      dateCounter++;
+      const id = 'dateBlock' + dateCounter;
+      const ticketsId = 'dateTickets' + dateCounter;
+
+      const block = document.createElement('div');
+      block.className = 'date-block';
+      block.id = id;
+      block.innerHTML = `
+        <div class="date-block-header">
+          <h4>Date ${document.getElementById('datesContainer').children.length + 1}</h4>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-outline btn-sm" onclick="duplicateDateBlock('${id}')">Dupliquer</button>
+            <button class="btn btn-danger btn-sm" onclick="document.getElementById('${id}').remove()">Supprimer</button>
+          </div>
         </div>
-        <div class="form-group">
-          <label>Artiste</label>
-          <input type="text" id="eventArtist" placeholder="Ex: Sabrina Carpenter" value="${event?.artist || ''}" />
+        <div class="form-row">
+          <div class="form-group" style="margin:0">
+            <label>Label date</label>
+            <input type="text" class="d-label" placeholder="Ex: 15 mars 2026" value="${label}" />
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Heure</label>
+            <input type="time" class="d-time" value="${time || '20:00'}" />
+          </div>
         </div>
-        <div class="form-group">
-          <label>Date *</label>
-          <input type="date" id="eventDate" value="${event?.date || ''}" />
+        <div class="form-group" style="margin-top:8px">
+          <label>Lieu (si different)</label>
+          <input type="text" class="d-location" placeholder="Meme lieu par defaut" value="${location}" />
         </div>
-        <div class="form-group">
-          <label>Heure</label>
-          <input type="time" id="eventTime" value="${event?.time || ''}" />
-        </div>
-        <div class="form-group">
-          <label>Lieu *</label>
-          <input type="text" id="eventLocation" placeholder="Ex: AccorArena" value="${event?.location || ''}" />
-        </div>
-        <div class="form-group">
-          <label>Catégorie *</label>
-          <input type="text" id="eventCategory" placeholder="Ex: Concert" value="${event?.category || ''}" />
-        </div>
-        <div class="form-group">
-          <label>Description</label>
-          <textarea id="eventDescription">${event?.description || ''}</textarea>
-        </div>
-        <div class="form-group">
-          <label>Image URL</label>
-          <input type="text" id="eventImage" placeholder="https://" value="${event?.image || ''}" />
-        </div>
-        <div id="ticketsContainer">${renderTicketsForm(event?.tickets || [])}</div>
-        <button class="btn btn-primary" style="margin: 16px 0 0 0;" onclick="addTicketType()">+ Ajouter type de billet</button>
-        <div style="margin-top: 20px;">
-          <button class="btn btn-primary" onclick="saveEvent()" style="width: 100%;">${eventId ? 'Mettre à jour' : 'Créer'} l'événement</button>
-        </div>
+        <div class="section-label" style="margin:12px 0 8px;">Billets pour cette date</div>
+        <div class="date-tickets" id="${ticketsId}"></div>
+        <button class="btn btn-outline btn-sm" onclick="addTicketRow('${ticketsId}')" style="margin-top:6px">+ Billet</button>
       `;
 
-      document.getElementById('modalTitle').textContent = eventId ? 'Modifier l\'événement' : 'Ajouter un événement';
-      document.getElementById('eventFormContainer').innerHTML = form;
+      document.getElementById('datesContainer').appendChild(block);
+
+      // Add default tickets or provided ones
+      const ticketsContainer = document.getElementById(ticketsId);
+      if (tickets.length > 0) {
+        tickets.forEach(t => addTicketRowTo(ticketsContainer, t.type, t.price));
+      } else {
+        addTicketRowTo(ticketsContainer, '', '');
+      }
+    }
+
+    function duplicateDateBlock(sourceId) {
+      const source = document.getElementById(sourceId);
+      const label = source.querySelector('.d-label').value;
+      const time = source.querySelector('.d-time').value;
+      const location = source.querySelector('.d-location').value;
+      const tickets = getTicketsFrom(source.querySelector('.date-tickets'));
+      addDateBlock(label, time, location, tickets);
+    }
+
+    // ========== IMAGE UPLOAD ==========
+    async function uploadImage(input) {
+      if (!input.files[0]) return;
+      const formData = new FormData();
+      formData.append('image', input.files[0]);
+      try {
+        const res = await fetch('/api/admin/upload', { method: 'POST', headers: authH(), body: formData });
+        const data = await res.json();
+        if (data.url) document.getElementById('fImage').value = data.url;
+      } catch(e) { alert('Erreur upload: ' + e.message); }
+    }
+
+    // ========== OPEN MODAL ==========
+    function openEventModal(eventId = null) {
+      currentEventId = eventId;
+      const ev = eventId ? allEvents.find(e => e.id === eventId) : null;
+
+      document.getElementById('modalTitle').textContent = ev ? 'Modifier' : 'Nouvel evenement';
+      document.getElementById('saveBtn').textContent = ev ? 'Enregistrer' : 'Creer l\'evenement';
+
+      document.getElementById('fName').value = ev?.name || '';
+      document.getElementById('fArtist').value = ev?.artist || '';
+      document.getElementById('fDate').value = ev?.date || '';
+      document.getElementById('fTime').value = ev?.time || '20:00';
+      document.getElementById('fLocation').value = ev?.location || '';
+      document.getElementById('fCategory').value = ev?.category || '';
+      document.getElementById('fDescription').value = ev?.description || '';
+      document.getElementById('fImage').value = ev?.image || '';
+
+      // Reset tickets
+      document.getElementById('singleTickets').innerHTML = '';
+      document.getElementById('datesContainer').innerHTML = '';
+      dateCounter = 0;
+
+      const hasMultiDates = ev && ev.dates && ev.dates.length > 0;
+      document.getElementById('fMultiDate').checked = hasMultiDates;
+      document.getElementById('singleTicketsSection').style.display = hasMultiDates ? 'none' : 'block';
+      document.getElementById('multiDateSection').style.display = hasMultiDates ? 'block' : 'none';
+
+      if (hasMultiDates) {
+        ev.dates.forEach(d => {
+          addDateBlock(d.label, d.time, d.location, d.tickets || ev.tickets || []);
+        });
+      } else {
+        const tickets = ev?.tickets || [];
+        if (tickets.length > 0) {
+          tickets.forEach(t => addTicketRow('singleTickets', t.type, t.price));
+        } else {
+          addTicketRow('singleTickets');
+        }
+      }
+
       document.getElementById('eventModal').classList.add('visible');
     }
 
-    function renderTicketsForm(tickets) {
-      if (tickets.length === 0) {
-        return `
-          <div class="form-group" style="border: 1px solid var(--gray-200); padding: 16px; border-radius: 8px;">
-            <h4 style="margin-bottom: 12px;">Types de billets</h4>
-            <div class="ticket-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; margin-bottom: 8px;">
-              <input type="text" placeholder="Type (VIP, Normal...)" class="ticket-type" value="" />
-              <input type="number" placeholder="Prix (€)" class="ticket-price" value="" />
-              <select class="ticket-currency"><option value="EUR">EUR</option><option value="USD">USD</option></select>
-              <button class="btn btn-danger" onclick="removeTicketRow(this)">✕</button>
-            </div>
-          </div>
-        `;
-      }
+    function editEvent(id) { openEventModal(id); }
+    function closeEventModal() { document.getElementById('eventModal').classList.remove('visible'); currentEventId = null; }
 
-      return `
-        <div class="form-group" style="border: 1px solid var(--gray-200); padding: 16px; border-radius: 8px;">
-          <h4 style="margin-bottom: 12px;">Types de billets</h4>
-          ${tickets.map((t, i) => `
-            <div class="ticket-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; margin-bottom: 8px;">
-              <input type="text" placeholder="Type" class="ticket-type" value="${t.type}" />
-              <input type="number" placeholder="Prix" class="ticket-price" value="${t.price}" />
-              <select class="ticket-currency"><option value="EUR" ${t.currency === 'EUR' ? 'selected' : ''}>EUR</option><option value="USD" ${t.currency === 'USD' ? 'selected' : ''}>USD</option></select>
-              <button class="btn btn-danger" onclick="removeTicketRow(this)">✕</button>
-            </div>
-          `).join('')}
-        </div>
-      `;
-    }
-
-    function addTicketType() {
-      const container = document.getElementById('ticketsContainer');
-      const html = container.innerHTML;
-      const newRow = `<div class="ticket-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; margin-bottom: 8px;"><input type="text" placeholder="Type" class="ticket-type" /><input type="number" placeholder="Prix" class="ticket-price" /><select class="ticket-currency"><option value="EUR">EUR</option><option value="USD">USD</option></select><button class="btn btn-danger" onclick="removeTicketRow(this)">✕</button></div>`;
-      const endDiv = html.lastIndexOf('</div>');
-      container.innerHTML = html.substring(0, endDiv) + newRow + html.substring(endDiv);
-    }
-
-    function removeTicketRow(btn) {
-      btn.parentElement.remove();
-    }
-
+    // ========== SAVE ==========
     async function saveEvent() {
-      const name = document.getElementById('eventName').value.trim();
-      const date = document.getElementById('eventDate').value;
-      const location = document.getElementById('eventLocation').value.trim();
-      const category = document.getElementById('eventCategory').value.trim();
+      const name = document.getElementById('fName').value.trim();
+      const date = document.getElementById('fDate').value;
+      const location = document.getElementById('fLocation').value.trim();
+      const category = document.getElementById('fCategory').value.trim();
 
-      if (!name || !date || !location || !category) {
-        alert('Veuillez remplir les champs obligatoires');
-        return;
-      }
+      if (!name || !date || !location || !category) return alert('Remplissez les champs obligatoires');
 
-      const tickets = Array.from(document.querySelectorAll('.ticket-row')).map(row => ({
-        type: row.querySelector('.ticket-type').value,
-        price: parseInt(row.querySelector('.ticket-price').value || '0'),
-        currency: row.querySelector('.ticket-currency').value
-      }));
+      const isMulti = document.getElementById('fMultiDate').checked;
+      let tickets = [];
+      let dates = [];
 
-      if (tickets.length === 0) {
-        alert('Ajouter au moins un type de billet');
-        return;
+      if (isMulti) {
+        const blocks = document.getElementById('datesContainer').querySelectorAll('.date-block');
+        if (blocks.length === 0) return alert('Ajoutez au moins une date');
+
+        blocks.forEach(block => {
+          const dateTickets = getTicketsFrom(block.querySelector('.date-tickets'));
+          if (dateTickets.length === 0) return alert('Chaque date doit avoir au moins un billet');
+          dates.push({
+            label: block.querySelector('.d-label').value.trim(),
+            time: block.querySelector('.d-time').value,
+            location: block.querySelector('.d-location').value.trim(),
+            tickets: dateTickets
+          });
+        });
+
+        // Fallback tickets = first date's tickets
+        tickets = dates[0]?.tickets || [];
+      } else {
+        tickets = getTicketsFrom(document.getElementById('singleTickets'));
+        if (tickets.length === 0) return alert('Ajoutez au moins un type de billet');
       }
 
       const payload = {
         name,
-        artist: document.getElementById('eventArtist').value.trim(),
+        artist: document.getElementById('fArtist').value.trim(),
         date,
-        time: document.getElementById('eventTime').value,
-        location,
-        category,
-        description: document.getElementById('eventDescription').value.trim(),
-        image: document.getElementById('eventImage').value.trim(),
-        tickets
+        time: document.getElementById('fTime').value,
+        location, category,
+        description: document.getElementById('fDescription').value.trim(),
+        image: document.getElementById('fImage').value.trim(),
+        tickets,
+        dates: isMulti ? dates : []
       };
 
       try {
         const method = currentEventId ? 'PUT' : 'POST';
         const url = currentEventId ? `/api/admin/events/${currentEventId}` : '/api/admin/events';
-
-        const res = await fetch(url, {
-          method,
-          headers: { ...setAuthHeader(), 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (!res.ok) throw new Error('Erreur serveur');
-
+        const res = await fetch(url, { method, headers: { ...authH(), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (!res.ok) { const d = await res.json(); return alert('Erreur: ' + (d.error || 'Erreur serveur')); }
         closeEventModal();
         loadEvents();
-        alert(currentEventId ? 'Événement modifié' : 'Événement créé');
-      } catch (err) {
-        alert('Erreur: ' + err.message);
-      }
+      } catch(e) { alert('Erreur: ' + e.message); }
     }
 
-    function editEvent(eventId) {
-      openEventModal(eventId);
-    }
-
-    async function deleteEvent(eventId) {
-      if (!confirm('Supprimer cet événement ?')) return;
-
+    async function deleteEvent(id) {
+      if (!confirm('Supprimer cet evenement ?')) return;
       try {
-        const res = await fetch(`/api/admin/events/${eventId}`, {
-          method: 'DELETE',
-          headers: setAuthHeader()
-        });
-
-        if (!res.ok) throw new Error('Erreur');
+        await fetch(`/api/admin/events/${id}`, { method: 'DELETE', headers: authH() });
         loadEvents();
-        alert('Événement supprimé');
-      } catch (err) {
-        alert('Erreur: ' + err.message);
-      }
+      } catch(e) { alert('Erreur'); }
     }
 
-    function closeEventModal() {
-      document.getElementById('eventModal').classList.remove('visible');
-      currentEventId = null;
-    }
-
-    // ============ ORDERS ============
+    // ========== ORDERS ==========
     async function loadOrders() {
       try {
-        const res = await fetch('/api/admin/orders', {
-          headers: setAuthHeader()
-        });
+        const res = await fetch('/api/admin/orders', { headers: authH() });
         allOrders = await res.json();
         renderOrders();
-      } catch (err) {
-        document.getElementById('ordersContainer').innerHTML = '<div class="empty-state">Erreur: ' + err.message + '</div>';
-      }
+      } catch(e) {}
     }
 
     function renderOrders() {
-      const container = document.getElementById('ordersContainer');
-
       document.getElementById('totalOrders').textContent = allOrders.length;
-      const totalRevenue = allOrders.reduce((sum, o) => sum + (o.amount || 0), 0);
-      document.getElementById('totalRevenue').textContent = '€' + (totalRevenue / 100).toFixed(2);
+      const total = allOrders.filter(o => o.status === 'completed').reduce((s, o) => s + (o.amount || 0), 0);
+      document.getElementById('totalRevenue').textContent = (total / 100).toFixed(2) + ' EUR';
 
-      if (allOrders.length === 0) {
-        container.innerHTML = '<div class="empty-state">Aucune commande pour le moment</div>';
-        return;
-      }
+      const el = document.getElementById('ordersContainer');
+      if (!allOrders.length) { el.innerHTML = '<div class="empty-state">Aucune commande</div>'; return; }
 
-      const html = `
-        <table class="orders-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Client</th>
-              <th>Email</th>
-              <th>Montant</th>
-              <th>Date</th>
-              <th>Statut</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${allOrders.map(order => `
-              <tr class="order-row" onclick="openOrderModal(${order.id})">
-                <td>#${order.id}</td>
-                <td>${order.customerName || 'N/A'}</td>
-                <td>${order.customerEmail || 'N/A'}</td>
-                <td>€${(order.amount / 100).toFixed(2)}</td>
-                <td>${new Date(order.createdAt).toLocaleDateString('fr-FR')}</td>
-                <td><span class="status-badge">${order.status}</span></td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-      container.innerHTML = html;
+      el.innerHTML = `<table class="orders-table"><thead><tr><th>#</th><th>Client</th><th>Email</th><th>Montant</th><th>Date</th><th>Statut</th></tr></thead><tbody>
+        ${allOrders.map(o => `<tr class="order-row" onclick="openOrderModal(${o.id})">
+          <td>#${o.id}</td><td>${o.customerName || 'N/A'}</td><td>${o.customerEmail || 'N/A'}</td>
+          <td>${(o.amount / 100).toFixed(2)} EUR</td>
+          <td>${new Date(o.createdAt).toLocaleDateString('fr-FR')}</td>
+          <td><span class="status-badge status-${o.status}">${o.status === 'completed' ? 'Paye' : 'En attente'}</span></td>
+        </tr>`).join('')}
+      </tbody></table>`;
     }
 
-    function openOrderModal(orderId) {
-      const order = allOrders.find(o => o.id === orderId);
-      if (!order) return;
-
-      const html = `
-        <div style="margin-bottom: 16px;">
-          <h3 style="margin-bottom: 12px;">Infos client</h3>
-          <p><strong>Nom:</strong> ${order.customerName || 'N/A'}</p>
-          <p><strong>Email:</strong> ${order.customerEmail || 'N/A'}</p>
-          <p><strong>Montant:</strong> €${(order.amount / 100).toFixed(2)}</p>
-        </div>
-        <div style="margin-bottom: 16px;">
-          <h3 style="margin-bottom: 12px;">Produits</h3>
-          ${(order.products || []).map(p => `<p>• ${p.name} (x${p.quantity})</p>`).join('')}
-        </div>
-        <div>
-          <h3 style="margin-bottom: 12px;">Détails</h3>
-          <p><strong>Date:</strong> ${new Date(order.createdAt).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-          <p><strong>Statut:</strong> <span class="status-badge">${order.status}</span></p>
-          <p><strong>Payment ID:</strong> ${order.paymentId}</p>
-        </div>
+    function openOrderModal(id) {
+      const o = allOrders.find(x => x.id === id);
+      if (!o) return;
+      document.getElementById('orderModalBody').innerHTML = `
+        <p><strong>Client:</strong> ${o.customerName || 'N/A'}</p>
+        <p><strong>Email:</strong> ${o.customerEmail || 'N/A'}</p>
+        <p><strong>Tel:</strong> ${o.customerPhone || 'N/A'}</p>
+        <p><strong>Montant:</strong> ${(o.amount / 100).toFixed(2)} EUR</p>
+        <p style="margin-top:12px"><strong>Produits:</strong></p>
+        ${(o.products || []).map(p => `<p>- ${p.name} x${p.quantity}</p>`).join('')}
+        <p style="margin-top:12px"><strong>Date:</strong> ${new Date(o.createdAt).toLocaleString('fr-FR')}</p>
+        <p><strong>Statut:</strong> <span class="status-badge status-${o.status}">${o.status === 'completed' ? 'Paye' : 'En attente'}</span></p>
+        <p><strong>Payment ID:</strong> ${o.paymentId || 'N/A'}</p>
       `;
-
-      document.getElementById('orderModalBody').innerHTML = html;
       document.getElementById('orderModal').classList.add('visible');
     }
 
-    function closeOrderModal() {
-      document.getElementById('orderModal').classList.remove('visible');
-    }
+    function closeOrderModal() { document.getElementById('orderModal').classList.remove('visible'); }
   </script>
-
 </body>
 </html>

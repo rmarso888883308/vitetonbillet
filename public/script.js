@@ -68,9 +68,17 @@ function renderEvents(events) {
     return;
   }
 
-  const minPrice = (tickets) => {
-    const prices = tickets.map(t => t.price);
-    return Math.min(...prices);
+  const minPrice = (event) => {
+    let allPrices = event.tickets.map(t => t.price);
+    // Inclure les prix des dates si elles ont leurs propres billets
+    if (event.dates && event.dates.length > 0) {
+      event.dates.forEach(d => {
+        if (d.tickets && d.tickets.length > 0) {
+          allPrices = allPrices.concat(d.tickets.map(t => t.price));
+        }
+      });
+    }
+    return Math.min(...allPrices);
   };
 
   grid.innerHTML = events.map(event => {
@@ -98,7 +106,7 @@ function renderEvents(events) {
         <div class="card-footer">
           <div class="card-price-tag">
             <span class="card-price-from">à partir de</span>
-            <span class="card-price-value">${formatPrice(minPrice(event.tickets), event.tickets[0].currency)}</span>
+            <span class="card-price-value">${formatPrice(minPrice(event), event.tickets[0].currency)}</span>
           </div>
           ${event.available
             ? `<button class="card-cta" onclick="event.stopPropagation(); openEvent('${slug}')">Voir les billets</button>`

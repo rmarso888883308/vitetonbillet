@@ -186,12 +186,22 @@ app.post('/api/checkout', async (req, res) => {
   if (!event) return res.status(404).json({ error: 'Événement introuvable' });
   if (!event.available) return res.status(400).json({ error: 'Événement complet' });
 
-  const ticket = event.tickets[parseInt(ticketTypeIndex)];
+  // Billets spécifiques à la date ou billets globaux
+  let tickets = event.tickets;
+  let dateLabel = '';
+  if (event.dates && dateIndex !== undefined && event.dates[dateIndex]) {
+    dateLabel = event.dates[dateIndex].label;
+    if (event.dates[dateIndex].tickets && event.dates[dateIndex].tickets.length > 0) {
+      tickets = event.dates[dateIndex].tickets;
+    }
+  }
+
+  const ticket = tickets[parseInt(ticketTypeIndex)];
   if (!ticket) return res.status(400).json({ error: 'Type de billet invalide' });
 
   let productName = `${event.name} — ${ticket.type}`;
-  if (event.dates && event.dates.length > 1 && dateIndex !== undefined && event.dates[dateIndex]) {
-    productName = `${event.name} — ${event.dates[dateIndex].label} — ${ticket.type}`;
+  if (dateLabel) {
+    productName = `${event.name} — ${dateLabel} — ${ticket.type}`;
   }
 
   const orderProducts = [{
@@ -336,11 +346,18 @@ app.post('/api/admin/events', requireAdmin, (req, res) => {
   };
 
   if (dates && Array.isArray(dates) && dates.length > 0) {
-    newEvent.dates = dates.map(d => ({
-      label: d.label || '',
-      time: d.time || '',
-      location: d.location || ''
-    }));
+    newEvent.dates = dates.map(d => {
+      const dateObj = { label: d.label || '', time: d.time || '', location: d.location || '' };
+      if (d.tickets && Array.isArray(d.tickets) && d.tickets.length > 0) {
+        dateObj.tickets = d.tickets.map(t => ({
+          type: t.type,
+          price: parseInt(t.price),
+          currency: t.currency || 'EUR',
+          maxQuantity: t.maxQuantity ? parseInt(t.maxQuantity) : 10
+        }));
+      }
+      return dateObj;
+    });
   }
 
   events.push(newEvent);
@@ -364,11 +381,18 @@ app.put('/api/admin/events/:id', requireAdmin, (req, res) => {
     }));
   }
   if (req.body.dates && Array.isArray(req.body.dates) && req.body.dates.length > 0) {
-    updated.dates = req.body.dates.map(d => ({
-      label: d.label || '',
-      time: d.time || '',
-      location: d.location || ''
-    }));
+    updated.dates = req.body.dates.map(d => {
+      const dateObj = { label: d.label || '', time: d.time || '', location: d.location || '' };
+      if (d.tickets && Array.isArray(d.tickets) && d.tickets.length > 0) {
+        dateObj.tickets = d.tickets.map(t => ({
+          type: t.type,
+          price: parseInt(t.price),
+          currency: t.currency || 'EUR',
+          maxQuantity: t.maxQuantity ? parseInt(t.maxQuantity) : 10
+        }));
+      }
+      return dateObj;
+    });
   } else if ('dates' in req.body) {
     delete updated.dates;
   }
@@ -408,7 +432,17 @@ app.post('/api/cart-checkout', async (req, res) => {
     if (!event) return res.status(404).json({ error: `Événement introuvable` });
     if (!event.available) return res.status(400).json({ error: `${event.name} est complet` });
 
-    const ticket = event.tickets[parseInt(item.ticketTypeIndex)];
+    // Billets spécifiques à la date ou billets globaux
+    let tickets = event.tickets;
+    let dateLabel = '';
+    if (event.dates && item.dateIndex !== undefined && event.dates[item.dateIndex]) {
+      dateLabel = event.dates[item.dateIndex].label;
+      if (event.dates[item.dateIndex].tickets && event.dates[item.dateIndex].tickets.length > 0) {
+        tickets = event.dates[item.dateIndex].tickets;
+      }
+    }
+
+    const ticket = tickets[parseInt(item.ticketTypeIndex)];
     if (!ticket) return res.status(400).json({ error: 'Type de billet invalide' });
 
     const maxQty = ticket.maxQuantity || 10;
@@ -417,8 +451,8 @@ app.post('/api/cart-checkout', async (req, res) => {
     }
 
     let cartProductName = `${event.name} — ${ticket.type}`;
-    if (event.dates && event.dates.length > 1 && item.dateIndex !== undefined && event.dates[item.dateIndex]) {
-      cartProductName = `${event.name} — ${event.dates[item.dateIndex].label} — ${ticket.type}`;
+    if (dateLabel) {
+      cartProductName = `${event.name} — ${dateLabel} — ${ticket.type}`;
     }
 
     currency = ticket.currency;
