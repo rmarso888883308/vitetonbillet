@@ -179,9 +179,19 @@ img { display: block; max-width: 100%; }
   justify-content: center;
   overflow: hidden;
   background: var(--dark);
-  background-image: url('/images/hero-bg.jpg');
-  background-size: cover;
-  background-position: center;
+}
+
+.hero-video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+  z-index: 0;
 }
 
 .hero-overlay {
