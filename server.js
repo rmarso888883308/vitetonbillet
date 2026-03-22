@@ -13,8 +13,9 @@ const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const INFLOW_API_KEY = process.env.INFLOW_API_KEY;
 const INFLOW_API_BASE = 'https://api.inflowpay.xyz';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'vitetonbillet2026';
-const EVENTS_FILE = path.join(__dirname, 'data', 'events.json');
-const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
+const DATA_DIR = path.join(__dirname, 'data');
+const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 
 // Config multer pour l'upload d'images
 const storage = multer.diskStorage({
@@ -42,6 +43,10 @@ const upload = multer({
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Servir les uploads depuis le volume persistant (data/uploads)
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 // =====================
 // HELPERS
