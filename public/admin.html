@@ -335,15 +335,15 @@
       const p = presets[type];
       document.getElementById('fCategory').value = p.category;
 
-      // Apply to single tickets section
+      // Apply to single tickets section (presets have empty prices)
       const container = document.getElementById('singleTickets');
       container.innerHTML = '';
-      p.tickets.forEach(t => addTicketRow('singleTickets', t.type, t.price));
+      p.tickets.forEach(t => addTicketRow('singleTickets', t.type, ''));
 
       // Also apply to any existing date blocks
       document.querySelectorAll('.date-tickets').forEach(dt => {
         dt.innerHTML = '';
-        p.tickets.forEach(t => addTicketRowTo(dt, t.type, t.price));
+        p.tickets.forEach(t => addTicketRowTo(dt, t.type, ''));
       });
     }
 
@@ -358,7 +358,7 @@
       row.className = 'ticket-row';
       row.innerHTML = `
         <input type="text" placeholder="Type (Fosse, VIP...)" value="${type}" class="t-type" />
-        <input type="number" placeholder="Prix en centimes" value="${price}" class="t-price" />
+        <input type="number" step="0.01" placeholder="Prix en EUR" value="${price}" class="t-price" />
         <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">x</button>
       `;
       container.appendChild(row);
@@ -367,7 +367,7 @@
     function getTicketsFrom(container) {
       return Array.from(container.querySelectorAll('.ticket-row')).map(row => ({
         type: row.querySelector('.t-type').value.trim(),
-        price: parseInt(row.querySelector('.t-price').value) || 0,
+        price: Math.round(parseFloat(row.querySelector('.t-price').value) * 100) || 0,
         currency: 'EUR'
       })).filter(t => t.type && t.price > 0);
     }
@@ -435,7 +435,11 @@
       const label = source.querySelector('.d-label').value;
       const time = source.querySelector('.d-time').value;
       const location = source.querySelector('.d-location').value;
-      const tickets = getTicketsFrom(source.querySelector('.date-tickets'));
+      // Lire les valeurs brutes en EUR (pas getTicketsFrom qui convertit en centimes)
+      const tickets = Array.from(source.querySelectorAll('.date-tickets .ticket-row')).map(row => ({
+        type: row.querySelector('.t-type').value,
+        price: row.querySelector('.t-price').value
+      })).filter(t => t.type);
       addDateBlock(label, time, location, tickets);
     }
 
@@ -480,12 +484,13 @@
 
       if (hasMultiDates) {
         ev.dates.forEach(d => {
-          addDateBlock(d.label, d.time, d.location, d.tickets || ev.tickets || []);
+          const dateTickets = (d.tickets || ev.tickets || []).map(t => ({ ...t, price: (t.price / 100).toFixed(2) }));
+          addDateBlock(d.label, d.time, d.location, dateTickets);
         });
       } else {
         const tickets = ev?.tickets || [];
         if (tickets.length > 0) {
-          tickets.forEach(t => addTicketRow('singleTickets', t.type, t.price));
+          tickets.forEach(t => addTicketRow('singleTickets', t.type, (t.price / 100).toFixed(2)));
         } else {
           addTicketRow('singleTickets');
         }
