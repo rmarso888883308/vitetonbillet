@@ -12,10 +12,9 @@ const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const INFLOW_API_KEY = process.env.INFLOW_API_KEY;
 const INFLOW_API_BASE = 'https://api.inflowpay.xyz';
-const INFLOW_WEBHOOK_SECRET = process.env.INFLOW_WEBHOOK_SECRET || 'your-webhook-secret';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'vitetonbillet2026';
 const PUSHOVER_USER_KEY = process.env.PUSHOVER_USER_KEY;
-const PUSHOVER_API_TOKEN = process.env.PUSHOVER_API_TOKEN || 'a142c51ccfd2a13e9701';
+const PUSHOVER_API_TOKEN = process.env.PUSHOVER_API_TOKEN;
 const DATA_DIR = path.join(__dirname, 'data');
 const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
@@ -195,9 +194,33 @@ app.post('/api/checkout', async (req, res) => {
     productName = `${event.name} — ${event.dates[dateIndex].label} — ${ticket.type}`;
   }
 
+  const orderProducts = [{
+    name: productName,
+    price: ticket.price,
+    quantity: parseInt(quantity)
+  }];
+  const totalAmount = ticket.price * parseInt(quantity);
+
+  // Sauvegarder la commande en "pending"
+  const orders = readOrders();
+  const orderId = getNextOrderId(orders);
+  const newOrder = {
+    id: orderId,
+    status: 'pending',
+    customerEmail: customerEmail || '',
+    customerName: customerName || '',
+    customerPhone: customerPhone || '',
+    products: orderProducts,
+    amount: totalAmount,
+    currency: ticket.currency,
+    createdAt: new Date().toISOString()
+  };
+  orders.push(newOrder);
+  writeOrders(orders);
+
   const payload = {
     currency: ticket.currency,
-    successUrl: `${BASE_URL}/success.html?event=${encodeURIComponent(event.name)}`,
+    successUrl: `${BASE_URL}/success.html?orderId=${orderId}`,
     cancelUrl: `${BASE_URL}/index.html`,
     products: [
       {
@@ -235,7 +258,15 @@ app.post('/api/checkout', async (req, res) => {
       return res.status(response.status).json({ error: data.message || 'Erreur de paiement' });
     }
 
-    res.json({ purchaseUrl: data.purchaseUrl, paymentId: data.paymentId });
+    // Mettre à jour la commande avec le paymentId
+    const updatedOrders = readOrders();
+    const orderIdx = updatedOrders.findIndex(o => o.id === orderId);
+    if (orderIdx !== -1) {
+      updatedOrders[orderIdx].paymentId = data.paymentId;
+      writeOrders(updatedOrders);
+    }
+
+    res.json({ purchaseUrl: data.purchaseUrl, paymentId: data.paymentId, orderId });
   } catch (err) {
     console.error('Server error:', err);
     res.status(500).json({ error: 'Erreur serveur' });
@@ -358,46 +389,6 @@ app.delete('/api/admin/events/:id', requireAdmin, (req, res) => {
   res.json({ success: true });
 });
 
-// POST /api/inflow-webhook — webhook de paiement Inflow
-app.post('/api/inflow-webhook', express.json(), async (req, res) => {
-  try {
-    const { paymentId, status, customerEmail, customerName, amount, products } = req.body;
-
-    // Vérifier que le paiement est confirmé
-    if (status !== 'success' && status !== 'completed') {
-      return res.status(200).json({ received: true });
-    }
-
-    // Créer la commande
-    const orders = readOrders();
-    const newOrder = {
-      id: getNextOrderId(orders),
-      paymentId,
-      status: 'completed',
-      customerEmail,
-      customerName,
-      amount,
-      products,
-      createdAt: new Date().toISOString()
-    };
-
-    orders.push(newOrder);
-    writeOrders(orders);
-
-    // Envoyer notification Pushover
-    const productNames = products.map(p => p.name).join(', ');
-    await sendPushoverNotification(
-      '🎫 Nouvelle vente !',
-      `${customerName}\n${productNames}\n€${(amount / 100).toFixed(2)}`
-    );
-
-    res.status(200).json({ received: true });
-  } catch (err) {
-    console.error('Webhook error:', err);
-    res.status(200).json({ received: true });
-  }
-});
-
 // POST /api/cart-checkout — paiement panier multi-produits
 app.post('/api/cart-checkout', async (req, res) => {
   const { items, customerEmail, customerName, customerPhone } = req.body;
@@ -408,7 +399,9 @@ app.post('/api/cart-checkout', async (req, res) => {
 
   const events = readEvents();
   const products = [];
+  const orderProducts = [];
   let currency = 'EUR';
+  let totalAmount = 0;
 
   for (const item of items) {
     const event = events.find(e => e.id === parseInt(item.eventId));
@@ -429,17 +422,43 @@ app.post('/api/cart-checkout', async (req, res) => {
     }
 
     currency = ticket.currency;
+    const qty = parseInt(item.quantity);
+    totalAmount += ticket.price * qty;
+
     products.push({
       name: cartProductName,
       price: ticket.price,
-      quantity: parseInt(item.quantity),
+      quantity: qty,
       taxRatePercentage: 0
+    });
+
+    orderProducts.push({
+      name: cartProductName,
+      price: ticket.price,
+      quantity: qty
     });
   }
 
+  // Sauvegarder la commande en "pending"
+  const orders = readOrders();
+  const orderId = getNextOrderId(orders);
+  const newOrder = {
+    id: orderId,
+    status: 'pending',
+    customerEmail: customerEmail || '',
+    customerName: customerName || '',
+    customerPhone: customerPhone || '',
+    products: orderProducts,
+    amount: totalAmount,
+    currency,
+    createdAt: new Date().toISOString()
+  };
+  orders.push(newOrder);
+  writeOrders(orders);
+
   const payload = {
     currency,
-    successUrl: `${BASE_URL}/success.html`,
+    successUrl: `${BASE_URL}/success.html?orderId=${orderId}`,
     cancelUrl: `${BASE_URL}/cart.html`,
     products,
     sessionCustomization: {
@@ -470,11 +489,48 @@ app.post('/api/cart-checkout', async (req, res) => {
       return res.status(response.status).json({ error: data.message || 'Erreur de paiement' });
     }
 
-    res.json({ purchaseUrl: data.purchaseUrl });
+    // Mettre à jour avec paymentId
+    const updatedOrders = readOrders();
+    const orderIdx = updatedOrders.findIndex(o => o.id === orderId);
+    if (orderIdx !== -1) {
+      updatedOrders[orderIdx].paymentId = data.paymentId;
+      writeOrders(updatedOrders);
+    }
+
+    res.json({ purchaseUrl: data.purchaseUrl, orderId });
   } catch (err) {
     console.error('Server error:', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
+});
+
+// POST /api/confirm-order — appelé par success.html après paiement
+app.post('/api/confirm-order', async (req, res) => {
+  const { orderId } = req.body;
+  if (!orderId) return res.status(400).json({ error: 'orderId manquant' });
+
+  const orders = readOrders();
+  const idx = orders.findIndex(o => o.id === parseInt(orderId));
+  if (idx === -1) return res.status(404).json({ error: 'Commande introuvable' });
+
+  // Ne confirmer qu'une seule fois
+  if (orders[idx].status === 'completed') {
+    return res.json({ success: true, alreadyConfirmed: true });
+  }
+
+  orders[idx].status = 'completed';
+  orders[idx].completedAt = new Date().toISOString();
+  writeOrders(orders);
+
+  // Notification Pushover
+  const order = orders[idx];
+  const productNames = (order.products || []).map(p => `${p.name} x${p.quantity}`).join('\n');
+  await sendPushoverNotification(
+    'Nouvelle vente ViteTonBillet !',
+    `Client: ${order.customerName || order.customerEmail || 'Anonyme'}\n${productNames}\nTotal: ${(order.amount / 100).toFixed(2)}€`
+  );
+
+  res.json({ success: true });
 });
 
 // Route SEO : /concert-[slug] → event.html

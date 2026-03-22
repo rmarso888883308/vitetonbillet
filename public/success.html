@@ -85,6 +85,19 @@
       el.textContent = name;
       el.style.display = 'block';
     }
+
+    // Confirmer la commande côté serveur (notif Pushover + statut completed)
+    const orderId = params.get('orderId');
+    if (orderId) {
+      fetch('/api/confirm-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: parseInt(orderId) })
+      }).catch(() => {});
+
+      // Vider le panier
+      try { localStorage.removeItem('vtbCart'); } catch {}
+    }
   </script>
 </body>
 </html>
