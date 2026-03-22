@@ -12,10 +12,14 @@ const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const INFLOW_API_KEY = process.env.INFLOW_API_KEY;
 const INFLOW_API_BASE = 'https://api.inflowpay.xyz';
+const INFLOW_WEBHOOK_SECRET = process.env.INFLOW_WEBHOOK_SECRET || 'your-webhook-secret';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'vitetonbillet2026';
+const PUSHOVER_USER_KEY = process.env.PUSHOVER_USER_KEY;
+const PUSHOVER_API_TOKEN = process.env.PUSHOVER_API_TOKEN || 'a142c51ccfd2a13e9701';
 const DATA_DIR = path.join(__dirname, 'data');
 const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
+const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
 
 // Config multer pour l'upload d'images
 const storage = multer.diskStorage({
@@ -92,6 +96,53 @@ function requireAdmin(req, res, next) {
     return res.status(401).json({ error: 'Mot de passe admin incorrect' });
   }
   next();
+}
+
+// =====================
+// ORDERS MANAGEMENT
+// =====================
+function readOrders() {
+  if (!fs.existsSync(ORDERS_FILE)) {
+    fs.mkdirSync(path.dirname(ORDERS_FILE), { recursive: true });
+    fs.writeFileSync(ORDERS_FILE, '[]', 'utf-8');
+    return [];
+  }
+  try {
+    return JSON.parse(fs.readFileSync(ORDERS_FILE, 'utf-8'));
+  } catch {
+    return [];
+  }
+}
+
+function writeOrders(orders) {
+  fs.mkdirSync(path.dirname(ORDERS_FILE), { recursive: true });
+  fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2), 'utf-8');
+}
+
+function getNextOrderId(orders) {
+  if (orders.length === 0) return 1;
+  return Math.max(...orders.map(o => o.id)) + 1;
+}
+
+// Send Pushover notification
+async function sendPushoverNotification(title, message) {
+  if (!PUSHOVER_USER_KEY) return;
+  try {
+    await fetch('https://api.pushover.net/1/messages.json', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        token: PUSHOVER_API_TOKEN,
+        user: PUSHOVER_USER_KEY,
+        title,
+        message,
+        priority: 1,
+        sound: 'cashregister'
+      })
+    });
+  } catch (err) {
+    console.error('Pushover error:', err);
+  }
 }
 
 // =====================
@@ -205,6 +256,20 @@ app.post('/api/admin/login', (req, res) => {
   }
 });
 
+// GET /api/admin/orders — liste des commandes
+app.get('/api/admin/orders', requireAdmin, (req, res) => {
+  const orders = readOrders();
+  res.json(orders.reverse());
+});
+
+// GET /api/admin/orders/:id — détail d'une commande
+app.get('/api/admin/orders/:id', requireAdmin, (req, res) => {
+  const orders = readOrders();
+  const order = orders.find(o => o.id === parseInt(req.params.id));
+  if (!order) return res.status(404).json({ error: 'Commande introuvable' });
+  res.json(order);
+});
+
 // POST /api/admin/upload — upload d'image
 app.post('/api/admin/upload', requireAdmin, upload.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Aucune image envoyée' });
@@ -291,6 +356,46 @@ app.delete('/api/admin/events/:id', requireAdmin, (req, res) => {
   events.splice(idx, 1);
   writeEvents(events);
   res.json({ success: true });
+});
+
+// POST /api/inflow-webhook — webhook de paiement Inflow
+app.post('/api/inflow-webhook', express.json(), async (req, res) => {
+  try {
+    const { paymentId, status, customerEmail, customerName, amount, products } = req.body;
+
+    // Vérifier que le paiement est confirmé
+    if (status !== 'success' && status !== 'completed') {
+      return res.status(200).json({ received: true });
+    }
+
+    // Créer la commande
+    const orders = readOrders();
+    const newOrder = {
+      id: getNextOrderId(orders),
+      paymentId,
+      status: 'completed',
+      customerEmail,
+      customerName,
+      amount,
+      products,
+      createdAt: new Date().toISOString()
+    };
+
+    orders.push(newOrder);
+    writeOrders(orders);
+
+    // Envoyer notification Pushover
+    const productNames = products.map(p => p.name).join(', ');
+    await sendPushoverNotification(
+      '🎫 Nouvelle vente !',
+      `${customerName}\n${productNames}\n€${(amount / 100).toFixed(2)}`
+    );
+
+    res.status(200).json({ received: true });
+  } catch (err) {
+    console.error('Webhook error:', err);
+    res.status(200).json({ received: true });
+  }
 });
 
 // POST /api/cart-checkout — paiement panier multi-produits
