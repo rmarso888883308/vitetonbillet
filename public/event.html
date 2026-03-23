@@ -407,44 +407,42 @@
 
     .hidden { display: none !important; }
 
-    /* FORM FIELDS */
-    .form-inline-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    .form-inline-group label {
-      display: block;
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--gray-600);
-      margin-bottom: 5px;
-    }
-    .form-inline-group input,
-    .purchase-form input[type="text"],
-    .purchase-form input[type="tel"] {
-      width: 100%;
-      padding: 10px 14px;
-      background: var(--gray-50);
+    /* AUTH BANNER */
+    .auth-banner {
+      margin-bottom: 18px;
+      padding: 16px 18px;
+      border-radius: 12px;
       border: 1.5px solid var(--gray-200);
-      border-radius: 10px;
+      background: var(--gray-50);
+    }
+    .auth-banner-logged {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       font-size: 0.9rem;
-      font-family: inherit;
-      outline: none;
-      color: var(--gray-800);
-      transition: border-color 0.2s;
+      color: var(--gray-700);
     }
-    .form-inline-group input:focus,
-    .purchase-form input[type="text"]:focus,
-    .purchase-form input[type="tel"]:focus {
-      border-color: var(--primary);
+    .btn-auth-login, .btn-auth-register {
+      display: inline-block;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      text-decoration: none;
+      text-align: center;
+      flex: 1;
     }
-    .req-star { color: #ef4444; }
-    .form-required-note {
-      font-size: 0.75rem;
-      color: var(--gray-400);
-      margin-top: 10px;
+    .btn-auth-login {
+      background: var(--primary);
+      color: white;
     }
+    .btn-auth-login:hover { background: var(--primary-dark); }
+    .btn-auth-register {
+      background: white;
+      color: var(--primary);
+      border: 1.5px solid var(--primary);
+    }
+    .btn-auth-register:hover { background: var(--primary-50); }
     .seats-note {
       display: flex;
       align-items: center;
@@ -562,25 +560,20 @@
             </p>
 
             <div class="purchase-form">
-              <div class="form-inline-row">
-                <div class="form-inline-group">
-                  <label for="firstName">Prénom <span class="req-star">*</span></label>
-                  <input type="text" id="firstName" placeholder="Prénom" required />
+              <!-- Auth banner -->
+              <div id="authBanner" class="auth-banner" style="display:none">
+                <div class="auth-banner-logged" id="authLogged" style="display:none">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                  <span>Connect&eacute; en tant que <strong id="authUserName"></strong></span>
                 </div>
-                <div class="form-inline-group">
-                  <label for="lastName">Nom <span class="req-star">*</span></label>
-                  <input type="text" id="lastName" placeholder="Nom" required />
+                <div class="auth-banner-guest" id="authGuest" style="display:none">
+                  <p style="margin:0 0 10px;font-size:0.9rem;color:var(--gray-600);">Connectez-vous ou cr&eacute;ez un compte pour commander</p>
+                  <div style="display:flex;gap:8px;">
+                    <a href="/mon-compte?redirect=back" class="btn-auth-login">Se connecter</a>
+                    <a href="/mon-compte?redirect=back&tab=register" class="btn-auth-register">Cr&eacute;er un compte</a>
+                  </div>
                 </div>
               </div>
-              <div class="form-inline-group" style="margin-top:12px">
-                <label for="email">Email <span class="req-star">*</span></label>
-                <input type="email" id="email" placeholder="votre@email.com" required />
-              </div>
-              <div class="form-inline-group" style="margin-top:12px">
-                <label for="phone">Téléphone <span class="req-star">*</span></label>
-                <input type="tel" id="phone" placeholder="+33 6 XX XX XX XX" required />
-              </div>
-              <p class="form-required-note">* Champs obligatoires</p>
 
               <div class="qty-section">
                 <label>Quantité</label>

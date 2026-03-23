@@ -6,7 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
-const nodemailer = require('nodemailer');
+// nodemailer retiré — Railway bloque SMTP, on utilise Resend HTTP API
 
 const multer = require('multer');
 
@@ -18,26 +18,39 @@ const INFLOW_API_BASE = 'https://api.inflowpay.xyz';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'vitetonbillet2026';
 const PUSHOVER_USER_KEY = process.env.PUSHOVER_USER_KEY;
 const PUSHOVER_API_TOKEN = process.env.PUSHOVER_API_TOKEN;
-const SMTP_HOST = process.env.SMTP_HOST || 'smtp.hostinger.com';
-const SMTP_PORT = parseInt(process.env.SMTP_PORT || '465');
-const SMTP_USER = process.env.SMTP_USER || 'contact@vitetonbillet.com';
-const SMTP_PASS = process.env.SMTP_PASS;
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const DATA_DIR = path.join(__dirname, 'data');
 const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
-// SMTP client pour les emails via Hostinger
-const smtpTransport = SMTP_PASS ? nodemailer.createTransport({
-  host: SMTP_HOST,
-  port: SMTP_PORT,
-  secure: SMTP_PORT === 465,
-  ...(SMTP_PORT !== 465 ? { requireTLS: true } : {}),
-  auth: { user: SMTP_USER, pass: SMTP_PASS },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000
-}) : null;
+// Envoyer un email via Resend HTTP API (pas de SMTP, pas de port bloqué)
+async function sendEmail({ to, subject, html }) {
+  if (!RESEND_API_KEY) { console.log('RESEND_API_KEY manquant, email non envoyé'); return false; }
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'ViteTonBillet <contact@vitetonbillet.com>',
+        to: [to],
+        subject,
+        html
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) { console.error('Resend error:', data); return false; }
+    console.log(`Email envoyé à ${to} (id: ${data.id})`);
+    return true;
+  } catch (err) {
+    console.error('Erreur envoi email:', err);
+    return false;
+  }
+}
 
 // Config multer pour l'upload d'images
 const storage = multer.diskStorage({
@@ -288,18 +301,12 @@ function buildOrderEmailHtml(order) {
 
 // Envoyer email de confirmation
 async function sendOrderConfirmationEmail(order) {
-  if (!smtpTransport || !order.customerEmail) return;
-  try {
-    await smtpTransport.sendMail({
-      from: `"ViteTonBillet" <${SMTP_USER}>`,
-      to: order.customerEmail,
-      subject: `Commande #${order.id} confirmée — ViteTonBillet`,
-      html: buildOrderEmailHtml(order)
-    });
-    console.log(`Email de confirmation envoyé à ${order.customerEmail}`);
-  } catch (err) {
-    console.error('Erreur envoi email:', err);
-  }
+  if (!order.customerEmail) return;
+  await sendEmail({
+    to: order.customerEmail,
+    subject: `Commande #${order.id} confirmée — ViteTonBillet`,
+    html: buildOrderEmailHtml(order)
+  });
 }
 
 // =====================
@@ -470,7 +477,7 @@ app.post('/api/admin/login', (req, res) => {
 
 // POST /api/admin/test-email — tester l'envoi d'email
 app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
-  if (!smtpTransport) return res.status(500).json({ error: 'SMTP non configuré (SMTP_PASS manquant)' });
+  if (!RESEND_API_KEY) return res.status(500).json({ error: 'RESEND_API_KEY non configuré' });
   const { to } = req.body;
   if (!to) return res.status(400).json({ error: 'Adresse email requise' });
   try {
@@ -483,13 +490,16 @@ app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
       currency: 'EUR',
       createdAt: new Date().toISOString()
     };
-    await smtpTransport.sendMail({
-      from: `"ViteTonBillet" <${SMTP_USER}>`,
-      to: to,
-      subject: `[TEST] Commande #9999 confirmée — ViteTonBillet`,
+    const ok = await sendEmail({
+      to,
+      subject: '[TEST] Commande #9999 confirmée — ViteTonBillet',
       html: buildOrderEmailHtml(testOrder)
     });
-    res.json({ success: true, message: `Email test envoyé à ${to}` });
+    if (ok) {
+      res.json({ success: true, message: `Email test envoyé à ${to}` });
+    } else {
+      res.status(500).json({ error: 'Échec envoi — vérifie que le domaine est vérifié sur Resend' });
+    }
   } catch (err) {
     console.error('Erreur test email:', err);
     res.status(500).json({ error: err.message });
@@ -866,18 +876,12 @@ function buildWelcomeEmailHtml(user) {
 }
 
 async function sendWelcomeEmail(user) {
-  if (!smtpTransport || !user.email) return;
-  try {
-    await smtpTransport.sendMail({
-      from: `"ViteTonBillet" <${SMTP_USER}>`,
-      to: user.email,
-      subject: `Bienvenue sur ViteTonBillet !`,
-      html: buildWelcomeEmailHtml(user)
-    });
-    console.log(`Email de bienvenue envoyé à ${user.email}`);
-  } catch (err) {
-    console.error('Erreur envoi email bienvenue:', err);
-  }
+  if (!user.email) return;
+  await sendEmail({
+    to: user.email,
+    subject: 'Bienvenue sur ViteTonBillet !',
+    html: buildWelcomeEmailHtml(user)
+  });
 }
 
 // POST /api/auth/register — inscription
