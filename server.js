@@ -6,7 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 
 const multer = require('multer');
 
@@ -18,15 +18,23 @@ const INFLOW_API_BASE = 'https://api.inflowpay.xyz';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'vitetonbillet2026';
 const PUSHOVER_USER_KEY = process.env.PUSHOVER_USER_KEY;
 const PUSHOVER_API_TOKEN = process.env.PUSHOVER_API_TOKEN;
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const SMTP_HOST = process.env.SMTP_HOST || 'smtp.hostinger.com';
+const SMTP_PORT = parseInt(process.env.SMTP_PORT || '465');
+const SMTP_USER = process.env.SMTP_USER || 'contact@vitetonbillet.com';
+const SMTP_PASS = process.env.SMTP_PASS;
 const DATA_DIR = path.join(__dirname, 'data');
 const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
-// Resend client pour les emails
-const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
+// SMTP client pour les emails via Hostinger
+const smtpTransport = SMTP_PASS ? nodemailer.createTransport({
+  host: SMTP_HOST,
+  port: SMTP_PORT,
+  secure: SMTP_PORT === 465,
+  auth: { user: SMTP_USER, pass: SMTP_PASS }
+}) : null;
 
 // Config multer pour l'upload d'images
 const storage = multer.diskStorage({
@@ -277,15 +285,15 @@ function buildOrderEmailHtml(order) {
 
 // Envoyer email de confirmation
 async function sendOrderConfirmationEmail(order) {
-  if (!resend || !order.customerEmail) return;
+  if (!smtpTransport || !order.customerEmail) return;
   try {
-    await resend.emails.send({
-      from: 'ViteTonBillet <contact@vitetonbillet.com>',
+    await smtpTransport.sendMail({
+      from: `"ViteTonBillet" <${SMTP_USER}>`,
       to: order.customerEmail,
-      subject: `Commande #${order.id} confirmee — ViteTonBillet`,
+      subject: `Commande #${order.id} confirmée — ViteTonBillet`,
       html: buildOrderEmailHtml(order)
     });
-    console.log(`Email de confirmation envoye a ${order.customerEmail}`);
+    console.log(`Email de confirmation envoyé à ${order.customerEmail}`);
   } catch (err) {
     console.error('Erreur envoi email:', err);
   }
