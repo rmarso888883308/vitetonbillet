@@ -4,6 +4,9 @@ const cors = require('cors');
 const fetch = require('node-fetch');
 const path = require('path');
 const fs = require('fs');
+const bcrypt = require('bcryptjs');
+const { v4: uuidv4 } = require('uuid');
+const { Resend } = require('resend');
 
 const multer = require('multer');
 
@@ -15,10 +18,15 @@ const INFLOW_API_BASE = 'https://api.inflowpay.xyz';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'vitetonbillet2026';
 const PUSHOVER_USER_KEY = process.env.PUSHOVER_USER_KEY;
 const PUSHOVER_API_TOKEN = process.env.PUSHOVER_API_TOKEN;
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const DATA_DIR = path.join(__dirname, 'data');
 const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+
+// Resend client pour les emails
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
 // Config multer pour l'upload d'images
 const storage = multer.diskStorage({
@@ -141,6 +149,145 @@ async function sendPushoverNotification(title, message) {
     });
   } catch (err) {
     console.error('Pushover error:', err);
+  }
+}
+
+// =====================
+// USERS MANAGEMENT
+// =====================
+function readUsers() {
+  if (!fs.existsSync(USERS_FILE)) {
+    fs.mkdirSync(path.dirname(USERS_FILE), { recursive: true });
+    fs.writeFileSync(USERS_FILE, '[]', 'utf-8');
+    return [];
+  }
+  try {
+    return JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8'));
+  } catch {
+    return [];
+  }
+}
+
+function writeUsers(users) {
+  fs.mkdirSync(path.dirname(USERS_FILE), { recursive: true });
+  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf-8');
+}
+
+function findUserByToken(token) {
+  if (!token) return null;
+  const users = readUsers();
+  return users.find(u => u.token === token) || null;
+}
+
+function requireAuth(req, res, next) {
+  const token = req.headers['authorization']?.replace('Bearer ', '');
+  const user = findUserByToken(token);
+  if (!user) return res.status(401).json({ error: 'Non connecte' });
+  req.user = user;
+  next();
+}
+
+// =====================
+// EMAIL — TEMPLATE HTML PRO
+// =====================
+function buildOrderEmailHtml(order) {
+  const productsHtml = (order.products || []).map(p => `
+    <tr>
+      <td style="padding:12px 16px;border-bottom:1px solid #eef2f7;font-size:14px;color:#334155;">${p.name}</td>
+      <td style="padding:12px 16px;border-bottom:1px solid #eef2f7;font-size:14px;color:#334155;text-align:center;">${p.quantity}</td>
+      <td style="padding:12px 16px;border-bottom:1px solid #eef2f7;font-size:14px;color:#334155;text-align:right;font-weight:600;">${((p.price * p.quantity) / 100).toFixed(2)} &euro;</td>
+    </tr>
+  `).join('');
+
+  const totalEur = (order.amount / 100).toFixed(2);
+
+  return `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.06);">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#050033,#0e0847);padding:32px 40px;text-align:center;">
+            <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:800;letter-spacing:-0.02em;">ViteTonBillet</h1>
+            <p style="margin:8px 0 0;color:rgba(255,255,255,0.6);font-size:13px;">Votre billetterie en ligne</p>
+          </td>
+        </tr>
+
+        <!-- Content -->
+        <tr>
+          <td style="padding:40px;">
+            <div style="text-align:center;margin-bottom:32px;">
+              <div style="width:56px;height:56px;background:#dcfce7;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;">
+                <span style="font-size:28px;">&#10003;</span>
+              </div>
+              <h2 style="margin:0 0 8px;font-size:22px;color:#0f172a;font-weight:800;">Commande confirmee !</h2>
+              <p style="margin:0;color:#64748b;font-size:14px;">Commande #${order.id} du ${new Date(order.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            </div>
+
+            <!-- Order details -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;border:1px solid #eef2f7;border-radius:12px;overflow:hidden;">
+              <tr style="background:#f8fafc;">
+                <td style="padding:10px 16px;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Article</td>
+                <td style="padding:10px 16px;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;text-align:center;">Qte</td>
+                <td style="padding:10px 16px;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;text-align:right;">Prix</td>
+              </tr>
+              ${productsHtml}
+              <tr style="background:#f8fafc;">
+                <td colspan="2" style="padding:14px 16px;font-size:15px;font-weight:800;color:#0f172a;">Total</td>
+                <td style="padding:14px 16px;font-size:15px;font-weight:800;color:#0f172a;text-align:right;">${totalEur} &euro;</td>
+              </tr>
+            </table>
+
+            <!-- Info box -->
+            <div style="background:#eff6ff;border:1px solid #dbeafe;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+              <p style="margin:0;font-size:13px;color:#1e40af;line-height:1.6;">
+                <strong>Livraison de vos billets :</strong> Vos billets electroniques vous seront envoyes par email sous 24h. Pensez a verifier vos spams.
+              </p>
+            </div>
+
+            <!-- CTA -->
+            <div style="text-align:center;margin-bottom:16px;">
+              <a href="${BASE_URL}/mon-compte" style="display:inline-block;padding:14px 36px;background:#3b82f6;color:#ffffff;font-weight:700;font-size:14px;border-radius:10px;text-decoration:none;">Suivre ma commande</a>
+            </div>
+
+            <p style="text-align:center;color:#94a3b8;font-size:12px;margin:0;">
+              Une question ? Contactez-nous sur <a href="https://x.com/Vitetonbillet" style="color:#3b82f6;">X (@Vitetonbillet)</a> ou par email a <a href="mailto:contact@vitetonbillet.com" style="color:#3b82f6;">contact@vitetonbillet.com</a>
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#f8fafc;padding:20px 40px;text-align:center;border-top:1px solid #eef2f7;">
+            <p style="margin:0;color:#94a3b8;font-size:11px;">&copy; 2026 ViteTonBillet — Tous droits reserves</p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+// Envoyer email de confirmation
+async function sendOrderConfirmationEmail(order) {
+  if (!resend || !order.customerEmail) return;
+  try {
+    await resend.emails.send({
+      from: 'ViteTonBillet <contact@vitetonbillet.com>',
+      to: order.customerEmail,
+      subject: `Commande #${order.id} confirmee — ViteTonBillet`,
+      html: buildOrderEmailHtml(order)
+    });
+    console.log(`Email de confirmation envoye a ${order.customerEmail}`);
+  } catch (err) {
+    console.error('Erreur envoi email:', err);
   }
 }
 
@@ -564,7 +711,112 @@ app.post('/api/confirm-order', async (req, res) => {
     `Client: ${order.customerName || order.customerEmail || 'Anonyme'}\n${productNames}\nTotal: ${(order.amount / 100).toFixed(2)}€`
   );
 
+  // Email de confirmation au client
+  await sendOrderConfirmationEmail(order);
+
+  // Lier la commande au compte utilisateur si l'email correspond
+  if (order.customerEmail) {
+    const users = readUsers();
+    const user = users.find(u => u.email.toLowerCase() === order.customerEmail.toLowerCase());
+    if (user) {
+      if (!user.orderIds) user.orderIds = [];
+      if (!user.orderIds.includes(order.id)) {
+        user.orderIds.push(order.id);
+        writeUsers(users);
+      }
+    }
+  }
+
   res.json({ success: true });
+});
+
+// =====================
+// USER ACCOUNT API
+// =====================
+
+// POST /api/auth/register — inscription
+app.post('/api/auth/register', async (req, res) => {
+  const { email, password, firstName, lastName } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });
+  if (password.length < 6) return res.status(400).json({ error: 'Mot de passe trop court (6 caracteres minimum)' });
+
+  const users = readUsers();
+  if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+    return res.status(409).json({ error: 'Un compte existe deja avec cet email' });
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const token = uuidv4();
+  const newUser = {
+    id: uuidv4(),
+    email: email.toLowerCase().trim(),
+    password: hashedPassword,
+    firstName: firstName || '',
+    lastName: lastName || '',
+    token,
+    orderIds: [],
+    createdAt: new Date().toISOString()
+  };
+
+  // Lier les commandes existantes avec cet email
+  const orders = readOrders();
+  orders.forEach(o => {
+    if (o.customerEmail && o.customerEmail.toLowerCase() === newUser.email) {
+      newUser.orderIds.push(o.id);
+    }
+  });
+
+  users.push(newUser);
+  writeUsers(users);
+
+  res.json({ token, user: { email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName } });
+});
+
+// POST /api/auth/login — connexion
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });
+
+  const users = readUsers();
+  const user = users.find(u => u.email === email.toLowerCase().trim());
+  if (!user) return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
+
+  const valid = await bcrypt.compare(password, user.password);
+  if (!valid) return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
+
+  // Renouveler le token
+  user.token = uuidv4();
+  writeUsers(users);
+
+  res.json({ token: user.token, user: { email: user.email, firstName: user.firstName, lastName: user.lastName } });
+});
+
+// GET /api/auth/me — profil utilisateur
+app.get('/api/auth/me', requireAuth, (req, res) => {
+  res.json({
+    email: req.user.email,
+    firstName: req.user.firstName,
+    lastName: req.user.lastName,
+    createdAt: req.user.createdAt
+  });
+});
+
+// GET /api/auth/orders — commandes de l'utilisateur
+app.get('/api/auth/orders', requireAuth, (req, res) => {
+  const orders = readOrders();
+  const userOrders = orders.filter(o => {
+    // Par orderIds lies au compte
+    if (req.user.orderIds && req.user.orderIds.includes(o.id)) return true;
+    // Ou par email correspondant
+    if (o.customerEmail && o.customerEmail.toLowerCase() === req.user.email) return true;
+    return false;
+  });
+  res.json(userOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+});
+
+// Route /mon-compte → page compte
+app.get('/mon-compte', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'account.html'));
 });
 
 // Route SEO : /concert-[slug] → event.html
