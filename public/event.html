@@ -879,19 +879,44 @@
       if (quantity < max) { quantity++; document.getElementById('qtyVal').textContent = quantity; updateTotal(); }
     });
 
+    // ─── AUTH HELPERS ───
+    function getUserToken() {
+      return localStorage.getItem('vtb_token') || null;
+    }
+    function getUserInfo() {
+      try { return JSON.parse(localStorage.getItem('vtb_user') || '{}'); } catch { return {}; }
+    }
+    function checkAuth() {
+      const banner = document.getElementById('authBanner');
+      banner.style.display = 'block';
+      const token = getUserToken();
+      if (token) {
+        const info = getUserInfo();
+        document.getElementById('authLogged').style.display = 'flex';
+        document.getElementById('authGuest').style.display = 'none';
+        document.getElementById('authUserName').textContent = `${info.firstName || ''} ${info.lastName || ''}`.trim() || info.email || '';
+        document.getElementById('payBtn').disabled = false;
+        document.getElementById('addCartBtn').disabled = false;
+      } else {
+        document.getElementById('authLogged').style.display = 'none';
+        document.getElementById('authGuest').style.display = 'block';
+        document.getElementById('payBtn').disabled = false;
+        document.getElementById('addCartBtn').disabled = false;
+      }
+    }
+    function requireLogin() {
+      if (!getUserToken()) {
+        const currentUrl = encodeURIComponent(window.location.href);
+        window.location.href = `/mon-compte?redirect=${currentUrl}`;
+        return false;
+      }
+      return true;
+    }
+
     // ─── PAY NOW ───
     document.getElementById('payBtn').addEventListener('click', async () => {
       if (!event) return;
-      const firstName = document.getElementById('firstName').value.trim();
-      const lastName = document.getElementById('lastName').value.trim();
-      const email = document.getElementById('email').value.trim();
-      const phone = document.getElementById('phone').value.trim();
-
-      if (!firstName || !lastName || !email || !phone) {
-        trackClarity('form_error', 'fields_incomplete');
-        alert('Veuillez remplir tous les champs obligatoires (prénom, nom, email, téléphone).');
-        return;
-      }
+      if (!requireLogin()) return;
 
       const btn = document.getElementById('payBtn');
       const text = document.getElementById('payText');
@@ -910,9 +935,7 @@
             eventId: event.id,
             ticketTypeIndex: selectedTicket,
             quantity,
-            customerEmail: email,
-            customerName: `${firstName} ${lastName}`,
-            customerPhone: phone,
+            userToken: getUserToken(),
             dateIndex: (event.dates && event.dates.length > 1) ? selectedDate : undefined
           })
         });
@@ -933,6 +956,7 @@
 
     // ─── ADD TO CART ───
     document.getElementById('addCartBtn').addEventListener('click', () => {
+      if (!requireLogin()) return;
       trackClarity('funnel', 'added_to_cart');
       if (!event) return;
       const cart = getCart();
@@ -979,6 +1003,7 @@
       document.getElementById('header').classList.toggle('scrolled', window.scrollY > 10);
     });
 
+    checkAuth();
     loadEvent();
   </script>
 </body>

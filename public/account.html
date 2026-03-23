@@ -345,10 +345,14 @@
               <input type="email" id="regEmail" placeholder="votre@email.com" required />
             </div>
             <div class="form-group">
+              <label for="regPhone">T&eacute;l&eacute;phone</label>
+              <input type="tel" id="regPhone" placeholder="+33 6 XX XX XX XX" />
+            </div>
+            <div class="form-group">
               <label for="regPassword">Mot de passe</label>
               <input type="password" id="regPassword" placeholder="Minimum 6 caracteres" required minlength="6" />
             </div>
-            <button type="submit" class="auth-btn" id="registerBtn">Creer mon compte</button>
+            <button type="submit" class="auth-btn" id="registerBtn">Cr&eacute;er mon compte</button>
           </form>
         </div>
       </div>
@@ -375,13 +379,26 @@
     const USER_KEY = 'vtb_user';
 
     // Check si deja connecte
+    function getRedirectUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('redirect') || null;
+    }
+    function doRedirect() {
+      const url = getRedirectUrl();
+      if (url) { window.location.href = decodeURIComponent(url); return true; }
+      return false;
+    }
     function init() {
       const token = localStorage.getItem(TOKEN_KEY);
       const user = localStorage.getItem(USER_KEY);
       if (token && user) {
+        if (doRedirect()) return; // Si deja connecte et redirect demande, y aller
         showDashboard(JSON.parse(user));
         loadOrders(token);
       }
+      // Si tab=register dans l'URL, afficher l'onglet inscription
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('tab') === 'register') switchAuthTab('register');
       updateCartCount();
     }
 
@@ -423,6 +440,7 @@
         if (!res.ok) { showError(data.error); return; }
         localStorage.setItem(TOKEN_KEY, data.token);
         localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+        if (doRedirect()) return; // Retour à la page précédente
         showDashboard(data.user);
         loadOrders(data.token);
       } catch (err) {
@@ -446,13 +464,15 @@
             email: document.getElementById('regEmail').value,
             password: document.getElementById('regPassword').value,
             firstName: document.getElementById('regFirstName').value,
-            lastName: document.getElementById('regLastName').value
+            lastName: document.getElementById('regLastName').value,
+            phone: document.getElementById('regPhone').value
           })
         });
         const data = await res.json();
         if (!res.ok) { showError(data.error); return; }
         localStorage.setItem(TOKEN_KEY, data.token);
         localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+        if (doRedirect()) return; // Retour à la page précédente
         showDashboard(data.user);
         loadOrders(data.token);
       } catch (err) {
