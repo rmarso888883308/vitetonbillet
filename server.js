@@ -33,7 +33,10 @@ const smtpTransport = SMTP_PASS ? nodemailer.createTransport({
   host: SMTP_HOST,
   port: SMTP_PORT,
   secure: SMTP_PORT === 465,
-  auth: { user: SMTP_USER, pass: SMTP_PASS }
+  ...(SMTP_PORT !== 465 ? { requireTLS: true } : {}),
+  auth: { user: SMTP_USER, pass: SMTP_PASS },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000
 }) : null;
 
 // Config multer pour l'upload d'images
