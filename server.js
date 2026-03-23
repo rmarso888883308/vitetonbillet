@@ -43,7 +43,8 @@ async function sendEmail({ to, subject, html }) {
       })
     });
     const data = await res.json();
-    if (!res.ok) { console.error('Resend error:', data); return false; }
+    console.log('Resend response status:', res.status, 'data:', JSON.stringify(data));
+    if (!res.ok) { console.error('Resend error:', res.status, JSON.stringify(data)); return false; }
     console.log(`Email envoyé à ${to} (id: ${data.id})`);
     return true;
   } catch (err) {
@@ -490,15 +491,26 @@ app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
       currency: 'EUR',
       createdAt: new Date().toISOString()
     };
-    const ok = await sendEmail({
-      to,
-      subject: '[TEST] Commande #9999 confirmée — ViteTonBillet',
-      html: buildOrderEmailHtml(testOrder)
+    // Appel direct pour avoir l'erreur exacte
+    const emailRes = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'ViteTonBillet <contact@vitetonbillet.com>',
+        to: [to],
+        subject: '[TEST] Commande #9999 confirmée — ViteTonBillet',
+        html: buildOrderEmailHtml(testOrder)
+      })
     });
-    if (ok) {
-      res.json({ success: true, message: `Email test envoyé à ${to}` });
+    const emailData = await emailRes.json();
+    console.log('Test email Resend response:', emailRes.status, JSON.stringify(emailData));
+    if (emailRes.ok) {
+      res.json({ success: true, message: `Email test envoyé à ${to} (id: ${emailData.id})` });
     } else {
-      res.status(500).json({ error: 'Échec envoi — vérifie que le domaine est vérifié sur Resend' });
+      res.status(500).json({ error: `Resend: ${emailData.message || JSON.stringify(emailData)}` });
     }
   } catch (err) {
     console.error('Erreur test email:', err);
@@ -522,9 +534,9 @@ app.post('/api/admin/test-pushover', requireAdmin, async (req, res) => {
   }
 });
 
-// GET /api/admin/orders — liste des commandes
+// GET /api/admin/orders — liste des commandes (uniquement payées)
 app.get('/api/admin/orders', requireAdmin, (req, res) => {
-  const orders = readOrders();
+  const orders = readOrders().filter(o => o.status === 'completed');
   res.json(orders.reverse());
 });
 
@@ -960,6 +972,7 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
 app.get('/api/auth/orders', requireAuth, (req, res) => {
   const orders = readOrders();
   const userOrders = orders.filter(o => {
+    if (o.status !== 'completed') return false; // Uniquement les commandes payées
     // Par orderIds lies au compte
     if (req.user.orderIds && req.user.orderIds.includes(o.id)) return true;
     // Ou par email correspondant

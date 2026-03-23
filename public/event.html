@@ -560,21 +560,6 @@
             </p>
 
             <div class="purchase-form">
-              <!-- Auth banner -->
-              <div id="authBanner" class="auth-banner" style="display:none">
-                <div class="auth-banner-logged" id="authLogged" style="display:none">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
-                  <span>Connect&eacute; en tant que <strong id="authUserName"></strong></span>
-                </div>
-                <div class="auth-banner-guest" id="authGuest" style="display:none">
-                  <p style="margin:0 0 10px;font-size:0.9rem;color:var(--gray-600);">Connectez-vous ou cr&eacute;ez un compte pour commander</p>
-                  <div style="display:flex;gap:8px;">
-                    <a href="/mon-compte?redirect=back" class="btn-auth-login">Se connecter</a>
-                    <a href="/mon-compte?redirect=back&tab=register" class="btn-auth-register">Cr&eacute;er un compte</a>
-                  </div>
-                </div>
-              </div>
-
               <div class="qty-section">
                 <label>Quantité</label>
                 <div class="qty-row">
@@ -886,24 +871,6 @@
     function getUserInfo() {
       try { return JSON.parse(localStorage.getItem('vtb_user') || '{}'); } catch { return {}; }
     }
-    function checkAuth() {
-      const banner = document.getElementById('authBanner');
-      banner.style.display = 'block';
-      const token = getUserToken();
-      if (token) {
-        const info = getUserInfo();
-        document.getElementById('authLogged').style.display = 'flex';
-        document.getElementById('authGuest').style.display = 'none';
-        document.getElementById('authUserName').textContent = `${info.firstName || ''} ${info.lastName || ''}`.trim() || info.email || '';
-        document.getElementById('payBtn').disabled = false;
-        document.getElementById('addCartBtn').disabled = false;
-      } else {
-        document.getElementById('authLogged').style.display = 'none';
-        document.getElementById('authGuest').style.display = 'block';
-        document.getElementById('payBtn').disabled = false;
-        document.getElementById('addCartBtn').disabled = false;
-      }
-    }
     function requireLogin() {
       if (!getUserToken()) {
         const currentUrl = encodeURIComponent(window.location.href);
@@ -1003,7 +970,6 @@
       document.getElementById('header').classList.toggle('scrolled', window.scrollY > 10);
     });
 
-    checkAuth();
     loadEvent();
   </script>
 </body>
