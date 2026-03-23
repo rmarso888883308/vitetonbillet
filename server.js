@@ -330,10 +330,23 @@ app.get('/api/events/:id', (req, res) => {
 
 // POST /api/checkout — paiement Inflow
 app.post('/api/checkout', async (req, res) => {
-  const { eventId, ticketTypeIndex, quantity, customerEmail, customerName, customerPhone, dateIndex } = req.body;
+  const { eventId, ticketTypeIndex, quantity, customerEmail, customerName, customerPhone, dateIndex, userToken } = req.body;
 
   if (!eventId || ticketTypeIndex === undefined || !quantity) {
     return res.status(400).json({ error: 'Paramètres manquants' });
+  }
+
+  // Si un token utilisateur est fourni, utiliser les infos du compte
+  let finalEmail = customerEmail || '';
+  let finalName = customerName || '';
+  let finalPhone = customerPhone || '';
+  if (userToken) {
+    const user = findUserByToken(userToken);
+    if (user) {
+      finalEmail = user.email;
+      finalName = `${user.firstName} ${user.lastName}`.trim();
+      finalPhone = user.phone || '';
+    }
   }
 
   const events = readEvents();
@@ -372,9 +385,9 @@ app.post('/api/checkout', async (req, res) => {
   const newOrder = {
     id: orderId,
     status: 'pending',
-    customerEmail: customerEmail || '',
-    customerName: customerName || '',
-    customerPhone: customerPhone || '',
+    customerEmail: finalEmail,
+    customerName: finalName,
+    customerPhone: finalPhone,
     products: orderProducts,
     amount: totalAmount,
     currency: ticket.currency,
@@ -402,9 +415,9 @@ app.post('/api/checkout', async (req, res) => {
     }
   };
 
-  if (customerEmail) payload.customerEmail = customerEmail;
-  if (customerName) payload.customerName = customerName;
-  if (customerPhone) payload.customerPhone = customerPhone;
+  if (finalEmail) payload.customerEmail = finalEmail;
+  if (finalName) payload.customerName = finalName;
+  if (finalPhone) payload.customerPhone = finalPhone;
 
   try {
     const response = await fetch(`${INFLOW_API_BASE}/api/payment`, {
@@ -449,6 +462,50 @@ app.post('/api/admin/login', (req, res) => {
     res.json({ success: true });
   } else {
     res.status(401).json({ error: 'Mot de passe incorrect' });
+  }
+});
+
+// POST /api/admin/test-email — tester l'envoi d'email
+app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
+  if (!smtpTransport) return res.status(500).json({ error: 'SMTP non configuré (SMTP_PASS manquant)' });
+  const { to } = req.body;
+  if (!to) return res.status(400).json({ error: 'Adresse email requise' });
+  try {
+    const testOrder = {
+      id: 9999,
+      customerName: 'Test Client',
+      customerEmail: to,
+      products: [{ name: 'Concert Test — Fosse Or', price: 4500, quantity: 2 }],
+      amount: 9000,
+      currency: 'EUR',
+      createdAt: new Date().toISOString()
+    };
+    await smtpTransport.sendMail({
+      from: `"ViteTonBillet" <${SMTP_USER}>`,
+      to: to,
+      subject: `[TEST] Commande #9999 confirmée — ViteTonBillet`,
+      html: buildOrderEmailHtml(testOrder)
+    });
+    res.json({ success: true, message: `Email test envoyé à ${to}` });
+  } catch (err) {
+    console.error('Erreur test email:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/test-pushover — tester la notification Pushover
+app.post('/api/admin/test-pushover', requireAdmin, async (req, res) => {
+  if (!PUSHOVER_USER_KEY || !PUSHOVER_API_TOKEN) {
+    return res.status(500).json({ error: 'Pushover non configuré (PUSHOVER_USER_KEY ou PUSHOVER_API_TOKEN manquant)' });
+  }
+  try {
+    await sendPushoverNotification(
+      'Test ViteTonBillet',
+      'Si tu vois cette notification, Pushover fonctionne !'
+    );
+    res.json({ success: true, message: 'Notification Pushover envoyée !' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -570,10 +627,23 @@ app.delete('/api/admin/events/:id', requireAdmin, (req, res) => {
 
 // POST /api/cart-checkout — paiement panier multi-produits
 app.post('/api/cart-checkout', async (req, res) => {
-  const { items, customerEmail, customerName, customerPhone } = req.body;
+  const { items, customerEmail, customerName, customerPhone, userToken } = req.body;
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'Panier vide' });
+  }
+
+  // Si un token utilisateur est fourni, utiliser les infos du compte
+  let finalEmail = customerEmail || '';
+  let finalName = customerName || '';
+  let finalPhone = customerPhone || '';
+  if (userToken) {
+    const user = findUserByToken(userToken);
+    if (user) {
+      finalEmail = user.email;
+      finalName = `${user.firstName} ${user.lastName}`.trim();
+      finalPhone = user.phone || '';
+    }
   }
 
   const events = readEvents();
@@ -634,9 +704,9 @@ app.post('/api/cart-checkout', async (req, res) => {
   const newOrder = {
     id: orderId,
     status: 'pending',
-    customerEmail: customerEmail || '',
-    customerName: customerName || '',
-    customerPhone: customerPhone || '',
+    customerEmail: finalEmail,
+    customerName: finalName,
+    customerPhone: finalPhone,
     products: orderProducts,
     amount: totalAmount,
     currency,
@@ -657,9 +727,9 @@ app.post('/api/cart-checkout', async (req, res) => {
     }
   };
 
-  if (customerEmail) payload.customerEmail = customerEmail;
-  if (customerName) payload.customerName = customerName;
-  if (customerPhone) payload.customerPhone = customerPhone;
+  if (finalEmail) payload.customerEmail = finalEmail;
+  if (finalName) payload.customerName = finalName;
+  if (finalPhone) payload.customerPhone = finalPhone;
 
   try {
     const response = await fetch(`${INFLOW_API_BASE}/api/payment`, {
@@ -742,9 +812,74 @@ app.post('/api/confirm-order', async (req, res) => {
 // USER ACCOUNT API
 // =====================
 
+// Email de bienvenue
+function buildWelcomeEmailHtml(user) {
+  return `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.06);">
+        <tr>
+          <td style="background:linear-gradient(135deg,#050033,#0e0847);padding:32px 40px;text-align:center;">
+            <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:800;letter-spacing:-0.02em;">ViteTonBillet</h1>
+            <p style="margin:8px 0 0;color:rgba(255,255,255,0.6);font-size:13px;">Votre billetterie en ligne</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:40px;">
+            <div style="text-align:center;margin-bottom:32px;">
+              <div style="width:56px;height:56px;background:#dcfce7;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;">
+                <span style="font-size:28px;">&#127881;</span>
+              </div>
+              <h2 style="margin:0 0 8px;font-size:22px;color:#0f172a;font-weight:800;">Bienvenue ${user.firstName || ''} !</h2>
+              <p style="margin:0;color:#64748b;font-size:14px;">Votre compte ViteTonBillet a bien &eacute;t&eacute; cr&eacute;&eacute;.</p>
+            </div>
+            <div style="background:#eff6ff;border:1px solid #dbeafe;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+              <p style="margin:0;font-size:13px;color:#1e40af;line-height:1.6;">
+                Vous pouvez d&eacute;sormais commander vos billets en un clic et retrouver l'historique de toutes vos commandes dans votre espace <strong>Mon Compte</strong>.
+              </p>
+            </div>
+            <div style="text-align:center;margin-bottom:16px;">
+              <a href="${BASE_URL}" style="display:inline-block;padding:14px 36px;background:#3b82f6;color:#ffffff;font-weight:700;font-size:14px;border-radius:10px;text-decoration:none;">D&eacute;couvrir les &eacute;v&eacute;nements</a>
+            </div>
+            <p style="text-align:center;color:#94a3b8;font-size:12px;margin:0;">
+              Une question ? Contactez-nous sur <a href="https://x.com/Vitetonbillet" style="color:#3b82f6;">X (@Vitetonbillet)</a> ou par email &agrave; <a href="mailto:contact@vitetonbillet.com" style="color:#3b82f6;">contact@vitetonbillet.com</a>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f8fafc;padding:20px 40px;text-align:center;border-top:1px solid #eef2f7;">
+            <p style="margin:0;color:#94a3b8;font-size:11px;">&copy; 2026 ViteTonBillet &mdash; Tous droits r&eacute;serv&eacute;s</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+async function sendWelcomeEmail(user) {
+  if (!smtpTransport || !user.email) return;
+  try {
+    await smtpTransport.sendMail({
+      from: `"ViteTonBillet" <${SMTP_USER}>`,
+      to: user.email,
+      subject: `Bienvenue sur ViteTonBillet !`,
+      html: buildWelcomeEmailHtml(user)
+    });
+    console.log(`Email de bienvenue envoyé à ${user.email}`);
+  } catch (err) {
+    console.error('Erreur envoi email bienvenue:', err);
+  }
+}
+
 // POST /api/auth/register — inscription
 app.post('/api/auth/register', async (req, res) => {
-  const { email, password, firstName, lastName } = req.body;
+  const { email, password, firstName, lastName, phone } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });
   if (password.length < 6) return res.status(400).json({ error: 'Mot de passe trop court (6 caracteres minimum)' });
 
@@ -761,6 +896,7 @@ app.post('/api/auth/register', async (req, res) => {
     password: hashedPassword,
     firstName: firstName || '',
     lastName: lastName || '',
+    phone: phone || '',
     token,
     orderIds: [],
     createdAt: new Date().toISOString()
@@ -777,7 +913,10 @@ app.post('/api/auth/register', async (req, res) => {
   users.push(newUser);
   writeUsers(users);
 
-  res.json({ token, user: { email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName } });
+  // Envoyer email de bienvenue
+  sendWelcomeEmail(newUser);
+
+  res.json({ token, user: { email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName, phone: newUser.phone } });
 });
 
 // POST /api/auth/login — connexion
@@ -796,7 +935,7 @@ app.post('/api/auth/login', async (req, res) => {
   user.token = uuidv4();
   writeUsers(users);
 
-  res.json({ token: user.token, user: { email: user.email, firstName: user.firstName, lastName: user.lastName } });
+  res.json({ token: user.token, user: { email: user.email, firstName: user.firstName, lastName: user.lastName, phone: user.phone } });
 });
 
 // GET /api/auth/me — profil utilisateur
@@ -805,6 +944,7 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
     email: req.user.email,
     firstName: req.user.firstName,
     lastName: req.user.lastName,
+    phone: req.user.phone,
     createdAt: req.user.createdAt
   });
 });

@@ -141,6 +141,7 @@
       <div class="tab-nav">
         <button class="tab-btn active" onclick="switchTab('events', this)">Evenements</button>
         <button class="tab-btn" onclick="switchTab('orders', this)">Commandes</button>
+        <button class="tab-btn" onclick="switchTab('tests', this)">Tests</button>
       </div>
 
       <!-- EVENTS TAB -->
@@ -162,6 +163,27 @@
           </div>
         </div>
         <div id="ordersContainer"></div>
+      </div>
+
+      <!-- TESTS TAB -->
+      <div id="tests" class="tab-content">
+        <div style="max-width:500px;">
+          <h3 style="margin-bottom:16px;font-size:1.1rem;">Tester l'envoi d'email</h3>
+          <p style="color:var(--gray-500);font-size:0.85rem;margin-bottom:16px;">Envoie un email de confirmation test pour v&eacute;rifier que le SMTP fonctionne.</p>
+          <div class="form-group">
+            <label>Email destinataire</label>
+            <input type="email" id="testEmailTo" placeholder="ton@email.com" />
+          </div>
+          <button class="btn btn-primary" onclick="testEmail()" id="testEmailBtn">Envoyer email test</button>
+          <div id="testEmailResult" style="margin-top:12px;font-size:0.9rem;"></div>
+
+          <hr style="margin:32px 0;border:none;border-top:1px solid var(--gray-200);">
+
+          <h3 style="margin-bottom:16px;font-size:1.1rem;">Tester Pushover</h3>
+          <p style="color:var(--gray-500);font-size:0.85rem;margin-bottom:16px;">Envoie une notification test sur ton t&eacute;l&eacute;phone.</p>
+          <button class="btn btn-primary" onclick="testPushover()" id="testPushoverBtn">Envoyer notification test</button>
+          <div id="testPushoverResult" style="margin-top:12px;font-size:0.9rem;"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -296,6 +318,53 @@
       document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
       document.getElementById(name).classList.add('active');
       btn.classList.add('active');
+    }
+
+    // ========== TESTS ==========
+    async function testEmail() {
+      const to = document.getElementById('testEmailTo').value.trim();
+      if (!to) return alert('Entre une adresse email');
+      const btn = document.getElementById('testEmailBtn');
+      const result = document.getElementById('testEmailResult');
+      btn.disabled = true; btn.textContent = 'Envoi en cours...';
+      try {
+        const res = await fetch('/api/admin/test-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authH() },
+          body: JSON.stringify({ to })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          result.innerHTML = '<span style="color:var(--success);font-weight:600;">Email envoy\u00e9 ! V\u00e9rifie ta bo\u00eete mail.</span>';
+        } else {
+          result.innerHTML = '<span style="color:var(--danger);font-weight:600;">Erreur : ' + (data.error || 'Inconnue') + '</span>';
+        }
+      } catch(e) {
+        result.innerHTML = '<span style="color:var(--danger);">Erreur : ' + e.message + '</span>';
+      }
+      btn.disabled = false; btn.textContent = 'Envoyer email test';
+    }
+
+    async function testPushover() {
+      const btn = document.getElementById('testPushoverBtn');
+      const result = document.getElementById('testPushoverResult');
+      btn.disabled = true; btn.textContent = 'Envoi en cours...';
+      try {
+        const res = await fetch('/api/admin/test-pushover', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authH() },
+          body: '{}'
+        });
+        const data = await res.json();
+        if (res.ok) {
+          result.innerHTML = '<span style="color:var(--success);font-weight:600;">Notification envoy\u00e9e ! V\u00e9rifie ton t\u00e9l\u00e9phone.</span>';
+        } else {
+          result.innerHTML = '<span style="color:var(--danger);font-weight:600;">Erreur : ' + (data.error || 'Inconnue') + '</span>';
+        }
+      } catch(e) {
+        result.innerHTML = '<span style="color:var(--danger);">Erreur : ' + e.message + '</span>';
+      }
+      btn.disabled = false; btn.textContent = 'Envoyer notification test';
     }
 
     // ========== EVENTS ==========
