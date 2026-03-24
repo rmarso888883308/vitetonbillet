@@ -676,6 +676,30 @@ img { display: block; max-width: 100%; }
   transform: none;
 }
 
+/* ── Bouton Afficher plus ── */
+.show-more-btn {
+  display: block;
+  margin: 40px auto 0;
+  padding: 14px 48px;
+  background: transparent;
+  border: 2px solid var(--primary);
+  color: var(--primary);
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s;
+  letter-spacing: 0.02em;
+}
+
+.show-more-btn:hover {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(59,130,246,0.4);
+  transform: translateY(-2px);
+}
+
 /* ===========================
    LOADER
 =========================== */

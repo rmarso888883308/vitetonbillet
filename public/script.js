@@ -4,6 +4,7 @@
 let allEvents = [];
 let currentCategory = 'all';
 let currentSearch = '';
+let visibleCount = 6;
 
 // =====================
 // HELPERS
@@ -81,7 +82,11 @@ function renderEvents(events) {
     return Math.min(...allPrices);
   };
 
-  grid.innerHTML = events.map(event => {
+  // Afficher seulement visibleCount événements
+  const eventsToShow = events.slice(0, visibleCount);
+  const hasMore = events.length > visibleCount;
+
+  grid.innerHTML = eventsToShow.map(event => {
     const slug = event.slug || event.id;
     return `
     <div class="card${event.available ? '' : ' sold-out'}" onclick="${event.available ? `openEvent('${slug}')` : ''}">
@@ -116,6 +121,23 @@ function renderEvents(events) {
     </div>
   `;
   }).join('');
+
+  // Bouton "Afficher plus"
+  const existingBtn = document.getElementById('showMoreBtn');
+  if (existingBtn) existingBtn.remove();
+
+  if (hasMore) {
+    const remaining = events.length - visibleCount;
+    const btn = document.createElement('button');
+    btn.id = 'showMoreBtn';
+    btn.className = 'show-more-btn';
+    btn.textContent = `Afficher plus (${remaining} restant${remaining > 1 ? 's' : ''})`;
+    btn.addEventListener('click', () => {
+      visibleCount += 6;
+      filterAndRender();
+    });
+    grid.parentNode.insertBefore(btn, grid.nextSibling);
+  }
 }
 
 // =====================
@@ -162,6 +184,7 @@ const searchClear = document.getElementById('searchClear');
 if (searchInput) {
   searchInput.addEventListener('input', () => {
     currentSearch = searchInput.value.trim();
+    visibleCount = 6;
     searchClear.style.display = currentSearch ? 'flex' : 'none';
     filterAndRender();
   });
@@ -184,6 +207,7 @@ document.getElementById('filters').addEventListener('click', (e) => {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   currentCategory = btn.dataset.category;
+  visibleCount = 6;
   filterAndRender();
 });
 
