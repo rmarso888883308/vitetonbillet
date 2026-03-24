@@ -215,7 +215,7 @@ document.getElementById('filters').addEventListener('click', (e) => {
 // NAVIGATION VERS PAGE ÉVÉNEMENT
 // =====================
 function openEvent(slug) {
-  try { if (typeof window.clarity === 'function') window.clarity('set', 'funnel', 'clicked_reserve'); } catch {}
+  /* tracking removed */
   window.location.href = '/concert-' + slug;
 }
 
