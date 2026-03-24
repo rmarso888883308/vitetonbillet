@@ -326,7 +326,7 @@
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .secure-line {
+    .secure-line, .delivery-line {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -592,7 +592,11 @@
 
               <div class="secure-line">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                Paiement 100% sécurisé via Inflow
+                Paiement 100% s&eacute;curis&eacute; via Inflow
+              </div>
+              <div class="delivery-line" id="deliveryLine" style="display:none">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                <span id="deliveryText"></span>
               </div>
             </div>
           </div>
@@ -765,6 +769,17 @@
       const artistEl = document.getElementById('evArtist');
       if (event.artist) { artistEl.textContent = event.artist; }
       else { artistEl.style.display = 'none'; }
+
+      // Delivery info
+      const deliveryLine = document.getElementById('deliveryLine');
+      const deliveryText = document.getElementById('deliveryText');
+      if (event.deliveryInfo === 'avant-event') {
+        deliveryText.textContent = 'Billets envoy\u00e9s \u00e0 l\u2019approche de l\u2019\u00e9v\u00e9nement';
+        deliveryLine.style.display = 'flex';
+      } else {
+        deliveryText.textContent = 'Billets envoy\u00e9s sous 24h';
+        deliveryLine.style.display = 'flex';
+      }
 
       // Multi-date selector
       if (event.dates && event.dates.length > 1) {
