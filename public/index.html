@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <!-- Visitors Analytics -->
-  <script src="https://cdn.visitors.now/v.js" data-token="ab803124-7cd1-4c6d-b457-bb355c3c892f" data-persist></script>
+  <script async src="https://cdn.visitors.now/v.js" data-token="ab803124-7cd1-4c6d-b457-bb355c3c892f" data-persist></script>
 </head>
 <body>
 
@@ -366,6 +366,11 @@
     <span class="floating-contact-label">Nous contacter</span>
   </a>
 
+  <script>
+  function toggleFaq(b){var i=b.closest('.faq-item'),o=i.classList.contains('open');document.querySelectorAll('.faq-item.open').forEach(function(e){e.classList.remove('open')});if(!o)i.classList.add('open')}
+  function updateCartCount(){try{var c=JSON.parse(localStorage.getItem('vtbCart')||'{"items":[]}'),n=c.items.reduce(function(s,i){return s+i.quantity},0),e=document.getElementById('cartCount');if(e){if(n>0){e.textContent=n;e.style.display='flex'}else{e.style.display='none'}}}catch(x){}}
+  updateCartCount();
+  </script>
   <script src="script.js"></script>
   <script src="main.js"></script>
 </body>

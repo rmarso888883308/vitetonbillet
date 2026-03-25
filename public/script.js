@@ -1,10 +1,10 @@
 // =====================
 // STATE
 // =====================
-let allEvents = [];
-let currentCategory = 'all';
-let currentSearch = '';
-let visibleCount = 6;
+var allEvents = [];
+var currentCategory = 'all';
+var currentSearch = '';
+var visibleCount = 6;
 
 // =====================
 // HELPERS
