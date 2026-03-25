@@ -392,6 +392,17 @@
       }
     } catch {}
 
+    // ─── FAQ toggle (doit etre defini AVANT le tracking) ───
+    function toggleFaq(btn) {
+      const item = btn.closest('.faq-item');
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+      if (!wasOpen) {
+        item.classList.add('open');
+        vTrack('faq_open', { question: btn.querySelector('span')?.textContent || '' });
+      }
+    }
+
     // ─── TRACK: Navigation header ───
     document.querySelectorAll('.nav a, .mobile-nav a').forEach(link => {
       link.addEventListener('click', () => {
@@ -424,8 +435,14 @@
       heroSearch.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
-          vTrack('hero_search_enter', { query: heroSearch.value.trim() });
-          document.getElementById('events').scrollIntoView({ behavior: 'smooth' });
+          currentSearch = heroSearch.value.trim();
+          const mainSearch = document.getElementById('searchInput');
+          if (mainSearch) mainSearch.value = heroSearch.value;
+          filterAndRender();
+          vTrack('hero_search_enter', { query: currentSearch });
+          setTimeout(() => {
+            document.getElementById('events').scrollIntoView({ behavior: 'smooth' });
+          }, 100);
         }
       });
     }
@@ -436,19 +453,7 @@
       if (btn) vTrack('filter_category', { category: btn.dataset.category || btn.textContent.trim() });
     });
 
-    // ─── TRACK: FAQ clicks ───
-    function toggleFaq(btn) {
-      const item = btn.closest('.faq-item');
-      const wasOpen = item.classList.contains('open');
-      document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
-      if (!wasOpen) {
-        item.classList.add('open');
-        const question = btn.querySelector('span')?.textContent || '';
-        vTrack('faq_open', { question: question });
-      } else {
-        vTrack('faq_close');
-      }
-    }
+    // toggleFaq defini plus haut
 
     // ─── TRACK: Reviews section visibility ───
     const reviewsSection = document.getElementById('reviews');
