@@ -1,24 +1,49 @@
-// =====================
-// STATE
-// =====================
+// =============================================
+// ViteTonBillet - Script principal
+// Compatible tous navigateurs (Safari inclus)
+// =============================================
+
+// ─── STATE ───
 var allEvents = [];
 var currentCategory = 'all';
 var currentSearch = '';
 var visibleCount = 6;
 
-// =====================
-// HELPERS
-// =====================
-function formatPrice(cents, currency = 'EUR') {
+// ─── TRACKING (Visitors) ───
+function vt(name, props) {
+  try {
+    if (typeof visitors !== 'undefined' && visitors.track) {
+      visitors.track(name, props || {});
+    }
+  } catch (e) {}
+}
+
+// ─── IDENTIFY USER ───
+function identifyUser() {
+  try {
+    var u = JSON.parse(localStorage.getItem('vtb_user') || '{}');
+    if (u.id && typeof visitors !== 'undefined' && visitors.identify) {
+      visitors.identify({
+        id: String(u.id),
+        email: u.email || '',
+        name: ((u.firstName || '') + ' ' + (u.lastName || '')).trim()
+      });
+    }
+  } catch (e) {}
+}
+
+// ─── HELPERS ───
+function formatPrice(cents, currency) {
+  currency = currency || 'EUR';
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
-    currency,
+    currency: currency,
     minimumFractionDigits: 2
   }).format(cents / 100);
 }
 
 function icon(name) {
-  const icons = {
+  var icons = {
     calendar: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
     clock: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
     pin: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
@@ -27,167 +52,172 @@ function icon(name) {
   return icons[name] || '';
 }
 
-// =====================
-// CHARGER LES ÉVÉNEMENTS
-// =====================
-async function loadEvents() {
-  try {
-    const res = await fetch('/api/events');
-    allEvents = await res.json();
-    buildFilters();
-    filterAndRender();
-  } catch {
-    document.getElementById('eventsGrid').innerHTML =
-      '<div class="empty-state">Impossible de charger les événements. Vérifiez que le serveur est lancé.</div>';
+function normalize(str) {
+  return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+// ─── CHARGER LES EVENEMENTS ───
+function loadEvents() {
+  fetch('/api/events')
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      allEvents = data;
+      buildFilters();
+      filterAndRender();
+    })
+    .catch(function () {
+      var grid = document.getElementById('eventsGrid');
+      if (grid) grid.innerHTML = '<div class="empty-state">Impossible de charger les evenements.</div>';
+    });
+}
+
+// ─── CONSTRUIRE LES FILTRES ───
+function buildFilters() {
+  var seen = {};
+  var categories = [];
+  for (var i = 0; i < allEvents.length; i++) {
+    var cat = allEvents[i].category;
+    if (cat && !seen[cat]) {
+      seen[cat] = true;
+      categories.push(cat);
+    }
+  }
+  var filtersEl = document.getElementById('filters');
+  if (!filtersEl) return;
+  filtersEl.innerHTML = '<button class="filter-btn active" data-category="all">Tous</button>';
+  for (var j = 0; j < categories.length; j++) {
+    filtersEl.innerHTML += '<button class="filter-btn" data-category="' + categories[j] + '">' + categories[j] + '</button>';
   }
 }
 
-// =====================
-// CONSTRUIRE LES FILTRES
-// =====================
-function buildFilters() {
-  const categories = [...new Set(allEvents.map(e => e.category))];
-  const filtersEl = document.getElementById('filters');
-  filtersEl.innerHTML = '<button class="filter-btn active" data-category="all">Tous</button>';
-  categories.forEach(cat => {
-    filtersEl.innerHTML += `<button class="filter-btn" data-category="${cat}">${cat}</button>`;
-  });
-}
-
-// =====================
-// RENDU DES CARTES
-// =====================
+// ─── RENDU DES CARTES ───
 function renderEvents(events) {
-  const grid = document.getElementById('eventsGrid');
+  var grid = document.getElementById('eventsGrid');
+  if (!grid) return;
 
   if (events.length === 0) {
-    grid.innerHTML = `<div class="empty-state">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:rgba(255,255,255,0.25);margin-bottom:12px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <p style="color:rgba(255,255,255,0.5);font-weight:500">Aucun résultat trouvé</p>
-      <p style="color:rgba(255,255,255,0.35);font-size:0.85rem">Essayez un autre terme de recherche ou une autre catégorie</p>
-    </div>`;
+    grid.innerHTML = '<div class="empty-state">' +
+      '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:rgba(255,255,255,0.25);margin-bottom:12px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+      '<p style="color:rgba(255,255,255,0.5);font-weight:500">Aucun resultat trouve</p>' +
+      '<p style="color:rgba(255,255,255,0.35);font-size:0.85rem">Essayez un autre terme de recherche ou une autre categorie</p>' +
+      '</div>';
     return;
   }
 
-  const minPrice = (event) => {
-    let allPrices = event.tickets.map(t => t.price);
-    // Inclure les prix des dates si elles ont leurs propres billets
-    if (event.dates && event.dates.length > 0) {
-      event.dates.forEach(d => {
-        if (d.tickets && d.tickets.length > 0) {
-          allPrices = allPrices.concat(d.tickets.map(t => t.price));
-        }
-      });
+  function minPrice(event) {
+    var prices = [];
+    for (var i = 0; i < event.tickets.length; i++) {
+      prices.push(event.tickets[i].price);
     }
-    return Math.min(...allPrices);
-  };
+    if (event.dates && event.dates.length > 0) {
+      for (var d = 0; d < event.dates.length; d++) {
+        if (event.dates[d].tickets) {
+          for (var t = 0; t < event.dates[d].tickets.length; t++) {
+            prices.push(event.dates[d].tickets[t].price);
+          }
+        }
+      }
+    }
+    return Math.min.apply(null, prices);
+  }
 
-  // Afficher seulement visibleCount événements
-  const eventsToShow = events.slice(0, visibleCount);
-  const hasMore = events.length > visibleCount;
+  var eventsToShow = events.slice(0, visibleCount);
+  var hasMore = events.length > visibleCount;
+  var html = '';
 
-  grid.innerHTML = eventsToShow.map(event => {
-    const slug = event.slug || event.id;
-    return `
-    <div class="card${event.available ? '' : ' sold-out'}" onclick="${event.available ? `openEvent('${slug}')` : ''}">
-      <div class="card-img-wrap">
-        <img class="card-img" src="${event.image}" alt="Affiche du concert de ${event.artist || event.name}" loading="lazy" />
-        <div class="card-img-overlay"></div>
-        <span class="card-cat">${event.category}</span>
-        ${!event.available ? '<div class="sold-out-label">Complet</div>' : ''}
-        <div class="card-img-info">
-          <h3 class="card-title">${event.name}</h3>
-          ${event.artist ? `<span class="card-artist">${event.artist}</span>` : ''}
-        </div>
-      </div>
-      <div class="card-body">
-        <h3 class="card-title">${event.name}</h3>
-        ${event.artist ? `<span class="card-artist">${event.artist}</span>` : ''}
-        <div class="card-details">
-          <div class="card-detail">${icon('calendar')} <span>${event.dates && event.dates.length > 1 ? event.dates.length + ' dates disponibles' : event.date}</span></div>
-          <div class="card-detail">${icon('clock')} <span>${event.dates && event.dates.length > 1 ? (event.dates[0].time || event.time) : event.time}</span></div>
-          <div class="card-detail">${icon('pin')} <span>${event.dates && event.dates.length > 1 ? (event.dates[0].location || event.location) : event.location}</span></div>
-        </div>
-        <div class="card-footer">
-          <div class="card-price-tag">
-            <span class="card-price-from">à partir de</span>
-            <span class="card-price-value">${formatPrice(minPrice(event), event.tickets[0].currency)}</span>
-          </div>
-          ${event.available
-            ? `<button class="card-cta" onclick="event.stopPropagation(); openEvent('${slug}')">Voir les billets</button>`
-            : `<button class="card-cta" disabled>Complet</button>`}
-        </div>
-      </div>
-    </div>
-  `;
-  }).join('');
+  for (var i = 0; i < eventsToShow.length; i++) {
+    var ev = eventsToShow[i];
+    var slug = ev.slug || ev.id;
+    var dateText = ev.dates && ev.dates.length > 1 ? ev.dates.length + ' dates disponibles' : ev.date;
+    var timeText = ev.dates && ev.dates.length > 1 ? (ev.dates[0].time || ev.time) : ev.time;
+    var locText = ev.dates && ev.dates.length > 1 ? (ev.dates[0].location || ev.location) : ev.location;
+
+    html += '<div class="card' + (ev.available ? '' : ' sold-out') + '" onclick="' + (ev.available ? "openEvent('" + slug + "')" : '') + '">' +
+      '<div class="card-img-wrap">' +
+        '<img class="card-img" src="' + ev.image + '" alt="Affiche du concert de ' + (ev.artist || ev.name) + '" loading="lazy" />' +
+        '<div class="card-img-overlay"></div>' +
+        '<span class="card-cat">' + ev.category + '</span>' +
+        (!ev.available ? '<div class="sold-out-label">Complet</div>' : '') +
+        '<div class="card-img-info"><h3 class="card-title">' + ev.name + '</h3>' +
+        (ev.artist ? '<span class="card-artist">' + ev.artist + '</span>' : '') +
+        '</div></div>' +
+      '<div class="card-body">' +
+        '<h3 class="card-title">' + ev.name + '</h3>' +
+        (ev.artist ? '<span class="card-artist">' + ev.artist + '</span>' : '') +
+        '<div class="card-details">' +
+          '<div class="card-detail">' + icon('calendar') + ' <span>' + dateText + '</span></div>' +
+          '<div class="card-detail">' + icon('clock') + ' <span>' + timeText + '</span></div>' +
+          '<div class="card-detail">' + icon('pin') + ' <span>' + locText + '</span></div>' +
+        '</div>' +
+        '<div class="card-footer">' +
+          '<div class="card-price-tag"><span class="card-price-from">a partir de</span>' +
+          '<span class="card-price-value">' + formatPrice(minPrice(ev), ev.tickets[0].currency) + '</span></div>' +
+          (ev.available
+            ? '<button class="card-cta" onclick="event.stopPropagation(); openEvent(\'' + slug + '\')">Voir les billets</button>'
+            : '<button class="card-cta" disabled>Complet</button>') +
+        '</div></div></div>';
+  }
+
+  grid.innerHTML = html;
 
   // Bouton "Afficher plus"
-  const existingBtn = document.getElementById('showMoreBtn');
+  var existingBtn = document.getElementById('showMoreBtn');
   if (existingBtn) existingBtn.remove();
 
   if (hasMore) {
-    const remaining = events.length - visibleCount;
-    const btn = document.createElement('button');
+    var remaining = events.length - visibleCount;
+    var btn = document.createElement('button');
     btn.id = 'showMoreBtn';
     btn.className = 'show-more-btn';
-    btn.textContent = `Afficher plus (${remaining} restant${remaining > 1 ? 's' : ''})`;
-    btn.addEventListener('click', () => {
+    btn.textContent = 'Afficher plus (' + remaining + ' restant' + (remaining > 1 ? 's' : '') + ')';
+    btn.addEventListener('click', function () {
       visibleCount += 6;
       filterAndRender();
+      vt('load_more_events');
     });
     grid.parentNode.insertBefore(btn, grid.nextSibling);
   }
 }
 
-// =====================
-// SEARCH + FILTRES
-// =====================
-function normalize(str) {
-  return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-}
-
+// ─── FILTRER ET AFFICHER ───
 function filterAndRender() {
-  let filtered = allEvents;
+  var filtered = allEvents;
 
-  // Category filter
   if (currentCategory !== 'all') {
-    filtered = filtered.filter(ev => ev.category === currentCategory);
+    filtered = filtered.filter(function (ev) { return ev.category === currentCategory; });
   }
 
-  // Search filter
   if (currentSearch) {
-    const q = normalize(currentSearch);
-    filtered = filtered.filter(ev => {
-      const text = normalize([ev.name, ev.artist, ev.location, ev.date, ev.category].join(' '));
-      return text.includes(q);
+    var q = normalize(currentSearch);
+    filtered = filtered.filter(function (ev) {
+      var text = normalize([ev.name, ev.artist, ev.location, ev.date, ev.category].join(' '));
+      return text.indexOf(q) !== -1;
     });
   }
 
   renderEvents(filtered);
 
-  // Track search
   if (currentSearch) {
-    try { if (typeof visitors !== 'undefined' && visitors.track) visitors.track('search', { query: currentSearch, results: String(filtered.length) }); } catch(e) {}
+    vt('search', { query: currentSearch, results: String(filtered.length) });
   }
 
-  // Update results count
-  const countEl = document.getElementById('resultsCount');
+  var countEl = document.getElementById('resultsCount');
   if (countEl) {
     if (currentSearch || currentCategory !== 'all') {
-      countEl.textContent = `${filtered.length} résultat${filtered.length !== 1 ? 's' : ''}`;
+      countEl.textContent = filtered.length + ' resultat' + (filtered.length !== 1 ? 's' : '');
     } else {
       countEl.textContent = '';
     }
   }
 }
 
-// Search input
-const searchInput = document.getElementById('searchInput');
-const searchClear = document.getElementById('searchClear');
+// ─── SEARCH INPUTS ───
+var searchInput = document.getElementById('searchInput');
+var searchClear = document.getElementById('searchClear');
+var heroSearchInput = document.getElementById('heroSearchInput');
 
 if (searchInput) {
-  searchInput.addEventListener('input', function() {
+  searchInput.addEventListener('input', function () {
     currentSearch = searchInput.value.trim();
     visibleCount = 6;
     if (searchClear) searchClear.style.display = currentSearch ? 'flex' : 'none';
@@ -197,26 +227,25 @@ if (searchInput) {
 }
 
 if (searchClear) {
-  searchClear.addEventListener('click', function() {
+  searchClear.addEventListener('click', function () {
     searchInput.value = '';
     currentSearch = '';
     searchClear.style.display = 'none';
     searchInput.focus();
+    if (heroSearchInput) heroSearchInput.value = '';
     filterAndRender();
   });
 }
 
-// Hero search (barre dans le hero)
-var heroSearchInput = document.getElementById('heroSearchInput');
 if (heroSearchInput) {
-  heroSearchInput.addEventListener('input', function() {
+  heroSearchInput.addEventListener('input', function () {
     if (searchInput) searchInput.value = heroSearchInput.value;
     currentSearch = heroSearchInput.value.trim();
     if (searchClear) searchClear.style.display = currentSearch ? 'flex' : 'none';
     visibleCount = 6;
     filterAndRender();
   });
-  heroSearchInput.addEventListener('keydown', function(e) {
+  heroSearchInput.addEventListener('keydown', function (e) {
     if (e.key === 'Enter') {
       e.preventDefault();
       currentSearch = heroSearchInput.value.trim();
@@ -224,123 +253,125 @@ if (heroSearchInput) {
       if (searchClear) searchClear.style.display = currentSearch ? 'flex' : 'none';
       visibleCount = 6;
       filterAndRender();
+      vt('hero_search_enter', { query: currentSearch });
       var eventsEl = document.getElementById('events');
       if (eventsEl) {
-        setTimeout(function() { eventsEl.scrollIntoView({ behavior: 'smooth' }); }, 100);
+        setTimeout(function () { eventsEl.scrollIntoView({ behavior: 'smooth' }); }, 100);
       }
     }
   });
+  heroSearchInput.addEventListener('focus', function () { vt('hero_search_focus'); });
 }
 
-// Category filter buttons
-document.getElementById('filters').addEventListener('click', (e) => {
-  const btn = e.target.closest('.filter-btn');
-  if (!btn) return;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  currentCategory = btn.dataset.category;
-  visibleCount = 6;
-  filterAndRender();
-});
+// ─── CATEGORY FILTER BUTTONS ───
+var filtersEl = document.getElementById('filters');
+if (filtersEl) {
+  filtersEl.addEventListener('click', function (e) {
+    var btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    var allBtns = document.querySelectorAll('.filter-btn');
+    for (var i = 0; i < allBtns.length; i++) allBtns[i].classList.remove('active');
+    btn.classList.add('active');
+    currentCategory = btn.dataset.category;
+    visibleCount = 6;
+    filterAndRender();
+    vt('filter_category', { category: currentCategory });
+  });
+}
 
-// =====================
-// NAVIGATION VERS PAGE ÉVÉNEMENT
-// =====================
+// ─── NAVIGATION VERS PAGE EVENEMENT ───
 function openEvent(slug) {
-  try { if (typeof visitors !== 'undefined' && visitors.track) visitors.track('click_event', { slug: slug }); } catch(e) {}
+  vt('click_event', { slug: slug });
   window.location.href = '/concert-' + slug;
 }
 
-// =====================
-// HEADER SCROLL
-// =====================
-window.addEventListener('scroll', () => {
-  document.getElementById('header').classList.toggle('scrolled', window.scrollY > 10);
+// ─── HEADER SCROLL ───
+window.addEventListener('scroll', function () {
+  var header = document.getElementById('header');
+  if (header) header.classList.toggle('scrolled', window.scrollY > 10);
 });
 
-// =====================
-// CARROUSEL AVIS
-// =====================
+// ─── CARROUSEL AVIS ───
 function initCarousel() {
-  const track = document.getElementById('carouselTrack');
-  const slides = track.querySelectorAll('.carousel-slide');
-  const dotsContainer = document.getElementById('carouselDots');
-  const prevBtn = document.getElementById('carouselPrev');
-  const nextBtn = document.getElementById('carouselNext');
+  var track = document.getElementById('carouselTrack');
+  if (!track) return;
+  var slides = track.querySelectorAll('.carousel-slide');
+  var dotsContainer = document.getElementById('carouselDots');
+  var prevBtn = document.getElementById('carouselPrev');
+  var nextBtn = document.getElementById('carouselNext');
 
-  if (!track || slides.length === 0) return;
+  if (slides.length === 0) return;
 
-  let current = 0;
-  let autoplayTimer;
-  const isMobile = window.innerWidth <= 768;
-  const slideWidth = isMobile ? 290 : 420;
+  var current = 0;
+  var autoplayTimer;
+  var isMobile = window.innerWidth <= 768;
+  var slideWidth = isMobile ? 290 : 420;
 
-  // Créer les dots
-  slides.forEach((_, i) => {
-    const dot = document.createElement('button');
+  // Creer les dots
+  for (var i = 0; i < slides.length; i++) {
+    var dot = document.createElement('button');
     dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
-    dot.addEventListener('click', () => goTo(i));
+    dot.setAttribute('data-index', i);
     dotsContainer.appendChild(dot);
+  }
+
+  dotsContainer.addEventListener('click', function (e) {
+    var d = e.target.closest('.carousel-dot');
+    if (d) {
+      goTo(parseInt(d.getAttribute('data-index'), 10));
+      vt('reviews_carousel_dot');
+    }
   });
 
   function goTo(index) {
     current = Math.max(0, Math.min(index, slides.length - 1));
-    track.style.transform = `translateX(-${current * slideWidth}px)`;
-
-    // Update dots
-    dotsContainer.querySelectorAll('.carousel-dot').forEach((d, i) => {
-      d.classList.toggle('active', i === current);
-    });
-
+    track.style.transform = 'translateX(-' + (current * slideWidth) + 'px)';
+    var dots = dotsContainer.querySelectorAll('.carousel-dot');
+    for (var i = 0; i < dots.length; i++) {
+      if (i === current) dots[i].classList.add('active');
+      else dots[i].classList.remove('active');
+    }
     resetAutoplay();
   }
 
-  function next() {
-    goTo(current >= slides.length - 1 ? 0 : current + 1);
-  }
+  function next() { goTo(current >= slides.length - 1 ? 0 : current + 1); }
+  function prev() { goTo(current <= 0 ? slides.length - 1 : current - 1); }
 
-  function prev() {
-    goTo(current <= 0 ? slides.length - 1 : current - 1);
-  }
+  prevBtn.addEventListener('click', function () { prev(); vt('reviews_carousel_prev'); });
+  nextBtn.addEventListener('click', function () { next(); vt('reviews_carousel_next'); });
 
-  prevBtn.addEventListener('click', prev);
-  nextBtn.addEventListener('click', next);
-
-  // Autoplay
   function resetAutoplay() {
     clearInterval(autoplayTimer);
     autoplayTimer = setInterval(next, 4000);
   }
 
-  // Pause on hover
-  track.addEventListener('mouseenter', () => clearInterval(autoplayTimer));
+  track.addEventListener('mouseenter', function () { clearInterval(autoplayTimer); });
   track.addEventListener('mouseleave', resetAutoplay);
 
   // Swipe mobile
-  let startX = 0;
-  track.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
-  track.addEventListener('touchend', (e) => {
-    const diff = startX - e.changedTouches[0].clientX;
+  var startX = 0;
+  track.addEventListener('touchstart', function (e) { startX = e.touches[0].clientX; }, { passive: true });
+  track.addEventListener('touchend', function (e) {
+    var diff = startX - e.changedTouches[0].clientX;
     if (Math.abs(diff) > 50) {
-      diff > 0 ? next() : prev();
+      if (diff > 0) next(); else prev();
     }
   }, { passive: true });
 
   resetAutoplay();
 }
 
-// =====================
-// MOBILE MENU
-// =====================
-const menuToggle = document.getElementById('menuToggle');
-const mobileNav = document.getElementById('mobileNav');
+// ─── MOBILE MENU ───
+var menuToggle = document.getElementById('menuToggle');
+var mobileNav = document.getElementById('mobileNav');
 
 if (menuToggle && mobileNav) {
-  menuToggle.addEventListener('click', () => {
-    const isOpen = mobileNav.classList.toggle('open');
+  menuToggle.addEventListener('click', function () {
+    var isOpen = mobileNav.classList.toggle('open');
     menuToggle.innerHTML = isOpen
       ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
       : '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
+    vt('mobile_menu_toggle');
   });
 }
 
@@ -349,8 +380,65 @@ function closeMobileNav() {
   if (menuToggle) menuToggle.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
 }
 
-// =====================
-// INIT
-// =====================
+// ─── TRACKING: Scroll depth ───
+var scrollDepths = { 25: false, 50: false, 75: false, 100: false };
+window.addEventListener('scroll', function () {
+  var scrollPct = Math.round((window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100);
+  var depths = [25, 50, 75, 100];
+  for (var i = 0; i < depths.length; i++) {
+    if (scrollPct >= depths[i] && !scrollDepths[depths[i]]) {
+      scrollDepths[depths[i]] = true;
+      vt('scroll_depth', { percent: String(depths[i]) });
+    }
+  }
+});
+
+// ─── TRACKING: Section visibility ───
+function trackVisibility(sectionId, eventName) {
+  var el = document.getElementById(sectionId);
+  if (el && 'IntersectionObserver' in window) {
+    var tracked = false;
+    new IntersectionObserver(function (entries) {
+      if (entries[0].isIntersecting && !tracked) {
+        tracked = true;
+        vt(eventName);
+      }
+    }, { threshold: 0.3 }).observe(el);
+  }
+}
+
+trackVisibility('events', 'events_section_viewed');
+trackVisibility('faq', 'faq_viewed');
+trackVisibility('reviews', 'reviews_viewed');
+
+// ─── TRACKING: Contact, footer, header links ───
+var contactBtn = document.getElementById('floatingContact');
+if (contactBtn) contactBtn.addEventListener('click', function () { vt('contact_click', { method: 'twitter_dm' }); });
+
+var footerLinks = document.querySelectorAll('.footer a');
+for (var fl = 0; fl < footerLinks.length; fl++) {
+  (function (link) {
+    link.addEventListener('click', function () { vt('footer_link', { target: link.textContent.trim() }); });
+  })(footerLinks[fl]);
+}
+
+var twitterLink = document.querySelector('.header-twitter');
+if (twitterLink) twitterLink.addEventListener('click', function () { vt('twitter_profile_click'); });
+
+var accountLink = document.querySelector('.header-account');
+if (accountLink) accountLink.addEventListener('click', function () { vt('account_icon_click'); });
+
+var cartLink = document.getElementById('headerCart');
+if (cartLink) cartLink.addEventListener('click', function () { vt('cart_icon_click'); });
+
+var navLinks = document.querySelectorAll('.nav a, .mobile-nav a');
+for (var nl = 0; nl < navLinks.length; nl++) {
+  (function (link) {
+    link.addEventListener('click', function () { vt('nav_click', { target: link.getAttribute('href') || link.textContent.trim() }); });
+  })(navLinks[nl]);
+}
+
+// ─── INIT ───
+identifyUser();
 loadEvents();
 initCarousel();

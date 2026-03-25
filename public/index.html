@@ -367,11 +367,11 @@
   </a>
 
   <script>
-  function toggleFaq(b){var i=b.closest('.faq-item'),o=i.classList.contains('open');document.querySelectorAll('.faq-item.open').forEach(function(e){e.classList.remove('open')});if(!o)i.classList.add('open')}
+  function vt(n,p){try{if(typeof visitors!=='undefined'&&visitors.track)visitors.track(n,p||{})}catch(e){}}
+  function toggleFaq(b){var i=b.closest('.faq-item'),o=i.classList.contains('open');document.querySelectorAll('.faq-item.open').forEach(function(e){e.classList.remove('open')});if(!o){i.classList.add('open');var q=b.querySelector('span');vt('faq_open',{question:q?q.textContent:''})}}
   function updateCartCount(){try{var c=JSON.parse(localStorage.getItem('vtbCart')||'{"items":[]}'),n=c.items.reduce(function(s,i){return s+i.quantity},0),e=document.getElementById('cartCount');if(e){if(n>0){e.textContent=n;e.style.display='flex'}else{e.style.display='none'}}}catch(x){}}
   updateCartCount();
   </script>
   <script src="script.js"></script>
-  <script src="main.js"></script>
 </body>
 </html>
