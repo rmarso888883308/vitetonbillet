@@ -548,6 +548,33 @@ app.get('/api/admin/orders/:id', requireAdmin, (req, res) => {
   res.json(order);
 });
 
+// GET /api/admin/users — liste des utilisateurs inscrits
+app.get('/api/admin/users', requireAdmin, (req, res) => {
+  const users = readUsers().map(u => ({
+    id: u.id,
+    email: u.email,
+    firstName: u.firstName,
+    lastName: u.lastName,
+    phone: u.phone || '',
+    createdAt: u.createdAt
+  }));
+  res.json(users.reverse());
+});
+
+// GET /api/admin/stats — statistiques globales
+app.get('/api/admin/stats', requireAdmin, (req, res) => {
+  const users = readUsers();
+  const orders = readOrders().filter(o => o.status === 'completed');
+  const events = readEvents();
+  const totalRevenue = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+  res.json({
+    totalUsers: users.length,
+    totalOrders: orders.length,
+    totalEvents: events.length,
+    totalRevenue
+  });
+});
+
 // POST /api/admin/upload — upload d'image
 app.post('/api/admin/upload', requireAdmin, upload.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Aucune image envoyée' });

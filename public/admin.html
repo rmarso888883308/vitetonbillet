@@ -104,6 +104,15 @@
     .ticket-row input { padding: 8px; border: 1.5px solid var(--gray-200); border-radius: 6px; font-size: 0.85rem; outline: none; }
     .ticket-row input:focus { border-color: var(--primary); }
 
+    /* USERS TABLE */
+    .users-table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+    .users-table th { background: var(--gray-50); padding: 12px; text-align: left; border-bottom: 1px solid var(--gray-200); font-weight: 600; color: var(--gray-700); font-size: 0.85rem; }
+    .users-table td { padding: 12px; border-bottom: 1px solid var(--gray-200); font-size: 0.9rem; }
+    .users-table tr:hover { background: var(--gray-50); }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: white; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; }
+    .search-bar { width: 100%; padding: 10px 14px; border: 1.5px solid var(--gray-200); border-radius: 10px; font-family: inherit; font-size: 0.9rem; margin-bottom: 16px; outline: none; }
+    .search-bar:focus { border-color: var(--primary); }
+
     .empty-state { text-align: center; padding: 60px 20px; color: var(--gray-400); }
 
     .section-label { font-weight: 700; font-size: 0.9rem; color: var(--gray-700); margin: 20px 0 10px; display: flex; align-items: center; gap: 8px; }
@@ -138,9 +147,18 @@
     </div>
 
     <div class="container">
+      <!-- STATS -->
+      <div class="stats" id="globalStats">
+        <div class="stat-card"><div class="stat-label">Utilisateurs inscrits</div><div class="stat-value" id="statUsers">-</div></div>
+        <div class="stat-card"><div class="stat-label">Commandes</div><div class="stat-value" id="statOrders">-</div></div>
+        <div class="stat-card"><div class="stat-label">Chiffre d'affaires</div><div class="stat-value" id="statRevenue">-</div></div>
+        <div class="stat-card"><div class="stat-label">&Eacute;v&eacute;nements</div><div class="stat-value" id="statEvents">-</div></div>
+      </div>
+
       <div class="tab-nav">
-        <button class="tab-btn active" onclick="switchTab('events', this)">Evenements</button>
+        <button class="tab-btn active" onclick="switchTab('events', this)">&Eacute;v&eacute;nements</button>
         <button class="tab-btn" onclick="switchTab('orders', this)">Commandes</button>
+        <button class="tab-btn" onclick="switchTab('users', this)">Utilisateurs</button>
         <button class="tab-btn" onclick="switchTab('tests', this)">Tests</button>
       </div>
 
@@ -163,6 +181,12 @@
           </div>
         </div>
         <div id="ordersContainer"></div>
+      </div>
+
+      <!-- USERS TAB -->
+      <div id="users" class="tab-content">
+        <input type="text" class="search-bar" id="usersSearch" placeholder="Rechercher un utilisateur (nom, email, tel)..." oninput="filterUsers()" />
+        <div id="usersContainer"></div>
       </div>
 
       <!-- TESTS TAB -->
@@ -297,7 +321,7 @@
   </div>
 
   <script>
-    let allEvents = [], allOrders = [], currentEventId = null;
+    let allEvents = [], allOrders = [], allUsers = [], currentEventId = null;
     const pw = () => document.getElementById('adminPassword').value;
     const authH = () => ({ 'x-admin-password': pw() });
 
@@ -310,7 +334,7 @@
         if (!res.ok) return alert('Mot de passe incorrect');
         document.getElementById('loginPage').style.display = 'none';
         document.getElementById('dashboard').classList.add('visible');
-        loadEvents(); loadOrders();
+        loadEvents(); loadOrders(); loadUsers(); loadStats();
       } catch(e) { alert('Erreur: ' + e.message); }
     }
 
@@ -326,6 +350,65 @@
       document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
       document.getElementById(name).classList.add('active');
       btn.classList.add('active');
+    }
+
+    // ========== STATS ==========
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/admin/stats', { headers: authH() });
+        if (!res.ok) return;
+        const s = await res.json();
+        document.getElementById('statUsers').textContent = s.totalUsers;
+        document.getElementById('statOrders').textContent = s.totalOrders;
+        document.getElementById('statEvents').textContent = s.totalEvents;
+        document.getElementById('statRevenue').textContent = (s.totalRevenue / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+      } catch {}
+    }
+
+    // ========== USERS ==========
+    async function loadUsers() {
+      try {
+        const res = await fetch('/api/admin/users', { headers: authH() });
+        if (!res.ok) return;
+        allUsers = await res.json();
+        renderUsers(allUsers);
+      } catch { document.getElementById('usersContainer').innerHTML = '<div class="empty-state">Erreur de chargement</div>'; }
+    }
+
+    function renderUsers(users) {
+      const c = document.getElementById('usersContainer');
+      if (users.length === 0) { c.innerHTML = '<div class="empty-state">Aucun utilisateur inscrit</div>'; return; }
+      c.innerHTML = `
+        <p style="color:var(--gray-500);font-size:0.85rem;margin-bottom:12px;">${users.length} utilisateur${users.length > 1 ? 's' : ''} inscrit${users.length > 1 ? 's' : ''}</p>
+        <table class="users-table">
+          <thead><tr>
+            <th></th>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>T\u00e9l\u00e9phone</th>
+            <th>Inscrit le</th>
+          </tr></thead>
+          <tbody>${users.map(u => {
+            const initials = ((u.firstName || '')[0] || '') + ((u.lastName || '')[0] || '');
+            const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString('fr-FR') : '-';
+            return `<tr>
+              <td><span class="user-avatar">${initials.toUpperCase() || '?'}</span></td>
+              <td><strong>${u.firstName || ''} ${u.lastName || ''}</strong></td>
+              <td>${u.email || '-'}</td>
+              <td>${u.phone || '-'}</td>
+              <td>${date}</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>`;
+    }
+
+    function filterUsers() {
+      const q = document.getElementById('usersSearch').value.toLowerCase().trim();
+      if (!q) { renderUsers(allUsers); return; }
+      const filtered = allUsers.filter(u =>
+        [u.firstName, u.lastName, u.email, u.phone].join(' ').toLowerCase().includes(q)
+      );
+      renderUsers(filtered);
     }
 
     // ========== TESTS ==========
