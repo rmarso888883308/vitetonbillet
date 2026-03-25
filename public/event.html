@@ -1049,6 +1049,38 @@
     });
 
     loadEvent();
+
+    // ─── TRACK: Reviews section visibility on event page ───
+    var evReviews = document.querySelector('.event-reviews');
+    if (evReviews && 'IntersectionObserver' in window) {
+      var evReviewsTracked = false;
+      new IntersectionObserver(function(entries) {
+        if (entries[0].isIntersecting && !evReviewsTracked) {
+          evReviewsTracked = true;
+          vTrack('event_reviews_viewed', { event_name: event ? event.name : '' });
+        }
+      }, { threshold: 0.3 }).observe(evReviews);
+    }
+
+    // ─── TRACK: Scroll inside reviews ───
+    var revScroll = document.getElementById('reviewsScroll');
+    if (revScroll) {
+      var revScrollTracked = false;
+      revScroll.addEventListener('scroll', function() {
+        if (!revScrollTracked) {
+          revScrollTracked = true;
+          vTrack('event_reviews_scroll', { event_name: event ? event.name : '' });
+        }
+      });
+    }
+
+    // ─── TRACK: "Voir tous les avis sur X" click ───
+    var revCta = document.querySelector('.reviews-card-cta');
+    if (revCta) {
+      revCta.addEventListener('click', function() {
+        vTrack('event_reviews_see_all_click', { event_name: event ? event.name : '' });
+      });
+    }
   </script>
 </body>
 </html>
