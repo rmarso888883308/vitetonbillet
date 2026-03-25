@@ -1,6 +1,6 @@
 // ─── VISITORS HELPERS ───
 function vTrack(name, props) {
-  try { if (typeof visitors !== 'undefined' && visitors.track) visitors.track(name, props || {}); } catch {}
+  try { if (typeof visitors !== 'undefined' && visitors.track) visitors.track(name, props || {}); } catch(e) {}
 }
 
 // Cart count
@@ -10,7 +10,7 @@ function updateCartCount() {
     const count = cart.items.reduce((sum, item) => sum + item.quantity, 0);
     const el = document.getElementById('cartCount');
     if (el) { if (count > 0) { el.textContent = count; el.style.display = 'flex'; } else { el.style.display = 'none'; } }
-  } catch {}
+  } catch(e) {}
 }
 updateCartCount();
 
@@ -20,7 +20,7 @@ try {
   if (u.id && typeof visitors !== 'undefined' && visitors.identify) {
     visitors.identify({ id: String(u.id), email: u.email || '', name: ((u.firstName || '') + ' ' + (u.lastName || '')).trim() });
   }
-} catch {}
+} catch(e) {}
 
 // ─── FAQ toggle ───
 function toggleFaq(btn) {
