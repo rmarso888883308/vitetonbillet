@@ -167,17 +167,27 @@
       document.getElementById('cartTotal').textContent = formatPrice(total, currency);
     }
 
+    function vTrack(name, props) {
+      try { if (typeof visitors !== 'undefined' && visitors.track) visitors.track(name, props || {}); } catch {}
+    }
+
+    // Track cart viewed
+    vTrack('cart_viewed', { items: String(getCart().items.length) });
+
     function changeQty(idx, delta) {
       const cart = getCart();
       const item = cart.items[idx];
       if (!item) return;
       const max = item.maxQuantity || 10;
       item.quantity = Math.max(1, Math.min(item.quantity + delta, max));
+      vTrack('cart_change_qty', { event_name: item.eventName, quantity: String(item.quantity), direction: delta > 0 ? 'plus' : 'minus' });
       saveCart(cart);
     }
 
     function removeItem(idx) {
       const cart = getCart();
+      const item = cart.items[idx];
+      if (item) vTrack('cart_remove_item', { event_name: item.eventName, ticket_type: item.ticketType });
       cart.items.splice(idx, 1);
       saveCart(cart);
     }

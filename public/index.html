@@ -368,6 +368,11 @@
 
   <script src="script.js"></script>
   <script>
+    // ─── VISITORS HELPERS ───
+    function vTrack(name, props) {
+      try { if (typeof visitors !== 'undefined' && visitors.track) visitors.track(name, props || {}); } catch {}
+    }
+
     // Cart count
     function updateCartCount() {
       try {
@@ -387,19 +392,22 @@
       }
     } catch {}
 
-    // FAQ toggle
-    function toggleFaq(btn) {
-      const item = btn.closest('.faq-item');
-      const wasOpen = item.classList.contains('open');
-      // Close all
-      document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
-      // Toggle clicked
-      if (!wasOpen) item.classList.add('open');
-    }
+    // ─── TRACK: Navigation header ───
+    document.querySelectorAll('.nav a, .mobile-nav a').forEach(link => {
+      link.addEventListener('click', () => {
+        vTrack('nav_click', { target: link.getAttribute('href') || link.textContent.trim() });
+      });
+    });
 
-    // Hero search syncs with main search
+    // ─── TRACK: Hero CTA "Voir le programme" ───
+    const heroCta = document.querySelector('.hero-cta-link');
+    if (heroCta) heroCta.addEventListener('click', () => vTrack('hero_cta_click'));
+
+    // ─── TRACK: Hero search ───
+    let heroSearchTimeout;
     const heroSearch = document.getElementById('heroSearchInput');
     if (heroSearch) {
+      heroSearch.addEventListener('focus', () => vTrack('hero_search_focus'));
       heroSearch.addEventListener('input', () => {
         const mainSearch = document.getElementById('searchInput');
         if (mainSearch) mainSearch.value = heroSearch.value;
@@ -407,14 +415,124 @@
         const searchClear = document.getElementById('searchClear');
         if (searchClear) searchClear.style.display = currentSearch ? 'flex' : 'none';
         filterAndRender();
+        // Track search avec debounce
+        clearTimeout(heroSearchTimeout);
+        if (currentSearch) {
+          heroSearchTimeout = setTimeout(() => vTrack('hero_search', { query: currentSearch }), 800);
+        }
       });
       heroSearch.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
+          vTrack('hero_search_enter', { query: heroSearch.value.trim() });
           document.getElementById('events').scrollIntoView({ behavior: 'smooth' });
         }
       });
     }
+
+    // ─── TRACK: Category filters ───
+    document.getElementById('filters').addEventListener('click', (e) => {
+      const btn = e.target.closest('.filter-btn');
+      if (btn) vTrack('filter_category', { category: btn.dataset.category || btn.textContent.trim() });
+    });
+
+    // ─── TRACK: FAQ clicks ───
+    function toggleFaq(btn) {
+      const item = btn.closest('.faq-item');
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+      if (!wasOpen) {
+        item.classList.add('open');
+        const question = btn.querySelector('span')?.textContent || '';
+        vTrack('faq_open', { question: question });
+      } else {
+        vTrack('faq_close');
+      }
+    }
+
+    // ─── TRACK: Reviews section visibility ───
+    const reviewsSection = document.getElementById('reviews');
+    if (reviewsSection && 'IntersectionObserver' in window) {
+      let reviewsTracked = false;
+      new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !reviewsTracked) {
+          reviewsTracked = true;
+          vTrack('reviews_viewed');
+        }
+      }, { threshold: 0.3 }).observe(reviewsSection);
+    }
+
+    // ─── TRACK: "Voir tous les avis" link ───
+    const seeMoreReviews = document.querySelector('.reviews-see-more');
+    if (seeMoreReviews) seeMoreReviews.addEventListener('click', () => vTrack('reviews_see_all'));
+
+    // ─── TRACK: FAQ section visibility ───
+    const faqSection = document.getElementById('faq');
+    if (faqSection && 'IntersectionObserver' in window) {
+      let faqTracked = false;
+      new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !faqTracked) {
+          faqTracked = true;
+          vTrack('faq_viewed');
+        }
+      }, { threshold: 0.3 }).observe(faqSection);
+    }
+
+    // ─── TRACK: Events section visibility ───
+    const eventsSection = document.getElementById('events');
+    if (eventsSection && 'IntersectionObserver' in window) {
+      let eventsTracked = false;
+      new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !eventsTracked) {
+          eventsTracked = true;
+          vTrack('events_section_viewed');
+        }
+      }, { threshold: 0.2 }).observe(eventsSection);
+    }
+
+    // ─── TRACK: Contact floating button ───
+    const contactBtn = document.getElementById('floatingContact');
+    if (contactBtn) contactBtn.addEventListener('click', () => vTrack('contact_click', { method: 'twitter_dm' }));
+
+    // ─── TRACK: Footer legal links ───
+    document.querySelectorAll('.footer a').forEach(link => {
+      link.addEventListener('click', () => vTrack('footer_link', { target: link.textContent.trim() }));
+    });
+
+    // ─── TRACK: Twitter/X link in header ───
+    const twitterLink = document.querySelector('.header-twitter');
+    if (twitterLink) twitterLink.addEventListener('click', () => vTrack('twitter_profile_click'));
+
+    // ─── TRACK: Account icon click ───
+    const accountLink = document.querySelector('.header-account');
+    if (accountLink) accountLink.addEventListener('click', () => vTrack('account_icon_click'));
+
+    // ─── TRACK: Cart icon click ───
+    const cartLink = document.getElementById('headerCart');
+    if (cartLink) cartLink.addEventListener('click', () => vTrack('cart_icon_click'));
+
+    // ─── TRACK: Scroll depth ───
+    let scrollDepths = { 25: false, 50: false, 75: false, 100: false };
+    window.addEventListener('scroll', () => {
+      const scrollPct = Math.round((window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100);
+      [25, 50, 75, 100].forEach(depth => {
+        if (scrollPct >= depth && !scrollDepths[depth]) {
+          scrollDepths[depth] = true;
+          vTrack('scroll_depth', { percent: String(depth) });
+        }
+      });
+    });
+
+    // ─── TRACK: "Afficher plus" button ───
+    document.addEventListener('click', (e) => {
+      if (e.target.id === 'loadMoreBtn' || e.target.closest('#loadMoreBtn')) {
+        vTrack('load_more_events');
+      }
+    });
+
+    // ─── TRACK: Mobile menu toggle ───
+    const menuToggle = document.getElementById('menuToggle');
+    if (menuToggle) menuToggle.addEventListener('click', () => vTrack('mobile_menu_toggle'));
   </script>
 </body>
 </html>

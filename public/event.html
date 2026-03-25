@@ -816,6 +816,7 @@
             datesEl.querySelectorAll('.edate').forEach(e => e.classList.remove('selected'));
             r.closest('.edate').classList.add('selected');
             const d = event.dates[selectedDate];
+            vTrack('select_date', { event_name: event.name, date: d.label, location: d.location || '' });
             document.getElementById('evDate').textContent = d.label;
             document.getElementById('evTime').textContent = d.time || event.time;
             document.getElementById('evLocation').textContent = d.location || event.location;
@@ -856,6 +857,8 @@
       ticketsEl.querySelectorAll('input[type="radio"]').forEach(r => {
         r.addEventListener('change', () => {
           selectedTicket = parseInt(r.value);
+          const t = tickets[selectedTicket];
+          if (t) vTrack('select_ticket', { event_name: event?.name || '', ticket_type: t.type, price: String(t.price / 100) });
           const max = getMaxQty();
           if (quantity > max) { quantity = max; document.getElementById('qtyVal').textContent = quantity; }
           ticketsEl.querySelectorAll('.eticket').forEach(e => e.classList.remove('selected'));
@@ -884,11 +887,20 @@
     }
 
     document.getElementById('qtyMinus').addEventListener('click', () => {
-      if (quantity > 1) { quantity--; document.getElementById('qtyVal').textContent = quantity; updateTotal(); }
+      if (quantity > 1) { quantity--; document.getElementById('qtyVal').textContent = quantity; updateTotal(); vTrack('change_quantity', { quantity: String(quantity), direction: 'minus' }); }
     });
     document.getElementById('qtyPlus').addEventListener('click', () => {
       const max = getMaxQty();
-      if (quantity < max) { quantity++; document.getElementById('qtyVal').textContent = quantity; updateTotal(); }
+      if (quantity < max) { quantity++; document.getElementById('qtyVal').textContent = quantity; updateTotal(); vTrack('change_quantity', { quantity: String(quantity), direction: 'plus' }); }
+    });
+
+    // ─── TRACK: Scroll depth on event page ───
+    let evScrollDepths = { 25: false, 50: false, 75: false, 100: false };
+    window.addEventListener('scroll', () => {
+      const pct = Math.round((window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100);
+      [25, 50, 75, 100].forEach(d => {
+        if (pct >= d && !evScrollDepths[d]) { evScrollDepths[d] = true; vTrack('event_scroll_depth', { percent: String(d) }); }
+      });
     });
 
     // ─── AUTH HELPERS ───
