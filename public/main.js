@@ -166,6 +166,20 @@ document.addEventListener('click', function(e) {
   }
 });
 
+// ─── TRACK: Carousel prev/next buttons ───
+var carouselPrev = document.getElementById('carouselPrev');
+var carouselNext = document.getElementById('carouselNext');
+if (carouselPrev) carouselPrev.addEventListener('click', function() { vTrack('reviews_carousel_prev'); });
+if (carouselNext) carouselNext.addEventListener('click', function() { vTrack('reviews_carousel_next'); });
+
+// ─── TRACK: Carousel dots ───
+var carouselDots = document.getElementById('carouselDots');
+if (carouselDots) carouselDots.addEventListener('click', function(e) {
+  if (e.target.classList.contains('carousel-dot')) {
+    vTrack('reviews_carousel_dot');
+  }
+});
+
 // ─── TRACK: Mobile menu toggle ───
 var menuToggle = document.getElementById('menuToggle');
 if (menuToggle) menuToggle.addEventListener('click', function() { vTrack('mobile_menu_toggle'); });
