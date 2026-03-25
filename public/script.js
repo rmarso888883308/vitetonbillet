@@ -12,6 +12,7 @@ var visibleCount = 6;
 // ─── TRACKING (Visitors) ───
 function vt(name, props) {
   try {
+    console.log('[VTB Track]', name, props || {});
     if (typeof visitors !== 'undefined' && visitors.track) {
       visitors.track(name, props || {});
     }
@@ -438,7 +439,35 @@ for (var nl = 0; nl < navLinks.length; nl++) {
   })(navLinks[nl]);
 }
 
+// ─── FAQ TOGGLE ───
+function toggleFaq(btn) {
+  var item = btn.closest('.faq-item');
+  var wasOpen = item.classList.contains('open');
+  var allOpen = document.querySelectorAll('.faq-item.open');
+  for (var i = 0; i < allOpen.length; i++) { allOpen[i].classList.remove('open'); }
+  if (!wasOpen) {
+    item.classList.add('open');
+    var q = btn.querySelector('span');
+    vt('faq_open', { question: q ? q.textContent : '' });
+  }
+}
+
+// ─── CART COUNT ───
+function updateCartCount() {
+  try {
+    var cart = JSON.parse(localStorage.getItem('vtbCart') || '{"items":[]}');
+    var count = 0;
+    for (var i = 0; i < cart.items.length; i++) { count += cart.items[i].quantity; }
+    var el = document.getElementById('cartCount');
+    if (el) {
+      if (count > 0) { el.textContent = count; el.style.display = 'flex'; }
+      else { el.style.display = 'none'; }
+    }
+  } catch (e) {}
+}
+
 // ─── INIT ───
 identifyUser();
+updateCartCount();
 loadEvents();
 initCarousel();

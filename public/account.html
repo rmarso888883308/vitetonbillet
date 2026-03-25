@@ -377,35 +377,53 @@
   </div>
 
   <script>
-    const TOKEN_KEY = 'vtb_token';
-    const USER_KEY = 'vtb_user';
+    var TOKEN_KEY = 'vtb_token';
+    var USER_KEY = 'vtb_user';
+
+    // ─── VISITORS TRACKING ───
+    function vTrack(name, props) {
+      try { if (typeof visitors !== 'undefined' && visitors.track) visitors.track(name, props || {}); } catch(e) {}
+    }
+    function vIdentify(user) {
+      try {
+        if (user && user.id && typeof visitors !== 'undefined' && visitors.identify) {
+          visitors.identify({ id: String(user.id), email: user.email || '', name: ((user.firstName || '') + ' ' + (user.lastName || '')).trim() });
+        }
+      } catch(e) {}
+    }
+    // Identifier si deja connecte
+    try { var uu = JSON.parse(localStorage.getItem(USER_KEY) || '{}'); if (uu.id) vIdentify(uu); } catch(e) {}
+
+    // Track page view
+    vTrack('account_page_view');
 
     // Check si deja connecte
     function getRedirectUrl() {
-      const params = new URLSearchParams(window.location.search);
+      var params = new URLSearchParams(window.location.search);
       return params.get('redirect') || null;
     }
     function doRedirect() {
-      const url = getRedirectUrl();
+      var url = getRedirectUrl();
       if (url) { window.location.href = decodeURIComponent(url); return true; }
       return false;
     }
     function init() {
-      const token = localStorage.getItem(TOKEN_KEY);
-      const user = localStorage.getItem(USER_KEY);
+      var token = localStorage.getItem(TOKEN_KEY);
+      var user = localStorage.getItem(USER_KEY);
       if (token && user) {
-        if (doRedirect()) return; // Si deja connecte et redirect demande, y aller
+        if (doRedirect()) return;
         showDashboard(JSON.parse(user));
         loadOrders(token);
       }
       // Si tab=register dans l'URL, afficher l'onglet inscription
-      const params = new URLSearchParams(window.location.search);
+      var params = new URLSearchParams(window.location.search);
       if (params.get('tab') === 'register') switchAuthTab('register');
       updateCartCount();
     }
 
     function switchAuthTab(tab) {
-      document.querySelectorAll('.auth-tab').forEach(el => el.classList.remove('active'));
+      var tabs = document.querySelectorAll('.auth-tab');
+      for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
       document.getElementById('authError').className = 'auth-error';
       if (tab === 'login') {
         document.querySelectorAll('.auth-tab')[0].classList.add('active');
@@ -416,193 +434,204 @@
         document.getElementById('loginForm').style.display = 'none';
         document.getElementById('registerForm').style.display = '';
       }
+      vTrack('auth_tab_switch', { tab: tab });
     }
-
-    // ─── VISITORS TRACKING ───
-    function vTrack(name, props) {
-      try { if (typeof visitors !== 'undefined' && visitors.track) visitors.track(name, props || {}); } catch {}
-    }
-    function vIdentify(user) {
-      try {
-        if (user && user.id && typeof visitors !== 'undefined' && visitors.identify) {
-          visitors.identify({ id: String(user.id), email: user.email || '', name: `${user.firstName || ''} ${user.lastName || ''}`.trim() });
-        }
-      } catch {}
-    }
-    // Identifier si deja connecte
-    try { const u = JSON.parse(localStorage.getItem(USER_KEY) || '{}'); if (u.id) vIdentify(u); } catch {}
 
     function showError(msg) {
-      const el = document.getElementById('authError');
+      var el = document.getElementById('authError');
       el.textContent = msg;
       el.className = 'auth-error visible';
     }
 
-    async function handleLogin(e) {
+    function handleLogin(e) {
       e.preventDefault();
-      const btn = document.getElementById('loginBtn');
+      var btn = document.getElementById('loginBtn');
       btn.disabled = true;
       btn.textContent = 'Connexion...';
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: document.getElementById('loginEmail').value,
-            password: document.getElementById('loginPassword').value
-          })
+      vTrack('login_attempt', { method: 'email' });
+      fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: document.getElementById('loginEmail').value,
+          password: document.getElementById('loginPassword').value
+        })
+      }).then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) {
+            showError(data.error);
+            vTrack('login_error', { error: data.error || 'unknown' });
+            return;
+          }
+          localStorage.setItem(TOKEN_KEY, data.token);
+          localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+          vIdentify(data.user);
+          vTrack('login_success', { method: 'email' });
+          if (doRedirect()) return;
+          showDashboard(data.user);
+          loadOrders(data.token);
         });
-        const data = await res.json();
-        if (!res.ok) { showError(data.error); return; }
-        localStorage.setItem(TOKEN_KEY, data.token);
-        localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-        vIdentify(data.user);
-        vTrack('login', { method: 'email' });
-        if (doRedirect()) return;
-        showDashboard(data.user);
-        loadOrders(data.token);
-      } catch (err) {
+      }).catch(function (err) {
         showError('Erreur de connexion');
-      } finally {
+        vTrack('login_error', { error: 'network' });
+      }).finally(function () {
         btn.disabled = false;
         btn.textContent = 'Se connecter';
-      }
+      });
     }
 
-    async function handleRegister(e) {
+    function handleRegister(e) {
       e.preventDefault();
-      const btn = document.getElementById('registerBtn');
+      var btn = document.getElementById('registerBtn');
       btn.disabled = true;
       btn.textContent = 'Creation...';
-      try {
-        const res = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: document.getElementById('regEmail').value,
-            password: document.getElementById('regPassword').value,
-            firstName: document.getElementById('regFirstName').value,
-            lastName: document.getElementById('regLastName').value,
-            phone: document.getElementById('regPhone').value
-          })
+      vTrack('register_attempt', { method: 'email' });
+      fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: document.getElementById('regEmail').value,
+          password: document.getElementById('regPassword').value,
+          firstName: document.getElementById('regFirstName').value,
+          lastName: document.getElementById('regLastName').value,
+          phone: document.getElementById('regPhone').value
+        })
+      }).then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) {
+            showError(data.error);
+            vTrack('register_error', { error: data.error || 'unknown' });
+            return;
+          }
+          localStorage.setItem(TOKEN_KEY, data.token);
+          localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+          vIdentify(data.user);
+          vTrack('register_success', { method: 'email' });
+          if (doRedirect()) return;
+          showDashboard(data.user);
+          loadOrders(data.token);
         });
-        const data = await res.json();
-        if (!res.ok) { showError(data.error); return; }
-        localStorage.setItem(TOKEN_KEY, data.token);
-        localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-        vIdentify(data.user);
-        vTrack('signup', { method: 'email' });
-        if (doRedirect()) return;
-        showDashboard(data.user);
-        loadOrders(data.token);
-      } catch (err) {
+      }).catch(function (err) {
         showError('Erreur lors de l\'inscription');
-      } finally {
+        vTrack('register_error', { error: 'network' });
+      }).finally(function () {
         btn.disabled = false;
         btn.textContent = 'Creer mon compte';
-      }
+      });
     }
 
     function showDashboard(user) {
       document.getElementById('authSection').style.display = 'none';
       document.getElementById('dashboardSection').classList.add('visible');
       document.getElementById('dashUserName').textContent = user.firstName || user.email;
+      vTrack('dashboard_view');
     }
 
     function handleLogout() {
+      vTrack('logout_click');
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
       document.getElementById('authSection').style.display = '';
       document.getElementById('dashboardSection').classList.remove('visible');
     }
 
-    async function loadOrders(token) {
-      try {
-        const res = await fetch('/api/auth/orders', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+    function loadOrders(token) {
+      fetch('/api/auth/orders', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      }).then(function (res) {
         if (!res.ok) {
-          if (res.status === 401) { handleLogout(); return; }
+          if (res.status === 401) { handleLogout(); }
           return;
         }
-        const orders = await res.json();
-        renderOrders(orders);
-      } catch {}
+        return res.json();
+      }).then(function (orders) {
+        if (orders) {
+          renderOrders(orders);
+          vTrack('orders_loaded', { count: String(orders.length) });
+        }
+      }).catch(function(e) {});
     }
 
     function renderOrders(orders) {
-      const container = document.getElementById('ordersList');
+      var container = document.getElementById('ordersList');
       if (orders.length === 0) {
-        container.innerHTML = `
-          <div class="orders-empty">
-            <p>Aucune commande pour le moment.</p>
-            <p style="margin-top:8px"><a href="/#events" style="color:var(--primary-light);font-weight:600;">Decouvrir les evenements</a></p>
-          </div>`;
+        container.innerHTML = '<div class="orders-empty">' +
+          '<p>Aucune commande pour le moment.</p>' +
+          '<p style="margin-top:8px"><a href="/#events" style="color:var(--primary-light);font-weight:600;">Decouvrir les evenements</a></p>' +
+        '</div>';
         return;
       }
-      container.innerHTML = orders.map(o => {
-        const date = new Date(o.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-        const statusClass = o.status === 'completed' ? 'completed' : 'pending';
-        const statusLabel = o.status === 'completed' ? 'Confirme' : 'En attente';
-        const productsHtml = (o.products || []).map(p => `
-          <div class="order-product">
-            <span class="order-product-name">${p.name}</span>
-            <span class="order-product-qty">x${p.quantity}</span>
-            <span class="order-product-price">${((p.price * p.quantity) / 100).toFixed(2)} &euro;</span>
-          </div>
-        `).join('');
-        const total = ((o.amount || 0) / 100).toFixed(2);
-        const deliveryHtml = o.status === 'completed' ? `
-          <div class="order-delivery">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            Billets envoyes par email — Verifiez vos spams si besoin
-          </div>` : `
-          <div class="order-delivery" style="border-color:rgba(234,179,8,0.2);color:#facc15;background:rgba(234,179,8,0.06);">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            Paiement en attente de confirmation
-          </div>`;
+      var html = '';
+      for (var i = 0; i < orders.length; i++) {
+        var o = orders[i];
+        var date = new Date(o.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        var statusClass = o.status === 'completed' ? 'completed' : 'pending';
+        var statusLabel = o.status === 'completed' ? 'Confirme' : 'En attente';
+        var products = o.products || [];
+        var productsHtml = '';
+        for (var p = 0; p < products.length; p++) {
+          var pr = products[p];
+          productsHtml += '<div class="order-product">' +
+            '<span class="order-product-name">' + pr.name + '</span>' +
+            '<span class="order-product-qty">x' + pr.quantity + '</span>' +
+            '<span class="order-product-price">' + ((pr.price * pr.quantity) / 100).toFixed(2) + ' &euro;</span>' +
+          '</div>';
+        }
+        var total = ((o.amount || 0) / 100).toFixed(2);
+        var deliveryHtml = o.status === 'completed'
+          ? '<div class="order-delivery">' +
+              '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
+              'Billets envoyes par email — Verifiez vos spams si besoin' +
+            '</div>'
+          : '<div class="order-delivery" style="border-color:rgba(234,179,8,0.2);color:#facc15;background:rgba(234,179,8,0.06);">' +
+              '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' +
+              'Paiement en attente de confirmation' +
+            '</div>';
 
-        return `
-          <div class="order-card">
-            <div class="order-top">
-              <div>
-                <span class="order-id">Commande #${o.id}</span>
-                <span class="order-date"> — ${date}</span>
-              </div>
-              <span class="order-status ${statusClass}"><span class="order-status-dot"></span>${statusLabel}</span>
-            </div>
-            <div class="order-products">${productsHtml}</div>
-            <div class="order-total">
-              <span>Total</span>
-              <span>${total} &euro;</span>
-            </div>
-            ${deliveryHtml}
-          </div>`;
-      }).join('');
+        html += '<div class="order-card">' +
+          '<div class="order-top">' +
+            '<div>' +
+              '<span class="order-id">Commande #' + o.id + '</span>' +
+              '<span class="order-date"> — ' + date + '</span>' +
+            '</div>' +
+            '<span class="order-status ' + statusClass + '"><span class="order-status-dot"></span>' + statusLabel + '</span>' +
+          '</div>' +
+          '<div class="order-products">' + productsHtml + '</div>' +
+          '<div class="order-total">' +
+            '<span>Total</span>' +
+            '<span>' + total + ' &euro;</span>' +
+          '</div>' +
+          deliveryHtml +
+        '</div>';
+      }
+      container.innerHTML = html;
     }
 
     // Cart count
     function updateCartCount() {
       try {
-        const cart = JSON.parse(localStorage.getItem('vtbCart') || '{"items":[]}');
-        const count = cart.items.reduce((sum, item) => sum + item.quantity, 0);
-        const el = document.getElementById('cartCount');
+        var cart = JSON.parse(localStorage.getItem('vtbCart') || '{"items":[]}');
+        var count = 0;
+        for (var i = 0; i < cart.items.length; i++) { count += cart.items[i].quantity; }
+        var el = document.getElementById('cartCount');
         if (el) { if (count > 0) { el.textContent = count; el.style.display = 'flex'; } else { el.style.display = 'none'; } }
-      } catch {}
+      } catch(e) {}
     }
 
     // Mobile menu
-    const menuToggle = document.getElementById('menuToggle');
+    var menuToggle = document.getElementById('menuToggle');
     if (menuToggle) {
-      menuToggle.addEventListener('click', () => {
-        const nav = document.getElementById('mobileNav');
+      menuToggle.addEventListener('click', function () {
+        var nav = document.getElementById('mobileNav');
         if (nav) nav.classList.toggle('open');
+        vTrack('mobile_menu_toggle');
       });
     }
 
     // Header scroll
-    window.addEventListener('scroll', () => {
-      document.getElementById('header')?.classList.toggle('scrolled', window.scrollY > 20);
+    window.addEventListener('scroll', function () {
+      var h = document.getElementById('header');
+      if (h) h.classList.toggle('scrolled', window.scrollY > 20);
     });
 
     init();

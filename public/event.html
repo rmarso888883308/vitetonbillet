@@ -650,76 +650,81 @@
 
   <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
   <script>
-    let event = null;
-    let selectedTicket = 0;
-    let selectedDate = 0;
-    let quantity = 1;
+    var event = null;
+    var selectedTicket = 0;
+    var selectedDate = 0;
+    var quantity = 1;
 
-    function formatPrice(cents, currency = 'EUR') {
-      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency, minimumFractionDigits: 2 }).format(cents / 100);
+    function formatPrice(cents, currency) {
+      currency = currency || 'EUR';
+      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: currency, minimumFractionDigits: 2 }).format(cents / 100);
     }
 
     // ─── CART ───
     function getCart() {
-      try { return JSON.parse(localStorage.getItem('vtbCart') || '{"items":[]}'); } catch { return { items: [] }; }
+      try { return JSON.parse(localStorage.getItem('vtbCart') || '{"items":[]}'); } catch(e) { return { items: [] }; }
     }
     function saveCart(cart) {
       localStorage.setItem('vtbCart', JSON.stringify(cart));
       updateCartCount();
     }
     function updateCartCount() {
-      const cart = getCart();
-      const count = cart.items.reduce((sum, item) => sum + item.quantity, 0);
-      const el = document.getElementById('cartCount');
+      var cart = getCart();
+      var count = 0;
+      for (var i = 0; i < cart.items.length; i++) { count += cart.items[i].quantity; }
+      var el = document.getElementById('cartCount');
       if (el) { if (count > 0) { el.textContent = count; el.style.display = 'flex'; } else { el.style.display = 'none'; } }
     }
 
-    // ─── LOAD EVENT ───
     // ─── VISITORS TRACKING ───
     function vTrack(name, props) {
-      try { if (typeof visitors !== 'undefined' && visitors.track) visitors.track(name, props || {}); } catch {}
+      try { if (typeof visitors !== 'undefined' && visitors.track) visitors.track(name, props || {}); } catch(e) {}
     }
     function vIdentify() {
       try {
-        const user = JSON.parse(localStorage.getItem('vtb_user') || '{}');
+        var user = JSON.parse(localStorage.getItem('vtb_user') || '{}');
         if (user.id && typeof visitors !== 'undefined' && visitors.identify) {
-          visitors.identify({ id: String(user.id), email: user.email || '', name: `${user.firstName || ''} ${user.lastName || ''}`.trim() });
+          visitors.identify({ id: String(user.id), email: user.email || '', name: ((user.firstName || '') + ' ' + (user.lastName || '')).trim() });
         }
-      } catch {}
+      } catch(e) {}
     }
-    vIdentify(); // Identifier l'utilisateur connecte
+    vIdentify();
     function trackClarity(key, val) { vTrack(key, { value: val }); }
 
-    async function loadEvent() {
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get('id');
-      const pathMatch = window.location.pathname.match(/^\/concert-(.+)$/);
+    function loadEvent() {
+      var params = new URLSearchParams(window.location.search);
+      var id = params.get('id');
+      var pathMatch = window.location.pathname.match(/^\/concert-(.+)$/);
 
-      let apiUrl;
+      var apiUrl;
       if (pathMatch) {
-        apiUrl = `/api/events/by-slug/${pathMatch[1]}`;
+        apiUrl = '/api/events/by-slug/' + pathMatch[1];
       } else if (id) {
-        apiUrl = `/api/events/${id}`;
+        apiUrl = '/api/events/' + id;
       } else { window.location.href = '/'; return; }
 
-      try {
-        const res = await fetch(apiUrl);
+      fetch(apiUrl).then(function (res) {
         if (!res.ok) { window.location.href = '/'; return; }
-        event = await res.json();
+        return res.json();
+      }).then(function (data) {
+        if (!data) return;
+        event = data;
         render();
         injectStructuredData(event);
-        vTrack('view_event', { event_name: event.name, event_id: String(event.id) });
+        vTrack('event_page_view', { event_name: event.name, event_id: String(event.id) });
         updateCartCount();
-      } catch { window.location.href = '/'; }
+      }).catch(function(e) { window.location.href = '/'; });
     }
 
     function injectStructuredData(ev) {
-      const minPrice = Math.min(...ev.tickets.map(t => t.price)) / 100;
-      const schema = {
+      var prices = [];
+      for (var i = 0; i < ev.tickets.length; i++) { prices.push(ev.tickets[i].price); }
+      var minPrice = Math.min.apply(null, prices) / 100;
+      var schema = {
         "@context": "https://schema.org",
         "@type": "Event",
         "name": ev.name,
-        "description": ev.description || `Billets ${ev.name} - Revente sécurisée via ViteTonBillet`,
+        "description": ev.description || ('Billets ' + ev.name + ' - Revente securisee via ViteTonBillet'),
         "location": { "@type": "Place", "name": ev.location },
         "organizer": { "@type": "Organization", "name": "ViteTonBillet", "url": "https://vitetonbillet.com" },
         "offers": {
@@ -732,7 +737,7 @@
         },
         "image": ev.image
       };
-      const s = document.createElement('script');
+      var s = document.createElement('script');
       s.type = 'application/ld+json';
       s.textContent = JSON.stringify(schema);
       document.head.appendChild(s);
@@ -746,28 +751,28 @@
     }
 
     function getMaxQty() {
-      const tickets = getActiveTickets();
+      var tickets = getActiveTickets();
       return (tickets[selectedTicket] && tickets[selectedTicket].maxQuantity) || 10;
     }
 
     function updateMaxLabel() {
-      const max = getMaxQty();
-      const el = document.getElementById('maxQtyLabel');
-      if (el) el.textContent = `Maximum ${max} billet${max > 1 ? 's' : ''} par commande`;
+      var max = getMaxQty();
+      var el = document.getElementById('maxQtyLabel');
+      if (el) el.textContent = 'Maximum ' + max + ' billet' + (max > 1 ? 's' : '') + ' par commande';
     }
 
     function render() {
-      const artistPart = event.artist ? event.artist : event.name;
-      document.title = `Billets ${artistPart} ${event.location} - Achat Sécurisé | ViteTonBillet`;
+      var artistPart = event.artist ? event.artist : event.name;
+      document.title = 'Billets ' + artistPart + ' ' + event.location + ' - Achat Securise | ViteTonBillet';
       // Meta description dynamique
-      let metaDesc = document.querySelector('meta[name="description"]');
+      var metaDesc = document.querySelector('meta[name="description"]');
       if (!metaDesc) { metaDesc = document.createElement('meta'); metaDesc.name = 'description'; document.head.appendChild(metaDesc); }
-      metaDesc.content = `Place de concert sold out pour ${artistPart} à ${event.location}. Billet 100% vérifié, accès garanti à la salle ou remboursé.`;
+      metaDesc.content = 'Place de concert sold out pour ' + artistPart + ' a ' + event.location + '. Billet 100% verifie, acces garanti a la salle ou rembourse.';
       // Canonical SEO URL
       if (event.slug) {
-        let canonical = document.querySelector('link[rel="canonical"]');
+        var canonical = document.querySelector('link[rel="canonical"]');
         if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical); }
-        canonical.href = `https://vitetonbillet.com/concert-${event.slug}`;
+        canonical.href = 'https://vitetonbillet.com/concert-' + event.slug;
       }
       document.getElementById('evImage').src = event.image;
       document.getElementById('evImage').alt = event.name;
@@ -778,13 +783,13 @@
       document.getElementById('evLocation').textContent = event.location;
       document.getElementById('evDesc').textContent = event.description;
 
-      const artistEl = document.getElementById('evArtist');
+      var artistEl = document.getElementById('evArtist');
       if (event.artist) { artistEl.textContent = event.artist; }
       else { artistEl.style.display = 'none'; }
 
       // Delivery info
-      const deliveryLine = document.getElementById('deliveryLine');
-      const deliveryText = document.getElementById('deliveryText');
+      var deliveryLine = document.getElementById('deliveryLine');
+      var deliveryText = document.getElementById('deliveryText');
       if (event.deliveryInfo === 'avant-event') {
         deliveryText.textContent = 'Billets envoy\u00e9s \u00e0 l\u2019approche de l\u2019\u00e9v\u00e9nement';
         deliveryLine.style.display = 'flex';
@@ -796,40 +801,46 @@
       // Multi-date selector
       if (event.dates && event.dates.length > 1) {
         selectedDate = 0;
-        const dateSel = document.getElementById('dateSelector');
+        var dateSel = document.getElementById('dateSelector');
         dateSel.style.display = 'block';
-        const datesEl = document.getElementById('evDates');
-        datesEl.innerHTML = event.dates.map((d, i) => `
-          <label class="edate${i === 0 ? ' selected' : ''}" data-index="${i}">
-            <input type="radio" name="eventdate" value="${i}" ${i === 0 ? 'checked' : ''} />
-            <div class="edate-info">
-              <div class="edate-label">${d.label}</div>
-              <div class="edate-meta">${d.time ? d.time + ' — ' : ''}${d.location || event.location}</div>
-            </div>
-          </label>
-        `).join('');
+        var datesEl = document.getElementById('evDates');
+        var datesHtml = '';
+        for (var di = 0; di < event.dates.length; di++) {
+          var d = event.dates[di];
+          datesHtml += '<label class="edate' + (di === 0 ? ' selected' : '') + '" data-index="' + di + '">' +
+            '<input type="radio" name="eventdate" value="' + di + '"' + (di === 0 ? ' checked' : '') + ' />' +
+            '<div class="edate-info">' +
+              '<div class="edate-label">' + d.label + '</div>' +
+              '<div class="edate-meta">' + (d.time ? d.time + ' — ' : '') + (d.location || event.location) + '</div>' +
+            '</div>' +
+          '</label>';
+        }
+        datesEl.innerHTML = datesHtml;
 
-        datesEl.querySelectorAll('input[type="radio"]').forEach(r => {
-          r.addEventListener('change', () => {
-            selectedDate = parseInt(r.value);
-            selectedTicket = 0;
-            datesEl.querySelectorAll('.edate').forEach(e => e.classList.remove('selected'));
-            r.closest('.edate').classList.add('selected');
-            const d = event.dates[selectedDate];
-            vTrack('select_date', { event_name: event.name, date: d.label, location: d.location || '' });
-            document.getElementById('evDate').textContent = d.label;
-            document.getElementById('evTime').textContent = d.time || event.time;
-            document.getElementById('evLocation').textContent = d.location || event.location;
-            // Afficher les billets spécifiques à cette date
-            renderTickets(getActiveTickets());
-            updateTotal();
-            updateMaxLabel();
-            updateSeatsNote();
-          });
-        });
+        var dateRadios = datesEl.querySelectorAll('input[type="radio"]');
+        for (var dr = 0; dr < dateRadios.length; dr++) {
+          (function(r) {
+            r.addEventListener('change', function () {
+              selectedDate = parseInt(r.value);
+              selectedTicket = 0;
+              var allDates = datesEl.querySelectorAll('.edate');
+              for (var x = 0; x < allDates.length; x++) allDates[x].classList.remove('selected');
+              r.closest('.edate').classList.add('selected');
+              var dd = event.dates[selectedDate];
+              vTrack('date_select', { event_name: event.name, date: dd.label, location: dd.location || '' });
+              document.getElementById('evDate').textContent = dd.label;
+              document.getElementById('evTime').textContent = dd.time || event.time;
+              document.getElementById('evLocation').textContent = dd.location || event.location;
+              renderTickets(getActiveTickets());
+              updateTotal();
+              updateMaxLabel();
+              updateSeatsNote();
+            });
+          })(dateRadios[dr]);
+        }
 
         // Set initial display to first date
-        const firstDate = event.dates[0];
+        var firstDate = event.dates[0];
         document.getElementById('evDate').textContent = firstDate.label;
         if (firstDate.time) document.getElementById('evTime').textContent = firstDate.time;
         if (firstDate.location) document.getElementById('evLocation').textContent = firstDate.location;
@@ -842,65 +853,74 @@
     }
 
     function renderTickets(tickets) {
-      const ticketsEl = document.getElementById('evTickets');
-      ticketsEl.innerHTML = tickets.map((t, i) => `
-        <label class="eticket${i === 0 ? ' selected' : ''}" data-index="${i}">
-          <input type="radio" name="ticket" value="${i}" ${i === 0 ? 'checked' : ''} />
-          <div class="eticket-info">
-            <div class="eticket-name">${t.type}</div>
-            <div class="eticket-price-label">${formatPrice(t.price, t.currency)} / billet</div>
-          </div>
-          <div class="eticket-amount">${formatPrice(t.price, t.currency)}</div>
-        </label>
-      `).join('');
+      var ticketsEl = document.getElementById('evTickets');
+      var ticketsHtml = '';
+      for (var ti = 0; ti < tickets.length; ti++) {
+        var t = tickets[ti];
+        ticketsHtml += '<label class="eticket' + (ti === 0 ? ' selected' : '') + '" data-index="' + ti + '">' +
+          '<input type="radio" name="ticket" value="' + ti + '"' + (ti === 0 ? ' checked' : '') + ' />' +
+          '<div class="eticket-info">' +
+            '<div class="eticket-name">' + t.type + '</div>' +
+            '<div class="eticket-price-label">' + formatPrice(t.price, t.currency) + ' / billet</div>' +
+          '</div>' +
+          '<div class="eticket-amount">' + formatPrice(t.price, t.currency) + '</div>' +
+        '</label>';
+      }
+      ticketsEl.innerHTML = ticketsHtml;
 
-      ticketsEl.querySelectorAll('input[type="radio"]').forEach(r => {
-        r.addEventListener('change', () => {
-          selectedTicket = parseInt(r.value);
-          const t = tickets[selectedTicket];
-          if (t) vTrack('select_ticket', { event_name: event?.name || '', ticket_type: t.type, price: String(t.price / 100) });
-          const max = getMaxQty();
-          if (quantity > max) { quantity = max; document.getElementById('qtyVal').textContent = quantity; }
-          ticketsEl.querySelectorAll('.eticket').forEach(e => e.classList.remove('selected'));
-          r.closest('.eticket').classList.add('selected');
-          updateTotal();
-          updateMaxLabel();
-          updateSeatsNote();
-        });
-      });
+      var ticketRadios = ticketsEl.querySelectorAll('input[type="radio"]');
+      for (var tr = 0; tr < ticketRadios.length; tr++) {
+        (function(r) {
+          r.addEventListener('change', function () {
+            selectedTicket = parseInt(r.value);
+            var tk = tickets[selectedTicket];
+            var evName = (event && event.name) ? event.name : '';
+            if (tk) vTrack('ticket_type_select', { event_name: evName, ticket_type: tk.type, price: String(tk.price / 100) });
+            var max = getMaxQty();
+            if (quantity > max) { quantity = max; document.getElementById('qtyVal').textContent = quantity; }
+            var allTickets = ticketsEl.querySelectorAll('.eticket');
+            for (var x = 0; x < allTickets.length; x++) allTickets[x].classList.remove('selected');
+            r.closest('.eticket').classList.add('selected');
+            updateTotal();
+            updateMaxLabel();
+            updateSeatsNote();
+          });
+        })(ticketRadios[tr]);
+      }
     }
 
     function updateSeatsNote() {
-      const tickets = getActiveTickets();
-      const ticket = tickets[selectedTicket];
-      const isFloor = /fosse|floor|debout/i.test(ticket.type);
-      const noteEl = document.getElementById('seatsNote');
+      var tickets = getActiveTickets();
+      var ticket = tickets[selectedTicket];
+      var isFloor = /fosse|floor|debout/i.test(ticket.type);
+      var noteEl = document.getElementById('seatsNote');
       if (noteEl) noteEl.style.display = isFloor ? 'none' : 'flex';
     }
 
     function updateTotal() {
       if (!event) return;
-      const tickets = getActiveTickets();
-      const t = tickets[selectedTicket];
+      var tickets = getActiveTickets();
+      var t = tickets[selectedTicket];
       if (!t) return;
       document.getElementById('totalPrice').textContent = formatPrice(t.price * quantity, t.currency);
     }
 
-    document.getElementById('qtyMinus').addEventListener('click', () => {
-      if (quantity > 1) { quantity--; document.getElementById('qtyVal').textContent = quantity; updateTotal(); vTrack('change_quantity', { quantity: String(quantity), direction: 'minus' }); }
+    document.getElementById('qtyMinus').addEventListener('click', function () {
+      if (quantity > 1) { quantity--; document.getElementById('qtyVal').textContent = quantity; updateTotal(); vTrack('quantity_change', { quantity: String(quantity), direction: 'minus' }); }
     });
-    document.getElementById('qtyPlus').addEventListener('click', () => {
-      const max = getMaxQty();
-      if (quantity < max) { quantity++; document.getElementById('qtyVal').textContent = quantity; updateTotal(); vTrack('change_quantity', { quantity: String(quantity), direction: 'plus' }); }
+    document.getElementById('qtyPlus').addEventListener('click', function () {
+      var max = getMaxQty();
+      if (quantity < max) { quantity++; document.getElementById('qtyVal').textContent = quantity; updateTotal(); vTrack('quantity_change', { quantity: String(quantity), direction: 'plus' }); }
     });
 
     // ─── TRACK: Scroll depth on event page ───
-    let evScrollDepths = { 25: false, 50: false, 75: false, 100: false };
-    window.addEventListener('scroll', () => {
-      const pct = Math.round((window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100);
-      [25, 50, 75, 100].forEach(d => {
-        if (pct >= d && !evScrollDepths[d]) { evScrollDepths[d] = true; vTrack('event_scroll_depth', { percent: String(d) }); }
-      });
+    var evScrollDepths = { 25: false, 50: false, 75: false, 100: false };
+    window.addEventListener('scroll', function () {
+      var pct = Math.round((window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100);
+      var depths = [25, 50, 75, 100];
+      for (var i = 0; i < depths.length; i++) {
+        if (pct >= depths[i] && !evScrollDepths[depths[i]]) { evScrollDepths[depths[i]] = true; vTrack('event_scroll_depth', { percent: String(depths[i]) }); }
+      }
     });
 
     // ─── AUTH HELPERS ───
@@ -908,77 +928,87 @@
       return localStorage.getItem('vtb_token') || null;
     }
     function getUserInfo() {
-      try { return JSON.parse(localStorage.getItem('vtb_user') || '{}'); } catch { return {}; }
+      try { return JSON.parse(localStorage.getItem('vtb_user') || '{}'); } catch(e) { return {}; }
     }
     function requireLogin() {
       if (!getUserToken()) {
-        const currentUrl = encodeURIComponent(window.location.href);
-        window.location.href = `/mon-compte?redirect=${currentUrl}`;
+        var currentUrl = encodeURIComponent(window.location.href);
+        window.location.href = '/mon-compte?redirect=' + currentUrl;
         return false;
       }
       return true;
     }
 
     // ─── PAY NOW ───
-    document.getElementById('payBtn').addEventListener('click', async () => {
+    document.getElementById('payBtn').addEventListener('click', function () {
       if (!event) return;
       if (!requireLogin()) return;
 
-      const btn = document.getElementById('payBtn');
-      const text = document.getElementById('payText');
-      const spin = document.getElementById('paySpin');
+      var btn = document.getElementById('payBtn');
+      var text = document.getElementById('payText');
+      var spin = document.getElementById('paySpin');
 
+      vTrack('buy_now_click', { event_name: event.name, quantity: String(quantity) });
       trackClarity('funnel', 'payment_initiated');
       btn.disabled = true;
       text.classList.add('hidden');
       spin.classList.remove('hidden');
 
-      try {
-        const res = await fetch('/api/checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            eventId: event.id,
-            ticketTypeIndex: selectedTicket,
-            quantity,
-            userToken: getUserToken(),
-            dateIndex: (event.dates && event.dates.length > 1) ? selectedDate : undefined
-          })
+      var checkoutBody = {
+        eventId: event.id,
+        ticketTypeIndex: selectedTicket,
+        quantity: quantity,
+        userToken: getUserToken()
+      };
+      if (event.dates && event.dates.length > 1) {
+        checkoutBody.dateIndex = selectedDate;
+      }
+
+      fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(checkoutBody)
+      }).then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) {
+            trackClarity('payment_status', 'failed');
+            alert('Erreur : ' + (data.error || 'Une erreur est survenue.')); return;
+          }
+          var ticketType = (event.tickets[selectedTicket] && event.tickets[selectedTicket].type) ? event.tickets[selectedTicket].type : '';
+          vTrack('purchase_initiated', { event_name: event.name, quantity: String(quantity), ticket: ticketType });
+          window.location.href = data.purchaseUrl;
         });
-        const data = await res.json();
-        if (!res.ok) {
-          trackClarity('payment_status', 'failed');
-          alert('Erreur : ' + (data.error || 'Une erreur est survenue.')); return;
-        }
-        vTrack('purchase_initiated', { event_name: event.name, quantity: String(quantity), ticket: event.tickets[selectedTicket]?.type || '' });
-        window.location.href = data.purchaseUrl;
-      } catch { alert('Erreur de connexion.'); }
-      finally {
+      }).catch(function(e) { alert('Erreur de connexion.'); })
+      .finally(function () {
         btn.disabled = false;
         text.classList.remove('hidden');
         spin.classList.add('hidden');
-      }
+      });
     });
 
     // ─── ADD TO CART ───
-    document.getElementById('addCartBtn').addEventListener('click', () => {
+    document.getElementById('addCartBtn').addEventListener('click', function () {
       if (!requireLogin()) return;
       if (!event) return;
-      vTrack('add_to_cart', { event_name: event.name, ticket: event.tickets[selectedTicket]?.type || '', quantity: String(quantity) });
-      const cart = getCart();
-      const ticket = event.tickets[selectedTicket];
-      const maxQty = ticket.maxQuantity || 10;
-      const hasMultiDates = event.dates && event.dates.length > 1;
-      const existing = cart.items.find(item =>
-        item.eventId === event.id &&
-        item.ticketTypeIndex === selectedTicket &&
-        (!hasMultiDates || item.dateIndex === selectedDate)
-      );
+      var ticketType = (event.tickets[selectedTicket] && event.tickets[selectedTicket].type) ? event.tickets[selectedTicket].type : '';
+      vTrack('add_to_cart', { event_name: event.name, ticket: ticketType, quantity: String(quantity) });
+      var cart = getCart();
+      var ticket = event.tickets[selectedTicket];
+      var maxQty = ticket.maxQuantity || 10;
+      var hasMultiDates = event.dates && event.dates.length > 1;
+      var existing = null;
+      for (var ei = 0; ei < cart.items.length; ei++) {
+        var ci = cart.items[ei];
+        if (ci.eventId === event.id && ci.ticketTypeIndex === selectedTicket && (!hasMultiDates || ci.dateIndex === selectedDate)) {
+          existing = ci;
+          break;
+        }
+      }
 
       if (existing) {
         existing.quantity = Math.min(existing.quantity + quantity, maxQty);
       } else {
-        const cartItem = {
+        var cartItem = {
           eventId: event.id,
           eventName: event.name,
           eventImage: event.image,
@@ -986,7 +1016,7 @@
           ticketTypeIndex: selectedTicket,
           price: ticket.price,
           currency: ticket.currency,
-          quantity,
+          quantity: quantity,
           maxQuantity: maxQty
         };
         if (hasMultiDates) {
@@ -998,15 +1028,24 @@
 
       saveCart(cart);
 
-      const btn = document.getElementById('addCartBtn');
-      const orig = btn.innerHTML;
-      btn.innerHTML = '✓ Ajouté au panier !';
+      var btn = document.getElementById('addCartBtn');
+      var orig = btn.innerHTML;
+      btn.innerHTML = '\u2713 Ajout\u00e9 au panier !';
       btn.style.background = 'var(--primary-50)';
-      setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 2000);
+      setTimeout(function () { btn.innerHTML = orig; btn.style.background = ''; }, 2000);
     });
 
-    window.addEventListener('scroll', () => {
-      document.getElementById('header').classList.toggle('scrolled', window.scrollY > 10);
+    // ─── TRACK: Share click (reviews CTA) ───
+    var reviewsCta = document.querySelector('.reviews-card-cta');
+    if (reviewsCta) {
+      reviewsCta.addEventListener('click', function () {
+        vTrack('share_click', { target: 'reviews_x_link' });
+      });
+    }
+
+    window.addEventListener('scroll', function () {
+      var h = document.getElementById('header');
+      if (h) h.classList.toggle('scrolled', window.scrollY > 10);
     });
 
     loadEvent();

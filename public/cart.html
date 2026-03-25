@@ -89,12 +89,13 @@
   </style>
 
   <script>
-    function formatPrice(cents, currency = 'EUR') {
-      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency, minimumFractionDigits: 2 }).format(cents / 100);
+    function formatPrice(cents, currency) {
+      currency = currency || 'EUR';
+      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: currency, minimumFractionDigits: 2 }).format(cents / 100);
     }
 
     function getCart() {
-      try { return JSON.parse(localStorage.getItem('vtbCart') || '{"items":[]}'); } catch { return { items: [] }; }
+      try { return JSON.parse(localStorage.getItem('vtbCart') || '{"items":[]}'); } catch(e) { return { items: [] }; }
     }
 
     function saveCart(cart) {
@@ -103,27 +104,33 @@
     }
 
     function updateCartCount() {
-      const cart = getCart();
-      const count = cart.items.reduce((sum, item) => sum + item.quantity, 0);
-      const el = document.getElementById('cartCount');
+      var cart = getCart();
+      var count = 0;
+      for (var i = 0; i < cart.items.length; i++) { count += cart.items[i].quantity; }
+      var el = document.getElementById('cartCount');
       if (el) { if (count > 0) { el.textContent = count; el.style.display = 'flex'; } else { el.style.display = 'none'; } }
     }
 
     // ─── VISITORS: Identifier l'utilisateur ───
     try {
-      const u = JSON.parse(localStorage.getItem('vtb_user') || '{}');
+      var u = JSON.parse(localStorage.getItem('vtb_user') || '{}');
       if (u.id && typeof visitors !== 'undefined' && visitors.identify) {
-        visitors.identify({ id: String(u.id), email: u.email || '', name: `${u.firstName || ''} ${u.lastName || ''}`.trim() });
+        visitors.identify({ id: String(u.id), email: u.email || '', name: ((u.firstName || '') + ' ' + (u.lastName || '')).trim() });
       }
-    } catch {}
+    } catch(e) {}
+
+    function vTrack(name, props) {
+      try { if (typeof visitors !== 'undefined' && visitors.track) visitors.track(name, props || {}); } catch(e) {}
+    }
 
     function render() {
-      const cart = getCart();
+      var cart = getCart();
       updateCartCount();
 
       if (cart.items.length === 0) {
         document.getElementById('cartEmpty').style.display = 'block';
         document.getElementById('cartContent').style.display = 'none';
+        vTrack('cart_empty');
         return;
       }
 
@@ -131,63 +138,68 @@
       document.getElementById('cartContent').style.display = 'block';
 
       // Render items
-      document.getElementById('cartItems').innerHTML = cart.items.map((item, idx) => `
-        <div class="cart-item">
-          <img class="cart-item-img" src="${item.eventImage || ''}" alt="${item.eventName}" onerror="this.style.display='none'" />
-          <div class="cart-item-info">
-            <div class="cart-item-name">${item.eventName}</div>
-            <div class="cart-item-type">${item.ticketType}${item.dateLabel ? ' — ' + item.dateLabel : ''}</div>
-            <div class="cart-item-price">${formatPrice(item.price * item.quantity, item.currency)}</div>
-          </div>
-          <div class="cart-item-qty">
-            <button class="cart-qty-btn" onclick="changeQty(${idx}, -1)">−</button>
-            <span class="cart-qty-val">${item.quantity}</span>
-            <button class="cart-qty-btn" onclick="changeQty(${idx}, 1)">+</button>
-          </div>
-          <button class="cart-item-remove" onclick="removeItem(${idx})" aria-label="Supprimer">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-          </button>
-        </div>
-      `).join('');
+      var itemsHtml = '';
+      for (var i = 0; i < cart.items.length; i++) {
+        var item = cart.items[i];
+        itemsHtml += '<div class="cart-item">' +
+          '<img class="cart-item-img" src="' + (item.eventImage || '') + '" alt="' + item.eventName + '" onerror="this.style.display=\'none\'" />' +
+          '<div class="cart-item-info">' +
+            '<div class="cart-item-name">' + item.eventName + '</div>' +
+            '<div class="cart-item-type">' + item.ticketType + (item.dateLabel ? ' — ' + item.dateLabel : '') + '</div>' +
+            '<div class="cart-item-price">' + formatPrice(item.price * item.quantity, item.currency) + '</div>' +
+          '</div>' +
+          '<div class="cart-item-qty">' +
+            '<button class="cart-qty-btn" onclick="changeQty(' + i + ', -1)">−</button>' +
+            '<span class="cart-qty-val">' + item.quantity + '</span>' +
+            '<button class="cart-qty-btn" onclick="changeQty(' + i + ', 1)">+</button>' +
+          '</div>' +
+          '<button class="cart-item-remove" onclick="removeItem(' + i + ')" aria-label="Supprimer">' +
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>' +
+          '</button>' +
+        '</div>';
+      }
+      document.getElementById('cartItems').innerHTML = itemsHtml;
 
       // Summary rows
-      document.getElementById('cartSummaryRows').innerHTML = cart.items.map(item => `
-        <div class="cart-summary-row">
-          <div>
-            <div>${item.eventName} × ${item.quantity}</div>
-            <div style="font-size:0.78rem;color:var(--gray-400);margin-top:2px">${item.ticketType}${item.dateLabel ? ' — ' + item.dateLabel : ''}</div>
-          </div>
-          <span>${formatPrice(item.price * item.quantity, item.currency)}</span>
-        </div>
-      `).join('');
+      var summaryHtml = '';
+      for (var j = 0; j < cart.items.length; j++) {
+        var si = cart.items[j];
+        summaryHtml += '<div class="cart-summary-row">' +
+          '<div>' +
+            '<div>' + si.eventName + ' × ' + si.quantity + '</div>' +
+            '<div style="font-size:0.78rem;color:var(--gray-400);margin-top:2px">' + si.ticketType + (si.dateLabel ? ' — ' + si.dateLabel : '') + '</div>' +
+          '</div>' +
+          '<span>' + formatPrice(si.price * si.quantity, si.currency) + '</span>' +
+        '</div>';
+      }
+      document.getElementById('cartSummaryRows').innerHTML = summaryHtml;
 
       // Total
-      const total = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-      const currency = cart.items[0]?.currency || 'EUR';
+      var total = 0;
+      for (var k = 0; k < cart.items.length; k++) { total += cart.items[k].price * cart.items[k].quantity; }
+      var currency = (cart.items[0] && cart.items[0].currency) ? cart.items[0].currency : 'EUR';
       document.getElementById('cartTotal').textContent = formatPrice(total, currency);
     }
 
-    function vTrack(name, props) {
-      try { if (typeof visitors !== 'undefined' && visitors.track) visitors.track(name, props || {}); } catch {}
-    }
-
     // Track cart viewed
-    vTrack('cart_viewed', { items: String(getCart().items.length) });
+    var initCart = getCart();
+    vTrack('cart_view', { items: String(initCart.items.length) });
+    if (initCart.items.length === 0) { vTrack('cart_empty'); }
 
     function changeQty(idx, delta) {
-      const cart = getCart();
-      const item = cart.items[idx];
+      var cart = getCart();
+      var item = cart.items[idx];
       if (!item) return;
-      const max = item.maxQuantity || 10;
+      var max = item.maxQuantity || 10;
       item.quantity = Math.max(1, Math.min(item.quantity + delta, max));
-      vTrack('cart_change_qty', { event_name: item.eventName, quantity: String(item.quantity), direction: delta > 0 ? 'plus' : 'minus' });
+      vTrack('cart_quantity_change', { event_name: item.eventName, quantity: String(item.quantity), direction: delta > 0 ? 'plus' : 'minus' });
       saveCart(cart);
     }
 
     function removeItem(idx) {
-      const cart = getCart();
-      const item = cart.items[idx];
-      if (item) vTrack('cart_remove_item', { event_name: item.eventName, ticket_type: item.ticketType });
+      var cart = getCart();
+      var item = cart.items[idx];
+      if (item) vTrack('cart_item_remove', { event_name: item.eventName, ticket_type: item.ticketType });
       cart.items.splice(idx, 1);
       saveCart(cart);
     }
@@ -196,8 +208,8 @@
       return localStorage.getItem('vtb_token') || null;
     }
 
-    document.getElementById('cartCheckoutBtn').addEventListener('click', async () => {
-      const cart = getCart();
+    document.getElementById('cartCheckoutBtn').addEventListener('click', function () {
+      var cart = getCart();
       if (cart.items.length === 0) return;
 
       // Vérifier connexion
@@ -206,46 +218,57 @@
         return;
       }
 
-      const btn = document.getElementById('cartCheckoutBtn');
-      const text = document.getElementById('checkoutText');
-      const spin = document.getElementById('checkoutSpin');
+      vTrack('cart_checkout_click', { items: String(cart.items.length) });
+
+      var btn = document.getElementById('cartCheckoutBtn');
+      var text = document.getElementById('checkoutText');
+      var spin = document.getElementById('checkoutSpin');
 
       btn.disabled = true;
       text.classList.add('hidden');
       spin.classList.remove('hidden');
 
-      try {
-        const res = await fetch('/api/cart-checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            items: cart.items.map(item => ({
-              eventId: item.eventId,
-              ticketTypeIndex: item.ticketTypeIndex,
-              quantity: item.quantity,
-              dateIndex: item.dateIndex
-            })),
-            userToken: getUserToken()
-          })
+      var checkoutItems = [];
+      for (var i = 0; i < cart.items.length; i++) {
+        var ci = cart.items[i];
+        checkoutItems.push({
+          eventId: ci.eventId,
+          ticketTypeIndex: ci.ticketTypeIndex,
+          quantity: ci.quantity,
+          dateIndex: ci.dateIndex
         });
+      }
 
-        const data = await res.json();
-        if (!res.ok) { alert('Erreur : ' + (data.error || 'Une erreur est survenue.')); return; }
+      fetch('/api/cart-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: checkoutItems,
+          userToken: getUserToken()
+        })
+      }).then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) { alert('Erreur : ' + (data.error || 'Une erreur est survenue.')); return; }
 
-        // Track & clear cart and redirect
-        try { if (typeof visitors !== 'undefined' && visitors.track) visitors.track('cart_checkout', { items: String(cart.items.length), total: String(cart.items.reduce((s,i) => s + (i.price * i.quantity), 0) / 100) }); } catch {}
-        localStorage.removeItem('vtbCart');
-        window.location.href = data.purchaseUrl;
-      } catch { alert('Erreur de connexion.'); }
-      finally {
+          // Track & clear cart and redirect
+          var total = 0;
+          for (var t = 0; t < cart.items.length; t++) { total += cart.items[t].price * cart.items[t].quantity; }
+          vTrack('cart_checkout', { items: String(cart.items.length), total: String(total / 100) });
+          localStorage.removeItem('vtbCart');
+          window.location.href = data.purchaseUrl;
+        });
+      }).catch(function(e) {
+        alert('Erreur de connexion.');
+      }).finally(function () {
         btn.disabled = false;
         text.classList.remove('hidden');
         spin.classList.add('hidden');
-      }
+      });
     });
 
-    window.addEventListener('scroll', () => {
-      document.getElementById('header').classList.toggle('scrolled', window.scrollY > 10);
+    window.addEventListener('scroll', function () {
+      var h = document.getElementById('header');
+      if (h) h.classList.toggle('scrolled', window.scrollY > 10);
     });
 
     render();
