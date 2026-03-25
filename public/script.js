@@ -187,21 +187,48 @@ const searchInput = document.getElementById('searchInput');
 const searchClear = document.getElementById('searchClear');
 
 if (searchInput) {
-  searchInput.addEventListener('input', () => {
+  searchInput.addEventListener('input', function() {
     currentSearch = searchInput.value.trim();
     visibleCount = 6;
-    searchClear.style.display = currentSearch ? 'flex' : 'none';
+    if (searchClear) searchClear.style.display = currentSearch ? 'flex' : 'none';
+    if (heroSearchInput) heroSearchInput.value = searchInput.value;
     filterAndRender();
   });
 }
 
 if (searchClear) {
-  searchClear.addEventListener('click', () => {
+  searchClear.addEventListener('click', function() {
     searchInput.value = '';
     currentSearch = '';
     searchClear.style.display = 'none';
     searchInput.focus();
     filterAndRender();
+  });
+}
+
+// Hero search (barre dans le hero)
+var heroSearchInput = document.getElementById('heroSearchInput');
+if (heroSearchInput) {
+  heroSearchInput.addEventListener('input', function() {
+    if (searchInput) searchInput.value = heroSearchInput.value;
+    currentSearch = heroSearchInput.value.trim();
+    if (searchClear) searchClear.style.display = currentSearch ? 'flex' : 'none';
+    visibleCount = 6;
+    filterAndRender();
+  });
+  heroSearchInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      currentSearch = heroSearchInput.value.trim();
+      if (searchInput) searchInput.value = heroSearchInput.value;
+      if (searchClear) searchClear.style.display = currentSearch ? 'flex' : 'none';
+      visibleCount = 6;
+      filterAndRender();
+      var eventsEl = document.getElementById('events');
+      if (eventsEl) {
+        setTimeout(function() { eventsEl.scrollIntoView({ behavior: 'smooth' }); }, 100);
+      }
+    }
   });
 }
 
