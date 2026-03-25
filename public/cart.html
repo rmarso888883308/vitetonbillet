@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <!-- Visitors Analytics -->
-  <script src="https://cdn.visitors.now/v.js" data-token="ab803124-7cd1-4c6d-b457-bb355c3c892f"></script>
+  <script src="https://cdn.visitors.now/v.js" data-token="ab803124-7cd1-4c6d-b457-bb355c3c892f" data-persist></script>
 </head>
 <body>
 
@@ -108,6 +108,14 @@
       const el = document.getElementById('cartCount');
       if (el) { if (count > 0) { el.textContent = count; el.style.display = 'flex'; } else { el.style.display = 'none'; } }
     }
+
+    // ─── VISITORS: Identifier l'utilisateur ───
+    try {
+      const u = JSON.parse(localStorage.getItem('vtb_user') || '{}');
+      if (u.id && typeof visitors !== 'undefined' && visitors.identify) {
+        visitors.identify({ id: String(u.id), email: u.email || '', name: `${u.firstName || ''} ${u.lastName || ''}`.trim() });
+      }
+    } catch {}
 
     function render() {
       const cart = getCart();
@@ -214,7 +222,8 @@
         const data = await res.json();
         if (!res.ok) { alert('Erreur : ' + (data.error || 'Une erreur est survenue.')); return; }
 
-        // Clear cart and redirect
+        // Track & clear cart and redirect
+        try { if (typeof visitors !== 'undefined' && visitors.track) visitors.track('cart_checkout', { items: String(cart.items.length), total: String(cart.items.reduce((s,i) => s + (i.price * i.quantity), 0) / 100) }); } catch {}
         localStorage.removeItem('vtbCart');
         window.location.href = data.purchaseUrl;
       } catch { alert('Erreur de connexion.'); }

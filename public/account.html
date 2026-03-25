@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <!-- Visitors Analytics -->
-  <script src="https://cdn.visitors.now/v.js" data-token="ab803124-7cd1-4c6d-b457-bb355c3c892f"></script>
+  <script src="https://cdn.visitors.now/v.js" data-token="ab803124-7cd1-4c6d-b457-bb355c3c892f" data-persist></script>
   <style>
     .account-page { padding: 100px 0 60px; min-height: 100vh; }
 
@@ -418,6 +418,20 @@
       }
     }
 
+    // ─── VISITORS TRACKING ───
+    function vTrack(name, props) {
+      try { if (typeof visitors !== 'undefined' && visitors.track) visitors.track(name, props || {}); } catch {}
+    }
+    function vIdentify(user) {
+      try {
+        if (user && user.id && typeof visitors !== 'undefined' && visitors.identify) {
+          visitors.identify({ id: String(user.id), email: user.email || '', name: `${user.firstName || ''} ${user.lastName || ''}`.trim() });
+        }
+      } catch {}
+    }
+    // Identifier si deja connecte
+    try { const u = JSON.parse(localStorage.getItem(USER_KEY) || '{}'); if (u.id) vIdentify(u); } catch {}
+
     function showError(msg) {
       const el = document.getElementById('authError');
       el.textContent = msg;
@@ -442,7 +456,9 @@
         if (!res.ok) { showError(data.error); return; }
         localStorage.setItem(TOKEN_KEY, data.token);
         localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-        if (doRedirect()) return; // Retour à la page précédente
+        vIdentify(data.user);
+        vTrack('login', { method: 'email' });
+        if (doRedirect()) return;
         showDashboard(data.user);
         loadOrders(data.token);
       } catch (err) {
@@ -474,7 +490,9 @@
         if (!res.ok) { showError(data.error); return; }
         localStorage.setItem(TOKEN_KEY, data.token);
         localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-        if (doRedirect()) return; // Retour à la page précédente
+        vIdentify(data.user);
+        vTrack('signup', { method: 'email' });
+        if (doRedirect()) return;
         showDashboard(data.user);
         loadOrders(data.token);
       } catch (err) {

@@ -166,6 +166,11 @@ function filterAndRender() {
 
   renderEvents(filtered);
 
+  // Track search
+  if (currentSearch) {
+    try { if (typeof visitors !== 'undefined' && visitors.track) visitors.track('search', { query: currentSearch, results: String(filtered.length) }); } catch {}
+  }
+
   // Update results count
   const countEl = document.getElementById('resultsCount');
   if (countEl) {
@@ -215,7 +220,7 @@ document.getElementById('filters').addEventListener('click', (e) => {
 // NAVIGATION VERS PAGE ÉVÉNEMENT
 // =====================
 function openEvent(slug) {
-  /* tracking removed */
+  try { if (typeof visitors !== 'undefined' && visitors.track) visitors.track('click_event', { slug: slug }); } catch {}
   window.location.href = '/concert-' + slug;
 }
 

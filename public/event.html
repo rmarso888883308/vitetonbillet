@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <!-- Visitors Analytics -->
-  <script src="https://cdn.visitors.now/v.js" data-token="ab803124-7cd1-4c6d-b457-bb355c3c892f"></script>
+  <script src="https://cdn.visitors.now/v.js" data-token="ab803124-7cd1-4c6d-b457-bb355c3c892f" data-persist></script>
   <style>
     body { background: var(--gray-50); }
 
@@ -675,7 +675,20 @@
     }
 
     // ─── LOAD EVENT ───
-    function trackClarity(key, val) { /* removed - was Clarity */ }
+    // ─── VISITORS TRACKING ───
+    function vTrack(name, props) {
+      try { if (typeof visitors !== 'undefined' && visitors.track) visitors.track(name, props || {}); } catch {}
+    }
+    function vIdentify() {
+      try {
+        const user = JSON.parse(localStorage.getItem('vtb_user') || '{}');
+        if (user.id && typeof visitors !== 'undefined' && visitors.identify) {
+          visitors.identify({ id: String(user.id), email: user.email || '', name: `${user.firstName || ''} ${user.lastName || ''}`.trim() });
+        }
+      } catch {}
+    }
+    vIdentify(); // Identifier l'utilisateur connecte
+    function trackClarity(key, val) { vTrack(key, { value: val }); }
 
     async function loadEvent() {
       const params = new URLSearchParams(window.location.search);
@@ -695,7 +708,7 @@
         event = await res.json();
         render();
         injectStructuredData(event);
-        trackClarity('funnel', 'reached_checkout');
+        vTrack('view_event', { event_name: event.name, event_id: String(event.id) });
         updateCartCount();
       } catch { window.location.href = '/'; }
     }
@@ -925,7 +938,7 @@
           trackClarity('payment_status', 'failed');
           alert('Erreur : ' + (data.error || 'Une erreur est survenue.')); return;
         }
-        trackClarity('funnel', 'purchase_success');
+        vTrack('purchase_initiated', { event_name: event.name, quantity: String(quantity), ticket: event.tickets[selectedTicket]?.type || '' });
         window.location.href = data.purchaseUrl;
       } catch { alert('Erreur de connexion.'); }
       finally {
@@ -938,8 +951,8 @@
     // ─── ADD TO CART ───
     document.getElementById('addCartBtn').addEventListener('click', () => {
       if (!requireLogin()) return;
-      trackClarity('funnel', 'added_to_cart');
       if (!event) return;
+      vTrack('add_to_cart', { event_name: event.name, ticket: event.tickets[selectedTicket]?.type || '', quantity: String(quantity) });
       const cart = getCart();
       const ticket = event.tickets[selectedTicket];
       const maxQty = ticket.maxQuantity || 10;

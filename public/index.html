@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <!-- Visitors Analytics -->
-  <script src="https://cdn.visitors.now/v.js" data-token="ab803124-7cd1-4c6d-b457-bb355c3c892f"></script>
+  <script src="https://cdn.visitors.now/v.js" data-token="ab803124-7cd1-4c6d-b457-bb355c3c892f" data-persist></script>
 </head>
 <body>
 
@@ -378,6 +378,14 @@
       } catch {}
     }
     updateCartCount();
+
+    // ─── VISITORS: Identifier l'utilisateur connecte ───
+    try {
+      const u = JSON.parse(localStorage.getItem('vtb_user') || '{}');
+      if (u.id && typeof visitors !== 'undefined' && visitors.identify) {
+        visitors.identify({ id: String(u.id), email: u.email || '', name: `${u.firstName || ''} ${u.lastName || ''}`.trim() });
+      }
+    } catch {}
 
     // FAQ toggle
     function toggleFaq(btn) {
