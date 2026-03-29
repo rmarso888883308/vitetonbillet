@@ -133,7 +133,9 @@ function renderEvents(events) {
     var timeText = ev.dates && ev.dates.length > 1 ? (ev.dates[0].time || ev.time) : ev.time;
     var locText = ev.dates && ev.dates.length > 1 ? (ev.dates[0].location || ev.location) : ev.location;
 
-    html += '<div class="card' + (ev.available ? '' : ' sold-out') + '" onclick="' + (ev.available ? "openEvent('" + slug + "')" : '') + '">' +
+    var cardUrl = '/concert-' + slug;
+    html += '<a href="' + cardUrl + '" class="card-link' + (ev.available ? '' : ' sold-out') + '">' +
+      '<div class="card">' +
       '<div class="card-img-wrap">' +
         '<img class="card-img" src="' + ev.image + '" alt="Affiche du concert de ' + (ev.artist || ev.name) + '" loading="lazy" />' +
         '<div class="card-img-overlay"></div>' +
@@ -154,9 +156,9 @@ function renderEvents(events) {
           '<div class="card-price-tag"><span class="card-price-from">a partir de</span>' +
           '<span class="card-price-value">' + formatPrice(minPrice(ev), ev.tickets[0].currency) + '</span></div>' +
           (ev.available
-            ? '<button class="card-cta" onclick="event.stopPropagation(); openEvent(\'' + slug + '\')">Voir les billets</button>'
-            : '<button class="card-cta" disabled>Complet</button>') +
-        '</div></div></div>';
+            ? '<span class="card-cta">Voir les billets</span>'
+            : '<span class="card-cta" style="opacity:0.5">Complet</span>') +
+        '</div></div></div></a>';
   }
 
   grid.innerHTML = html;

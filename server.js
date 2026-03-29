@@ -1,12 +1,13 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
 const fetch = require('node-fetch');
 const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
-// nodemailer retiré — Railway bloque SMTP, on utilise Resend HTTP API
 
 const multer = require('multer');
 
@@ -77,12 +78,28 @@ const upload = multer({
 });
 
 app.use(cors());
+app.use(helmet({
+  contentSecurityPolicy: false, // Trop de scripts externes (Twitter, Visitors, Google Fonts)
+  crossOriginEmbedderPolicy: false
+}));
+app.use(compression());
 app.use(express.json({ limit: '10mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+
+// Cache-Control pour les assets statiques (1 an)
+app.use(express.static(path.join(__dirname, 'public'), {
+  maxAge: '1y',
+  immutable: true,
+  setHeaders: function(res, filePath) {
+    // Pas de cache sur les HTML (ils changent)
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  }
+}));
 
 // Servir les uploads depuis le volume persistant (data/uploads)
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-app.use('/uploads', express.static(UPLOADS_DIR));
+app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '1y', immutable: true }));
 
 // =====================
 // HELPERS
@@ -1009,14 +1026,155 @@ app.get('/api/auth/orders', requireAuth, (req, res) => {
   res.json(userOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
 });
 
+// =====================
+// robots.txt
+// =====================
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain').send(`User-agent: *
+Disallow: /cart.html
+Disallow: /mon-compte
+Disallow: /api/
+Disallow: /admin.html
+Allow: /
+Sitemap: ${BASE_URL}/sitemap.xml
+`);
+});
+
+// =====================
+// sitemap.xml dynamique
+// =====================
+app.get('/sitemap.xml', (req, res) => {
+  const events = readEvents();
+  const today = new Date().toISOString().split('T')[0];
+  let urls = `
+  <url><loc>${BASE_URL}/</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>${BASE_URL}/mentions-legales</loc><changefreq>yearly</changefreq><priority>0.1</priority></url>
+  <url><loc>${BASE_URL}/cgv</loc><changefreq>yearly</changefreq><priority>0.1</priority></url>
+  <url><loc>${BASE_URL}/confidentialite</loc><changefreq>yearly</changefreq><priority>0.1</priority></url>`;
+  events.forEach(function(e) {
+    var slug = e.slug || generateEventSlug(e);
+    urls += `\n  <url><loc>${BASE_URL}/concert-${slug}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
+  });
+  res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}
+</urlset>`);
+});
+
+// =====================
+// llms.txt
+// =====================
+app.get('/llms.txt', (req, res) => {
+  res.type('text/plain').send(`# ViteTonBillet
+
+> Marketplace de revente de billets pour concerts, festivals et spectacles en France.
+> Billets 100% authentiques, verifies manuellement, livres en PDF par email.
+
+## Pages essentielles
+- [Accueil](${BASE_URL}/)
+- [CGV](${BASE_URL}/cgv)
+- [Mentions legales](${BASE_URL}/mentions-legales)
+
+## Garanties
+- Billets verifies avant mise en vente
+- Remboursement integral si billet invalide
+- Paiement securise (Visa, Mastercard, virement via Inflow)
+- Livraison par email en PDF
+
+## Contact
+- Email: contact@vitetonbillet.com
+- X / Twitter: @Vitetonbillet
+`);
+});
+
 // Route /mon-compte → page compte
 app.get('/mon-compte', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'account.html'));
 });
 
-// Route SEO : /concert-[slug] → event.html
+// =====================
+// SSR : /concert-[slug] — page evenement avec meta SEO dans le HTML
+// =====================
 app.get('/concert-:slug', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'event.html'));
+  var events = readEvents();
+  var slug = req.params.slug;
+  var event = events.find(function(e) { return e.slug === slug; });
+  if (!event) event = events.find(function(e) { return generateEventSlug(e) === slug; });
+
+  // Si pas d'evenement, renvoyer le template client-side quand meme
+  if (!event) {
+    return res.sendFile(path.join(__dirname, 'public', 'event.html'));
+  }
+
+  var eventSlug = event.slug || generateEventSlug(event);
+  var eventUrl = BASE_URL + '/concert-' + eventSlug;
+  var title = event.name + ' — Billets | ViteTonBillet';
+  var description = (event.description || ('Achetez vos billets pour ' + event.name + ' a ' + event.location)).substring(0, 160);
+  var image = event.image || '';
+  if (image.startsWith('/')) image = BASE_URL + image;
+
+  // Prix min/max pour le schema
+  var allTickets = event.tickets || [];
+  if (event.dates) {
+    event.dates.forEach(function(d) {
+      if (d.tickets) allTickets = allTickets.concat(d.tickets);
+    });
+  }
+  var prices = allTickets.map(function(t) { return t.price; }).filter(function(p) { return p > 0; });
+  var minPrice = prices.length ? (Math.min.apply(null, prices) / 100).toFixed(2) : '0';
+  var maxPrice = prices.length ? (Math.max.apply(null, prices) / 100).toFixed(2) : '0';
+
+  // Schema Event + AggregateOffer JSON-LD
+  var schemaEvent = {
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    'name': event.name,
+    'eventStatus': 'https://schema.org/EventScheduled',
+    'eventAttendanceMode': 'https://schema.org/OfflineEventAttendanceMode',
+    'location': {
+      '@type': 'Place',
+      'name': event.location,
+      'address': { '@type': 'PostalAddress', 'addressCountry': 'FR' }
+    },
+    'organizer': { '@type': 'Organization', 'name': 'ViteTonBillet', 'url': BASE_URL },
+    'offers': {
+      '@type': 'AggregateOffer',
+      'lowPrice': minPrice,
+      'highPrice': maxPrice,
+      'priceCurrency': 'EUR',
+      'availability': event.available !== false ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut',
+      'url': eventUrl
+    }
+  };
+  if (event.date) schemaEvent.startDate = event.date;
+  if (event.artist) schemaEvent.performer = { '@type': 'MusicGroup', 'name': event.artist };
+  if (image) schemaEvent.image = image;
+
+  // Lire le template event.html et injecter les meta
+  var html = fs.readFileSync(path.join(__dirname, 'public', 'event.html'), 'utf-8');
+
+  // Remplacer le <title> generique
+  html = html.replace(/<title>[^<]*<\/title>/, '<title>' + title.replace(/</g, '&lt;') + '</title>');
+
+  // Injecter meta description, canonical, og, twitter:card, et schema AVANT </head>
+  var inject = '\n  <meta name="description" content="' + description.replace(/"/g, '&quot;') + '" />';
+  inject += '\n  <link rel="canonical" href="' + eventUrl + '" />';
+  inject += '\n  <meta property="og:title" content="' + title.replace(/"/g, '&quot;') + '" />';
+  inject += '\n  <meta property="og:description" content="' + description.replace(/"/g, '&quot;') + '" />';
+  inject += '\n  <meta property="og:url" content="' + eventUrl + '" />';
+  inject += '\n  <meta property="og:type" content="website" />';
+  if (image) inject += '\n  <meta property="og:image" content="' + image + '" />';
+  inject += '\n  <meta name="twitter:card" content="summary_large_image" />';
+  inject += '\n  <meta name="twitter:title" content="' + title.replace(/"/g, '&quot;') + '" />';
+  inject += '\n  <meta name="twitter:description" content="' + description.replace(/"/g, '&quot;') + '" />';
+  if (image) inject += '\n  <meta name="twitter:image" content="' + image + '" />';
+  inject += '\n  <script type="application/ld+json">' + JSON.stringify(schemaEvent) + '</script>';
+  html = html.replace('</head>', inject + '\n</head>');
+
+  // Injecter le nom de l'event dans le H1 pour que le HTML statique ait le contenu
+  html = html.replace('<h1 id="evName"></h1>', '<h1 id="evName">' + event.name.replace(/</g, '&lt;') + '</h1>');
+  html = html.replace('<h1 id="evName" class="event-title"></h1>', '<h1 id="evName" class="event-title">' + event.name.replace(/</g, '&lt;') + '</h1>');
+
+  res.send(html);
 });
 
 // Routes pages légales

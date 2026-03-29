@@ -489,6 +489,14 @@ img { display: block; max-width: 100%; }
 /* ===========================
    CARD — CINEMATIC STYLE
 =========================== */
+.card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.card-link:hover .card {
+  transform: scale(1.03);
+}
 .card {
   position: relative;
   border-radius: 16px;
