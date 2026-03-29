@@ -1162,11 +1162,14 @@ app.get('/concert-:slug', (req, res) => {
   inject += '\n  <meta property="og:description" content="' + description.replace(/"/g, '&quot;') + '" />';
   inject += '\n  <meta property="og:url" content="' + eventUrl + '" />';
   inject += '\n  <meta property="og:type" content="website" />';
-  if (image) inject += '\n  <meta property="og:image" content="' + image + '" />';
+  const ogImage = image || 'https://vitetonbillet.com/images/og-default.png';
+  inject += '\n  <meta property="og:image" content="' + ogImage + '" />';
+  inject += '\n  <meta property="og:image:width" content="1200" />';
+  inject += '\n  <meta property="og:image:height" content="630" />';
   inject += '\n  <meta name="twitter:card" content="summary_large_image" />';
   inject += '\n  <meta name="twitter:title" content="' + title.replace(/"/g, '&quot;') + '" />';
   inject += '\n  <meta name="twitter:description" content="' + description.replace(/"/g, '&quot;') + '" />';
-  if (image) inject += '\n  <meta name="twitter:image" content="' + image + '" />';
+  inject += '\n  <meta name="twitter:image" content="' + ogImage + '" />';
   inject += '\n  <script type="application/ld+json">' + JSON.stringify(schemaEvent) + '</script>';
   html = html.replace('</head>', inject + '\n</head>');
 
