@@ -453,15 +453,18 @@ app.post('/api/checkout', async (req, res) => {
     currency: ticket.currency,
     successUrl: `${BASE_URL}/success.html?orderId=${orderId}`,
     cancelUrl: `${BASE_URL}/index.html`,
-    priceIncludesVat: true,
+    pricingMode: 'TAX_INCLUSIVE',
     products: [
       {
         name: productName,
         price: ticket.price,
-        quantity: parseInt(quantity),
-        taxRatePercentage: 0
+        quantity: parseInt(quantity)
       }
     ],
+    metadatas: {
+      orderId: String(orderId),
+      source: 'vitetonbillet'
+    },
     sessionCustomization: {
       merchantName: "ViteTonBillet",
       bgColor: "#f8fafc",
@@ -470,8 +473,6 @@ app.post('/api/checkout', async (req, res) => {
   };
 
   if (finalEmail) payload.customerEmail = finalEmail;
-  if (finalName) payload.customerName = finalName;
-  if (finalPhone) payload.customerPhone = finalPhone;
 
   try {
     const response = await fetch(`${INFLOW_API_BASE}/api/payment`, {
@@ -837,8 +838,7 @@ app.post('/api/cart-checkout', async (req, res) => {
     products.push({
       name: cartProductName,
       price: ticket.price,
-      quantity: qty,
-      taxRatePercentage: 0
+      quantity: qty
     });
 
     orderProducts.push({
@@ -869,8 +869,12 @@ app.post('/api/cart-checkout', async (req, res) => {
     currency,
     successUrl: `${BASE_URL}/success.html?orderId=${orderId}`,
     cancelUrl: `${BASE_URL}/cart.html`,
-    priceIncludesVat: true,
+    pricingMode: 'TAX_INCLUSIVE',
     products,
+    metadatas: {
+      orderId: String(orderId),
+      source: 'vitetonbillet'
+    },
     sessionCustomization: {
       merchantName: "ViteTonBillet",
       bgColor: "#f8fafc",
@@ -879,8 +883,6 @@ app.post('/api/cart-checkout', async (req, res) => {
   };
 
   if (finalEmail) payload.customerEmail = finalEmail;
-  if (finalName) payload.customerName = finalName;
-  if (finalPhone) payload.customerPhone = finalPhone;
 
   try {
     const response = await fetch(`${INFLOW_API_BASE}/api/payment`, {
