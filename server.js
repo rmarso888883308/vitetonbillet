@@ -1085,53 +1085,57 @@ app.post('/api/confirm-order', async (req, res) => {
   res.json(result);
 });
 
-// POST /api/webhooks/inflow — webhook Inflow pour mise à jour de paiement
-app.post('/api/webhooks/inflow', express.raw({ type: 'application/json' }), async (req, res) => {
-  // Vérifier le secret webhook si configuré
-  if (INFLOW_WEBHOOK_SECRET) {
-    const signature = req.headers['x-inflow-signature'] || req.headers['x-webhook-secret'];
-    if (signature !== INFLOW_WEBHOOK_SECRET) {
-      console.error('Webhook signature invalide');
-      return res.status(401).json({ error: 'Signature invalide' });
-    }
-  }
-
+// POST /api/webhooks/inflow — webhook Inflow (via Svix) pour mise à jour de paiement
+// Format payload Inflow: { data: [{ eventType: "payment_created"|"payment_status_updated", payload: { id, status, subscriptionId? } }] }
+app.post('/api/webhooks/inflow', express.json(), async (req, res) => {
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    const { paymentId, status } = body;
+    const { data } = req.body;
 
-    if (!paymentId) return res.status(400).json({ error: 'paymentId manquant' });
-
-    console.log(`Webhook Inflow reçu: paymentId=${paymentId}, status=${status}`);
-
-    const orders = readOrders();
-    const order = orders.find(o => o.paymentId === paymentId);
-
-    if (!order) {
-      console.log(`Webhook: aucune commande trouvée pour paymentId=${paymentId}`);
-      return res.json({ received: true });
+    if (!data || !Array.isArray(data)) {
+      console.error('Webhook Inflow: format invalide', req.body);
+      return res.status(400).json({ error: 'Format invalide' });
     }
 
-    if (status === 'PAYMENT_SUCCESS' || status === 'PAYMENT_RECEIVED') {
-      await confirmOrderById(order.id);
-    } else if (status === 'PAYMENT_FAILED') {
-      const idx = orders.findIndex(o => o.id === order.id);
-      if (idx !== -1) {
-        orders[idx].status = 'failed';
-        orders[idx].failedAt = new Date().toISOString();
-        writeOrders(orders);
+    for (const event of data) {
+      const { eventType, payload } = event;
+      if (!payload || !payload.id) continue;
+
+      const paymentId = payload.id;
+      const status = payload.status;
+
+      console.log(`Webhook Inflow: ${eventType} — paymentId=${paymentId}, status=${status}`);
+
+      const orders = readOrders();
+      const order = orders.find(o => o.paymentId === paymentId);
+
+      if (!order) {
+        console.log(`Webhook: aucune commande trouvée pour paymentId=${paymentId}`);
+        continue;
       }
-    } else if (status === 'PARTIAL_REFUNDED' || status === 'FULLY_REFUNDED') {
-      const idx = orders.findIndex(o => o.id === order.id);
-      if (idx !== -1) {
-        orders[idx].status = 'refunded';
-        orders[idx].refundedAt = new Date().toISOString();
-        orders[idx].refundStatus = status;
-        writeOrders(orders);
+
+      if (eventType === 'payment_status_updated') {
+        if (status === 'settled' || status === 'authorized') {
+          await confirmOrderById(order.id);
+        } else if (status === 'failed') {
+          const idx = orders.findIndex(o => o.id === order.id);
+          if (idx !== -1) {
+            orders[idx].status = 'failed';
+            orders[idx].failedAt = new Date().toISOString();
+            writeOrders(orders);
+          }
+        } else if (status === 'refunded') {
+          const idx = orders.findIndex(o => o.id === order.id);
+          if (idx !== -1) {
+            orders[idx].status = 'refunded';
+            orders[idx].refundedAt = new Date().toISOString();
+            orders[idx].refundStatus = status;
+            writeOrders(orders);
+          }
+        }
       }
     }
 
-    res.json({ received: true });
+    res.status(200).json({ received: true });
   } catch (err) {
     console.error('Erreur webhook Inflow:', err);
     res.status(500).json({ error: 'Erreur serveur' });
