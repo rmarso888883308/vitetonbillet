@@ -453,16 +453,18 @@ app.post('/api/checkout', async (req, res) => {
   orders.push(newOrder);
   writeOrders(orders);
 
+  // Envoyer le prix HT pour que le total TTC (après TVA 20%) = prix affiché
+  const priceHT = Math.round(ticket.price / 1.20);
+
   const payload = {
     currency: ticket.currency,
     successUrl: `${BASE_URL}/success.html?orderId=${orderId}`,
     cancelUrl: `${BASE_URL}/index.html`,
-    pricingMode: 'TAX_INCLUSIVE',
     expiresAt: Math.floor(Date.now() / 1000) + 15 * 60,
     products: [
       {
         name: productName,
-        price: ticket.price,
+        price: priceHT,
         quantity: parseInt(quantity)
       }
     ],
@@ -916,9 +918,12 @@ app.post('/api/cart-checkout', async (req, res) => {
     const qty = parseInt(item.quantity);
     totalAmount += ticket.price * qty;
 
+    // Prix HT pour que le total TTC (après TVA 20%) = prix affiché
+    const priceHT = Math.round(ticket.price / 1.20);
+
     products.push({
       name: cartProductName,
-      price: ticket.price,
+      price: priceHT,
       quantity: qty
     });
 
@@ -956,7 +961,6 @@ app.post('/api/cart-checkout', async (req, res) => {
     currency,
     successUrl: `${BASE_URL}/success.html?orderId=${orderId}`,
     cancelUrl: `${BASE_URL}/cart.html`,
-    pricingMode: 'TAX_INCLUSIVE',
     expiresAt: Math.floor(Date.now() / 1000) + 15 * 60,
     products,
     metadatas: {
