@@ -100,7 +100,7 @@
     .date-block { background: var(--gray-50); border: 1.5px solid var(--gray-200); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
     .date-block-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
     .date-block-header h4 { font-size: 0.9rem; color: var(--gray-700); }
-    .ticket-row { display: grid; grid-template-columns: 2fr 1fr auto; gap: 8px; margin-bottom: 8px; align-items: end; }
+    .ticket-row { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 8px; margin-bottom: 8px; align-items: end; }
     .ticket-row input { padding: 8px; border: 1.5px solid var(--gray-200); border-radius: 6px; font-size: 0.85rem; outline: none; }
     .ticket-row input:focus { border-color: var(--primary); }
 
@@ -138,7 +138,7 @@
 
     @media (max-width: 640px) {
       .form-row { grid-template-columns: 1fr; }
-      .ticket-row { grid-template-columns: 1fr 1fr auto; }
+      .ticket-row { grid-template-columns: 1fr 1fr 1fr auto; }
       .event-item { flex-direction: column; gap: 12px; align-items: flex-start; }
     }
   </style>
@@ -690,17 +690,18 @@
     }
 
     // ========== TICKET ROWS ==========
-    function addTicketRow(containerId, type = '', price = '') {
+    function addTicketRow(containerId, type = '', price = '', maxQty = 10) {
       const container = document.getElementById(containerId);
-      addTicketRowTo(container, type, price);
+      addTicketRowTo(container, type, price, maxQty);
     }
 
-    function addTicketRowTo(container, type = '', price = '') {
+    function addTicketRowTo(container, type = '', price = '', maxQty = 10) {
       const row = document.createElement('div');
       row.className = 'ticket-row';
       row.innerHTML = `
         <input type="text" placeholder="Type (Fosse, VIP...)" value="${type}" class="t-type" />
-        <input type="number" step="0.01" placeholder="Prix en EUR" value="${price}" class="t-price" />
+        <input type="number" step="0.01" placeholder="Prix EUR" value="${price}" class="t-price" />
+        <input type="number" min="1" max="99" placeholder="Max/cmd" value="${maxQty}" class="t-max" title="Maximum par commande" />
         <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">x</button>
       `;
       container.appendChild(row);
@@ -710,7 +711,8 @@
       return Array.from(container.querySelectorAll('.ticket-row')).map(row => ({
         type: row.querySelector('.t-type').value.trim(),
         price: Math.round(parseFloat(row.querySelector('.t-price').value) * 100) || 0,
-        currency: 'EUR'
+        currency: 'EUR',
+        maxQuantity: parseInt(row.querySelector('.t-max').value) || 10
       })).filter(t => t.type && t.price > 0);
     }
 
@@ -766,7 +768,7 @@
       // Add default tickets or provided ones
       const ticketsContainer = document.getElementById(ticketsId);
       if (tickets.length > 0) {
-        tickets.forEach(t => addTicketRowTo(ticketsContainer, t.type, t.price));
+        tickets.forEach(t => addTicketRowTo(ticketsContainer, t.type, t.price, t.maxQuantity || 10));
       } else {
         addTicketRowTo(ticketsContainer, '', '');
       }
@@ -780,7 +782,8 @@
       // Lire les valeurs brutes en EUR (pas getTicketsFrom qui convertit en centimes)
       const tickets = Array.from(source.querySelectorAll('.date-tickets .ticket-row')).map(row => ({
         type: row.querySelector('.t-type').value,
-        price: row.querySelector('.t-price').value
+        price: row.querySelector('.t-price').value,
+        maxQuantity: parseInt(row.querySelector('.t-max').value) || 10
       })).filter(t => t.type);
       addDateBlock(label, time, location, tickets);
     }
@@ -827,13 +830,13 @@
 
       if (hasMultiDates) {
         ev.dates.forEach(d => {
-          const dateTickets = (d.tickets || ev.tickets || []).map(t => ({ ...t, price: (t.price / 100).toFixed(2) }));
+          const dateTickets = (d.tickets || ev.tickets || []).map(t => ({ ...t, price: (t.price / 100).toFixed(2), maxQuantity: t.maxQuantity || 10 }));
           addDateBlock(d.label, d.time, d.location, dateTickets);
         });
       } else {
         const tickets = ev?.tickets || [];
         if (tickets.length > 0) {
-          tickets.forEach(t => addTicketRow('singleTickets', t.type, (t.price / 100).toFixed(2)));
+          tickets.forEach(t => addTicketRow('singleTickets', t.type, (t.price / 100).toFixed(2), t.maxQuantity || 10));
         } else {
           addTicketRow('singleTickets');
         }
