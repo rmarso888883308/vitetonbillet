@@ -130,32 +130,37 @@
       margin-bottom: 24px;
     }
 
-    .edate {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 16px 18px;
+    .date-select {
+      width: 100%;
+      padding: 14px 16px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--gray-800);
       background: var(--gray-50);
       border: 1.5px solid var(--gray-200);
       border-radius: 12px;
       cursor: pointer;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      padding-right: 44px;
       transition: all 0.2s;
+      margin-bottom: 8px;
     }
 
-    .edate:hover, .edate.selected {
+    .date-select:hover, .date-select:focus {
       border-color: var(--primary);
-      background: var(--primary-50);
+      background-color: var(--primary-50);
     }
 
-    .edate input[type="radio"] {
-      accent-color: var(--primary);
-      width: 18px; height: 18px;
-      flex-shrink: 0;
+    .date-select option {
+      font-weight: 500;
+      padding: 8px;
     }
-
-    .edate-info { flex: 1; }
-    .edate-label { font-weight: 600; font-size: 0.95rem; color: var(--gray-800); }
-    .edate-meta { font-size: 0.84rem; color: var(--gray-500); margin-top: 2px; }
 
     /* TICKETS */
     .tickets-title {
@@ -470,8 +475,7 @@
       .event-info-item { font-size: 0.84rem; }
       .event-desc { font-size: 0.88rem; margin-bottom: 20px; padding-bottom: 20px; }
       .dates-title { font-size: 0.92rem; }
-      .edate { padding: 12px 14px; gap: 10px; }
-      .edate-label { font-size: 0.88rem; }
+      .date-select { font-size: 0.88rem; padding: 12px 14px; }
       .tickets-title { font-size: 0.92rem; }
       .eticket { padding: 12px 14px; gap: 10px; }
       .eticket-name { font-size: 0.88rem; }
@@ -549,7 +553,7 @@
 
             <div id="dateSelector" style="display:none">
               <h3 class="dates-title">Choisissez votre date</h3>
-              <div class="event-dates" id="evDates"></div>
+              <select class="date-select" id="evDateSelect"></select>
             </div>
 
             <h3 class="tickets-title">Choisissez vos billets</h3>
@@ -798,46 +802,33 @@
         deliveryLine.style.display = 'flex';
       }
 
-      // Multi-date selector
+      // Multi-date selector (dropdown)
       if (event.dates && event.dates.length > 1) {
         selectedDate = 0;
         var dateSel = document.getElementById('dateSelector');
         dateSel.style.display = 'block';
-        var datesEl = document.getElementById('evDates');
-        var datesHtml = '';
+        var selectEl = document.getElementById('evDateSelect');
+        var optionsHtml = '';
         for (var di = 0; di < event.dates.length; di++) {
           var d = event.dates[di];
-          datesHtml += '<label class="edate' + (di === 0 ? ' selected' : '') + '" data-index="' + di + '">' +
-            '<input type="radio" name="eventdate" value="' + di + '"' + (di === 0 ? ' checked' : '') + ' />' +
-            '<div class="edate-info">' +
-              '<div class="edate-label">' + d.label + '</div>' +
-              '<div class="edate-meta">' + (d.time ? d.time + ' — ' : '') + (d.location || event.location) + '</div>' +
-            '</div>' +
-          '</label>';
+          var optLabel = d.label + (d.time ? '  \u2022  ' + d.time : '') + (d.location ? '  \u2022  ' + d.location : '');
+          optionsHtml += '<option value="' + di + '"' + (di === 0 ? ' selected' : '') + '>' + optLabel + '</option>';
         }
-        datesEl.innerHTML = datesHtml;
+        selectEl.innerHTML = optionsHtml;
 
-        var dateRadios = datesEl.querySelectorAll('input[type="radio"]');
-        for (var dr = 0; dr < dateRadios.length; dr++) {
-          (function(r) {
-            r.addEventListener('change', function () {
-              selectedDate = parseInt(r.value);
-              selectedTicket = 0;
-              var allDates = datesEl.querySelectorAll('.edate');
-              for (var x = 0; x < allDates.length; x++) allDates[x].classList.remove('selected');
-              r.closest('.edate').classList.add('selected');
-              var dd = event.dates[selectedDate];
-              vTrack('date_select', { event_name: event.name, date: dd.label, location: dd.location || '' });
-              document.getElementById('evDate').textContent = dd.label;
-              document.getElementById('evTime').textContent = dd.time || event.time;
-              document.getElementById('evLocation').textContent = dd.location || event.location;
-              renderTickets(getActiveTickets());
-              updateTotal();
-              updateMaxLabel();
-              updateSeatsNote();
-            });
-          })(dateRadios[dr]);
-        }
+        selectEl.addEventListener('change', function () {
+          selectedDate = parseInt(selectEl.value);
+          selectedTicket = 0;
+          var dd = event.dates[selectedDate];
+          vTrack('date_select', { event_name: event.name, date: dd.label, location: dd.location || '' });
+          document.getElementById('evDate').textContent = dd.label;
+          document.getElementById('evTime').textContent = dd.time || event.time;
+          document.getElementById('evLocation').textContent = dd.location || event.location;
+          renderTickets(getActiveTickets());
+          updateTotal();
+          updateMaxLabel();
+          updateSeatsNote();
+        });
 
         // Set initial display to first date
         var firstDate = event.dates[0];

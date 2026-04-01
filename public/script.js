@@ -492,15 +492,20 @@ function loadPromoBanner() {
       if (textEl) textEl.innerHTML = '<strong>' + (banner.text || '') + '</strong>' + (banner.subtitle ? ' — ' + banner.subtitle : '');
       if (linkEl) {
         linkEl.textContent = (banner.linkText || 'Voir les places') + ' \u2192';
-        var query = banner.searchQuery || banner.text || '';
-        linkEl.onclick = function(e) {
-          e.preventDefault();
-          var input = document.getElementById('searchInput');
-          if (input) { input.value = query; input.dispatchEvent(new Event('input')); }
-          var eventsEl = document.getElementById('events');
-          if (eventsEl) eventsEl.scrollIntoView({ behavior: 'smooth' });
-          vt('promo_banner_click', { text: banner.text });
-        };
+        if (banner.linkUrl) {
+          linkEl.href = banner.linkUrl;
+          linkEl.onclick = function() {
+            vt('promo_banner_click', { text: banner.text, url: banner.linkUrl });
+          };
+        } else {
+          linkEl.href = '#events';
+          linkEl.onclick = function(e) {
+            e.preventDefault();
+            var eventsEl = document.getElementById('events');
+            if (eventsEl) eventsEl.scrollIntoView({ behavior: 'smooth' });
+            vt('promo_banner_click', { text: banner.text });
+          };
+        }
       }
       // Appliquer la couleur choisie
       var colorMap = {

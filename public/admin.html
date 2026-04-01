@@ -253,8 +253,8 @@
                 <input type="text" id="bannerLinkText" placeholder="Ex: Voir les places" />
               </div>
               <div class="form-group">
-                <label>Recherche au clic</label>
-                <input type="text" id="bannerSearchQuery" placeholder="Ex: Celine Dion" />
+                <label>Lien du bouton (URL)</label>
+                <input type="text" id="bannerLinkUrl" placeholder="Ex: /concert-celine-dion-paris ou https://..." />
               </div>
             </div>
 
@@ -541,7 +541,7 @@
         document.getElementById('bannerText').value = b.text || '';
         document.getElementById('bannerSubtitle').value = b.subtitle || '';
         document.getElementById('bannerLinkText').value = b.linkText || 'Voir les places';
-        document.getElementById('bannerSearchQuery').value = b.searchQuery || '';
+        document.getElementById('bannerLinkUrl').value = b.linkUrl || '';
         // Set color radio
         var colorVal = b.color || 'orange';
         var colorRadio = document.querySelector('input[name="bannerColor"][value="' + colorVal + '"]');
@@ -575,7 +575,7 @@
             text: document.getElementById('bannerText').value.trim(),
             subtitle: document.getElementById('bannerSubtitle').value.trim(),
             linkText: document.getElementById('bannerLinkText').value.trim() || 'Voir les places',
-            searchQuery: document.getElementById('bannerSearchQuery').value.trim(),
+            linkUrl: document.getElementById('bannerLinkUrl').value.trim(),
             color: selectedColor
           }
         };
