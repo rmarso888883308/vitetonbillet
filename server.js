@@ -453,6 +453,7 @@ app.post('/api/checkout', async (req, res) => {
     currency: ticket.currency,
     successUrl: `${BASE_URL}/success.html?orderId=${orderId}`,
     cancelUrl: `${BASE_URL}/index.html`,
+    priceIncludesVat: true,
     products: [
       {
         name: productName,
@@ -868,6 +869,7 @@ app.post('/api/cart-checkout', async (req, res) => {
     currency,
     successUrl: `${BASE_URL}/success.html?orderId=${orderId}`,
     cancelUrl: `${BASE_URL}/cart.html`,
+    priceIncludesVat: true,
     products,
     sessionCustomization: {
       merchantName: "ViteTonBillet",
