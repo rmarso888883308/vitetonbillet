@@ -732,7 +732,7 @@
           "url": window.location.href,
           "price": minPrice,
           "priceCurrency": "EUR",
-          "availability": ev.available ? "https://schema.org/InStock" : "https://schema.org/SoldOut",
+          "availability": ev.available !== false ? "https://schema.org/InStock" : "https://schema.org/PreOrder",
           "seller": { "@type": "Organization", "name": "ViteTonBillet" }
         },
         "image": ev.image
@@ -850,6 +850,27 @@
       updateTotal();
       updateMaxLabel();
       updateSeatsNote();
+
+      // Si l'event n'est pas encore disponible à la vente
+      if (event.available === false) {
+        var payBtn = document.getElementById('payBtn');
+        var cartBtn = document.getElementById('addCartBtn');
+        var qtyWrap = document.querySelector('.qty-row');
+        var totalBar = document.querySelector('.total-bar');
+        if (payBtn) { payBtn.style.display = 'none'; }
+        if (cartBtn) { cartBtn.style.display = 'none'; }
+        if (qtyWrap) { qtyWrap.style.display = 'none'; }
+        if (totalBar) { totalBar.style.display = 'none'; }
+        // Ajouter un message "Bientôt disponible"
+        var soonDiv = document.createElement('div');
+        soonDiv.style.cssText = 'background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;text-align:center;padding:16px 20px;border-radius:12px;margin-top:12px;font-weight:700;font-size:1rem;';
+        soonDiv.innerHTML = '&#128276; Places bientot disponibles<br><span style="font-weight:400;font-size:0.85rem;opacity:0.85;">Restez a l\'affut, la mise en vente arrive tres prochainement !</span>';
+        var secureLine = document.querySelector('.secure-line');
+        if (secureLine) { secureLine.parentNode.insertBefore(soonDiv, secureLine); secureLine.style.display = 'none'; }
+        // Cacher le label max qty
+        var maxLabel = document.getElementById('maxQtyLabel');
+        if (maxLabel) maxLabel.style.display = 'none';
+      }
     }
 
     function renderTickets(tickets) {

@@ -120,6 +120,22 @@
     .toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
     .toggle-row label { font-size: 0.85rem; color: var(--gray-600); font-weight: 500; cursor: pointer; }
 
+    .color-chip {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      border: 3px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .color-chip:hover { transform: scale(1.1); }
+    input[name="bannerColor"]:checked + .color-chip {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(42,140,181,0.3);
+      transform: scale(1.1);
+    }
+
     @media (max-width: 640px) {
       .form-row { grid-template-columns: 1fr; }
       .ticket-row { grid-template-columns: 1fr 1fr auto; }
@@ -239,6 +255,20 @@
               <div class="form-group">
                 <label>Recherche au clic</label>
                 <input type="text" id="bannerSearchQuery" placeholder="Ex: Celine Dion" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Couleur de fond</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <label style="cursor:pointer;"><input type="radio" name="bannerColor" value="orange" checked style="display:none;" /><span class="color-chip" style="background:linear-gradient(90deg,#f59e0b,#f97316);" data-color="orange"></span></label>
+                <label style="cursor:pointer;"><input type="radio" name="bannerColor" value="blue" style="display:none;" /><span class="color-chip" style="background:linear-gradient(90deg,#3b82f6,#2563eb);" data-color="blue"></span></label>
+                <label style="cursor:pointer;"><input type="radio" name="bannerColor" value="purple" style="display:none;" /><span class="color-chip" style="background:linear-gradient(90deg,#8b5cf6,#7c3aed);" data-color="purple"></span></label>
+                <label style="cursor:pointer;"><input type="radio" name="bannerColor" value="red" style="display:none;" /><span class="color-chip" style="background:linear-gradient(90deg,#ef4444,#dc2626);" data-color="red"></span></label>
+                <label style="cursor:pointer;"><input type="radio" name="bannerColor" value="green" style="display:none;" /><span class="color-chip" style="background:linear-gradient(90deg,#22c55e,#16a34a);" data-color="green"></span></label>
+                <label style="cursor:pointer;"><input type="radio" name="bannerColor" value="pink" style="display:none;" /><span class="color-chip" style="background:linear-gradient(90deg,#ec4899,#db2777);" data-color="pink"></span></label>
+                <label style="cursor:pointer;"><input type="radio" name="bannerColor" value="dark" style="display:none;" /><span class="color-chip" style="background:linear-gradient(90deg,#1e293b,#334155);" data-color="dark"></span></label>
+                <label style="cursor:pointer;"><input type="radio" name="bannerColor" value="gold" style="display:none;" /><span class="color-chip" style="background:linear-gradient(90deg,#d4a017,#b8860b);" data-color="gold"></span></label>
               </div>
             </div>
 
@@ -512,6 +542,10 @@
         document.getElementById('bannerSubtitle').value = b.subtitle || '';
         document.getElementById('bannerLinkText').value = b.linkText || 'Voir les places';
         document.getElementById('bannerSearchQuery').value = b.searchQuery || '';
+        // Set color radio
+        var colorVal = b.color || 'orange';
+        var colorRadio = document.querySelector('input[name="bannerColor"][value="' + colorVal + '"]');
+        if (colorRadio) colorRadio.checked = true;
         updateBannerPreview();
       } catch(e) {}
     }
@@ -532,13 +566,17 @@
       const btn = document.getElementById('saveSettingsBtn');
       btn.disabled = true; btn.textContent = 'Enregistrement...';
       try {
+        var selectedColor = 'orange';
+        var colorRadios = document.querySelectorAll('input[name="bannerColor"]');
+        colorRadios.forEach(r => { if (r.checked) selectedColor = r.value; });
         const payload = {
           promoBanner: {
             enabled: document.getElementById('bannerEnabled').checked,
             text: document.getElementById('bannerText').value.trim(),
             subtitle: document.getElementById('bannerSubtitle').value.trim(),
             linkText: document.getElementById('bannerLinkText').value.trim() || 'Voir les places',
-            searchQuery: document.getElementById('bannerSearchQuery').value.trim()
+            searchQuery: document.getElementById('bannerSearchQuery').value.trim(),
+            color: selectedColor
           }
         };
         const res = await fetch('/api/admin/settings', { method: 'PUT', headers: { ...authH(), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -569,19 +607,51 @@
         if (a.featured && b.featured) return (a.featuredOrder || 0) - (b.featuredOrder || 0);
         return 0;
       });
-      el.innerHTML = sorted.map(ev => `
-        <div class="event-item" style="${ev.featured ? 'border-left:4px solid #f59e0b;background:#fffbeb;' : ''}">
+      el.innerHTML = sorted.map(ev => {
+        const isAvail = ev.available !== false;
+        const isFeat = !!ev.featured;
+        let borderStyle = '';
+        if (isFeat) borderStyle = 'border-left:4px solid #f59e0b;background:#fffbeb;';
+        else if (!isAvail) borderStyle = 'border-left:4px solid #94a3b8;background:#f8fafc;';
+        return `
+        <div class="event-item" style="${borderStyle}">
           <div class="event-info">
-            <h3>${ev.featured ? '&#9733; ' : ''}${ev.name}</h3>
-            <p>${ev.location} - ${ev.date}${ev.dates && ev.dates.length > 1 ? ' (' + ev.dates.length + ' dates)' : ''}${ev.featured ? ' — <strong style="color:#f59e0b">A la une</strong>' : ''}</p>
+            <h3>${isFeat ? '&#9733; ' : ''}${ev.name}</h3>
+            <p>
+              ${ev.location} - ${ev.date}${ev.dates && ev.dates.length > 1 ? ' (' + ev.dates.length + ' dates)' : ''}
+              ${isFeat ? ' — <strong style="color:#f59e0b">A la une</strong>' : ''}
+              ${!isAvail ? ' — <strong style="color:#94a3b8">Bientot disponible</strong>' : ' — <strong style="color:#22c55e">En vente</strong>'}
+            </p>
           </div>
           <div class="event-actions">
-            <button class="btn btn-sm" style="background:${ev.featured ? '#f59e0b' : '#e2e8f0'};color:${ev.featured ? 'white' : '#64748b'};" onclick="toggleFeatured(${ev.id})" title="${ev.featured ? 'Retirer de la une' : 'Mettre a la une'}">&#9733;</button>
+            <button class="btn btn-sm" style="background:${isAvail ? '#22c55e' : '#e2e8f0'};color:${isAvail ? 'white' : '#64748b'};" onclick="toggleAvailable(${ev.id})" title="${isAvail ? 'Rendre indisponible' : 'Mettre en vente'}">
+              ${isAvail ? '&#10003;' : '&#10007;'}
+            </button>
+            <button class="btn btn-sm" style="background:${isFeat ? '#f59e0b' : '#e2e8f0'};color:${isFeat ? 'white' : '#64748b'};" onclick="toggleFeatured(${ev.id})" title="${isFeat ? 'Retirer de la une' : 'Mettre a la une'}">&#9733;</button>
             <button class="btn btn-outline btn-sm" onclick="editEvent(${ev.id})">Modifier</button>
             <button class="btn btn-danger btn-sm" onclick="deleteEvent(${ev.id})">Supprimer</button>
           </div>
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
+    }
+
+    async function toggleAvailable(id) {
+      try {
+        const ev = allEvents.find(e => e.id === id);
+        if (!ev) return;
+        const newAvail = ev.available === false ? true : false;
+        const res = await fetch('/api/admin/events/' + id, {
+          method: 'PUT',
+          headers: { ...authH(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ available: newAvail })
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          const idx = allEvents.findIndex(e => e.id === id);
+          if (idx !== -1) allEvents[idx] = updated;
+          renderEventsList();
+        }
+      } catch(e) { alert('Erreur: ' + e.message); }
     }
 
     async function toggleFeatured(id) {

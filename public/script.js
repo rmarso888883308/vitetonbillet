@@ -135,14 +135,15 @@ function renderEvents(events) {
 
     var cardUrl = '/concert-' + slug;
     var featuredClass = ev.featured ? ' is-featured' : '';
-    html += '<a href="' + cardUrl + '" class="card-link' + (ev.available ? '' : ' sold-out') + featuredClass + '">' +
+    var isAvailable = ev.available !== false;
+    html += '<a href="' + cardUrl + '" class="card-link' + (isAvailable ? '' : ' coming-soon') + featuredClass + '">' +
       '<div class="card">' +
       '<div class="card-img-wrap">' +
         '<img class="card-img" src="' + ev.image + '" alt="Affiche du concert de ' + (ev.artist || ev.name) + '" loading="lazy" />' +
         '<div class="card-img-overlay"></div>' +
         '<span class="card-cat">' + ev.category + '</span>' +
         (ev.featured ? '<span class="card-featured-badge">&#9733; A la une</span>' : '') +
-        (!ev.available ? '<div class="sold-out-label">Complet</div>' : '') +
+        (!isAvailable ? '<div class="coming-soon-label">Bientot disponible</div>' : '') +
         '<div class="card-img-info"><h3 class="card-title">' + ev.name + '</h3>' +
         (ev.artist ? '<span class="card-artist">' + ev.artist + '</span>' : '') +
         '</div></div>' +
@@ -157,9 +158,9 @@ function renderEvents(events) {
         '<div class="card-footer">' +
           '<div class="card-price-tag"><span class="card-price-from">a partir de</span>' +
           '<span class="card-price-value">' + formatPrice(minPrice(ev), ev.tickets[0].currency) + '</span></div>' +
-          (ev.available
+          (isAvailable
             ? '<span class="card-cta">Voir les billets</span>'
-            : '<span class="card-cta" style="opacity:0.5">Complet</span>') +
+            : '<span class="card-cta card-cta-soon">Bientot disponible</span>') +
         '</div></div></div></a>';
   }
 
@@ -501,6 +502,21 @@ function loadPromoBanner() {
           vt('promo_banner_click', { text: banner.text });
         };
       }
+      // Appliquer la couleur choisie
+      var colorMap = {
+        orange: 'linear-gradient(90deg, #f59e0b, #f97316, #f59e0b)',
+        blue: 'linear-gradient(90deg, #3b82f6, #2563eb, #3b82f6)',
+        purple: 'linear-gradient(90deg, #8b5cf6, #7c3aed, #8b5cf6)',
+        red: 'linear-gradient(90deg, #ef4444, #dc2626, #ef4444)',
+        green: 'linear-gradient(90deg, #22c55e, #16a34a, #22c55e)',
+        pink: 'linear-gradient(90deg, #ec4899, #db2777, #ec4899)',
+        dark: 'linear-gradient(90deg, #1e293b, #334155, #1e293b)',
+        gold: 'linear-gradient(90deg, #d4a017, #b8860b, #d4a017)'
+      };
+      var bgGradient = colorMap[banner.color] || colorMap.orange;
+      el.style.background = bgGradient;
+      el.style.backgroundSize = '200% 100%';
+
       el.style.display = 'block';
       // Décaler header et mobile-nav sous la bannière
       var bannerHeight = el.offsetHeight || 36;

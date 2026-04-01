@@ -1,0 +1,9 @@
+{
+  "promoBanner": {
+    "enabled": true,
+    "text": "Celine Dion",
+    "subtitle": "Places disponibles !",
+    "linkText": "Voir les places",
+    "searchQuery": "Celine Dion"
+  }
+}
