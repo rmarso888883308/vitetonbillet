@@ -20,6 +20,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'vitetonbillet2026';
 const PUSHOVER_USER_KEY = process.env.PUSHOVER_USER_KEY;
 const PUSHOVER_API_TOKEN = process.env.PUSHOVER_API_TOKEN;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const INFLOW_WEBHOOK_SECRET = process.env.INFLOW_WEBHOOK_SECRET;
 const DATA_DIR = path.join(__dirname, 'data');
 const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
@@ -314,6 +315,9 @@ function buildOrderEmailHtml(order) {
             <div style="text-align:center;margin-bottom:16px;">
               <a href="${BASE_URL}/mon-compte" style="display:inline-block;padding:14px 36px;background:#3b82f6;color:#ffffff;font-weight:700;font-size:14px;border-radius:10px;text-decoration:none;">Suivre ma commande</a>
             </div>
+            ${order.invoiceUrl ? `<div style="text-align:center;margin-bottom:16px;">
+              <a href="${order.invoiceUrl}" style="color:#3b82f6;font-size:13px;text-decoration:underline;" target="_blank">T&eacute;l&eacute;charger ma facture</a>
+            </div>` : ''}
 
             <p style="text-align:center;color:#94a3b8;font-size:12px;margin:0;">
               Une question ? Contactez-nous sur <a href="https://x.com/Vitetonbillet" style="color:#3b82f6;">X (@Vitetonbillet)</a> ou par email a <a href="mailto:contact@vitetonbillet.com" style="color:#3b82f6;">contact@vitetonbillet.com</a>
@@ -454,6 +458,7 @@ app.post('/api/checkout', async (req, res) => {
     successUrl: `${BASE_URL}/success.html?orderId=${orderId}`,
     cancelUrl: `${BASE_URL}/index.html`,
     pricingMode: 'TAX_INCLUSIVE',
+    expiresAt: Math.floor(Date.now() / 1000) + 15 * 60,
     products: [
       {
         name: productName,
@@ -463,10 +468,14 @@ app.post('/api/checkout', async (req, res) => {
     ],
     metadatas: {
       orderId: String(orderId),
-      source: 'vitetonbillet'
+      source: 'vitetonbillet',
+      eventName: event.name,
+      ticketType: ticket.type,
+      customerName: finalName || 'Anonyme'
     },
     sessionCustomization: {
       merchantName: "ViteTonBillet",
+      logoUrl: `${BASE_URL}/images/logo-128.png`,
       bgColor: "#f8fafc",
       fontColor: "#0f172a"
     }
@@ -578,9 +587,9 @@ app.post('/api/admin/test-pushover', requireAdmin, async (req, res) => {
   }
 });
 
-// GET /api/admin/orders — liste des commandes (uniquement payées)
+// GET /api/admin/orders — liste des commandes (payées + remboursées)
 app.get('/api/admin/orders', requireAdmin, (req, res) => {
-  const orders = readOrders().filter(o => o.status === 'completed');
+  const orders = readOrders().filter(o => o.status === 'completed' || o.status === 'refunded');
   res.json(orders.reverse());
 });
 
@@ -590,6 +599,78 @@ app.get('/api/admin/orders/:id', requireAdmin, (req, res) => {
   const order = orders.find(o => o.id === parseInt(req.params.id));
   if (!order) return res.status(404).json({ error: 'Commande introuvable' });
   res.json(order);
+});
+
+// POST /api/admin/orders/:id/refund — rembourser une commande via Inflow
+app.post('/api/admin/orders/:id/refund', requireAdmin, async (req, res) => {
+  const orders = readOrders();
+  const idx = orders.findIndex(o => o.id === parseInt(req.params.id));
+  if (idx === -1) return res.status(404).json({ error: 'Commande introuvable' });
+
+  const order = orders[idx];
+  if (!order.paymentId) return res.status(400).json({ error: 'Pas de paymentId pour cette commande' });
+  if (order.status === 'refunded') return res.status(400).json({ error: 'Commande déjà remboursée' });
+
+  const reason = req.body.reason || 'Remboursement demandé par l\'administrateur';
+
+  try {
+    const refundRes = await fetch(`${INFLOW_API_BASE}/api/payment/${order.paymentId}/refund`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Inflow-Api-Key': INFLOW_API_KEY
+      },
+      body: JSON.stringify({ reason })
+    });
+
+    const refundData = await refundRes.json();
+
+    if (!refundRes.ok) {
+      console.error('Erreur remboursement Inflow:', refundData);
+      return res.status(refundRes.status).json({ error: refundData.message || 'Erreur remboursement' });
+    }
+
+    orders[idx].status = 'refunded';
+    orders[idx].refundedAt = new Date().toISOString();
+    orders[idx].refundReason = reason;
+    writeOrders(orders);
+
+    // Notification Pushover
+    await sendPushoverNotification(
+      'Remboursement ViteTonBillet',
+      `Commande #${order.id} remboursée\nClient: ${order.customerName || order.customerEmail || 'N/A'}\nMontant: ${(order.amount / 100).toFixed(2)}€\nRaison: ${reason}`
+    );
+
+    res.json({ success: true, refundData });
+  } catch (err) {
+    console.error('Erreur remboursement:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// GET /api/admin/orders/:id/payment-details — détails paiement Inflow (tentatives, timeline)
+app.get('/api/admin/orders/:id/payment-details', requireAdmin, async (req, res) => {
+  const orders = readOrders();
+  const order = orders.find(o => o.id === parseInt(req.params.id));
+  if (!order) return res.status(404).json({ error: 'Commande introuvable' });
+  if (!order.paymentId) return res.status(400).json({ error: 'Pas de paymentId' });
+
+  try {
+    const payRes = await fetch(`${INFLOW_API_BASE}/api/payment/${order.paymentId}`, {
+      headers: { 'X-Inflow-Api-Key': INFLOW_API_KEY }
+    });
+
+    if (!payRes.ok) {
+      const errData = await payRes.json();
+      return res.status(payRes.status).json({ error: errData.message || 'Erreur Inflow' });
+    }
+
+    const payData = await payRes.json();
+    res.json(payData);
+  } catch (err) {
+    console.error('Erreur récupération détails paiement:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
 });
 
 // GET /api/admin/users — liste des utilisateurs inscrits
@@ -865,18 +946,29 @@ app.post('/api/cart-checkout', async (req, res) => {
   orders.push(newOrder);
   writeOrders(orders);
 
+  // Résumé des événements pour les métadonnées
+  const eventNames = [...new Set(items.map(item => {
+    const ev = events.find(e => e.id === parseInt(item.eventId));
+    return ev ? ev.name : '';
+  }).filter(Boolean))].join(', ');
+
   const payload = {
     currency,
     successUrl: `${BASE_URL}/success.html?orderId=${orderId}`,
     cancelUrl: `${BASE_URL}/cart.html`,
     pricingMode: 'TAX_INCLUSIVE',
+    expiresAt: Math.floor(Date.now() / 1000) + 15 * 60,
     products,
     metadatas: {
       orderId: String(orderId),
-      source: 'vitetonbillet'
+      source: 'vitetonbillet',
+      eventNames,
+      customerName: finalName || 'Anonyme',
+      itemCount: String(items.length)
     },
     sessionCustomization: {
       merchantName: "ViteTonBillet",
+      logoUrl: `${BASE_URL}/images/logo-128.png`,
       bgColor: "#f8fafc",
       fontColor: "#0f172a"
     }
@@ -916,18 +1008,40 @@ app.post('/api/cart-checkout', async (req, res) => {
   }
 });
 
-// POST /api/confirm-order — appelé par success.html après paiement
-app.post('/api/confirm-order', async (req, res) => {
-  const { orderId } = req.body;
-  if (!orderId) return res.status(400).json({ error: 'orderId manquant' });
-
+// Fonction partagée pour confirmer une commande (utilisée par confirm-order et webhook)
+async function confirmOrderById(orderId) {
   const orders = readOrders();
   const idx = orders.findIndex(o => o.id === parseInt(orderId));
-  if (idx === -1) return res.status(404).json({ error: 'Commande introuvable' });
+  if (idx === -1) return { error: 'Commande introuvable' };
 
   // Ne confirmer qu'une seule fois
   if (orders[idx].status === 'completed') {
-    return res.json({ success: true, alreadyConfirmed: true });
+    return { success: true, alreadyConfirmed: true };
+  }
+
+  // Vérification côté serveur : interroger Inflow pour confirmer le paiement
+  const order = orders[idx];
+  if (order.paymentId) {
+    try {
+      const payRes = await fetch(`${INFLOW_API_BASE}/api/payment/${order.paymentId}`, {
+        headers: { 'X-Inflow-Api-Key': INFLOW_API_KEY }
+      });
+      if (payRes.ok) {
+        const payData = await payRes.json();
+        // Vérifier que le paiement est bien réussi
+        const validStatuses = ['PAYMENT_SUCCESS', 'PAYMENT_RECEIVED', 'CHECKOUT_SUCCESS'];
+        if (!validStatuses.includes(payData.status)) {
+          return { error: `Paiement non confirmé (statut: ${payData.status})` };
+        }
+        // Récupérer l'URL de la facture si disponible
+        if (payData.invoiceUrl) {
+          orders[idx].invoiceUrl = payData.invoiceUrl;
+        }
+      }
+    } catch (err) {
+      console.error('Erreur vérification paiement Inflow:', err.message);
+      // On continue quand même pour ne pas bloquer la commande
+    }
   }
 
   orders[idx].status = 'completed';
@@ -935,30 +1049,93 @@ app.post('/api/confirm-order', async (req, res) => {
   writeOrders(orders);
 
   // Notification Pushover
-  const order = orders[idx];
-  const productNames = (order.products || []).map(p => `${p.name} x${p.quantity}`).join('\n');
+  const confirmedOrder = orders[idx];
+  const productNames = (confirmedOrder.products || []).map(p => `${p.name} x${p.quantity}`).join('\n');
   await sendPushoverNotification(
     'Nouvelle vente ViteTonBillet !',
-    `Client: ${order.customerName || order.customerEmail || 'Anonyme'}\n${productNames}\nTotal: ${(order.amount / 100).toFixed(2)}€`
+    `Client: ${confirmedOrder.customerName || confirmedOrder.customerEmail || 'Anonyme'}\n${productNames}\nTotal: ${(confirmedOrder.amount / 100).toFixed(2)}€`
   );
 
   // Email de confirmation au client
-  await sendOrderConfirmationEmail(order);
+  await sendOrderConfirmationEmail(confirmedOrder);
 
   // Lier la commande au compte utilisateur si l'email correspond
-  if (order.customerEmail) {
+  if (confirmedOrder.customerEmail) {
     const users = readUsers();
-    const user = users.find(u => u.email.toLowerCase() === order.customerEmail.toLowerCase());
+    const user = users.find(u => u.email.toLowerCase() === confirmedOrder.customerEmail.toLowerCase());
     if (user) {
       if (!user.orderIds) user.orderIds = [];
-      if (!user.orderIds.includes(order.id)) {
-        user.orderIds.push(order.id);
+      if (!user.orderIds.includes(confirmedOrder.id)) {
+        user.orderIds.push(confirmedOrder.id);
         writeUsers(users);
       }
     }
   }
 
-  res.json({ success: true });
+  return { success: true };
+}
+
+// POST /api/confirm-order — appelé par success.html après paiement
+app.post('/api/confirm-order', async (req, res) => {
+  const { orderId } = req.body;
+  if (!orderId) return res.status(400).json({ error: 'orderId manquant' });
+
+  const result = await confirmOrderById(orderId);
+  if (result.error) return res.status(400).json(result);
+  res.json(result);
+});
+
+// POST /api/webhooks/inflow — webhook Inflow pour mise à jour de paiement
+app.post('/api/webhooks/inflow', express.raw({ type: 'application/json' }), async (req, res) => {
+  // Vérifier le secret webhook si configuré
+  if (INFLOW_WEBHOOK_SECRET) {
+    const signature = req.headers['x-inflow-signature'] || req.headers['x-webhook-secret'];
+    if (signature !== INFLOW_WEBHOOK_SECRET) {
+      console.error('Webhook signature invalide');
+      return res.status(401).json({ error: 'Signature invalide' });
+    }
+  }
+
+  try {
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const { paymentId, status } = body;
+
+    if (!paymentId) return res.status(400).json({ error: 'paymentId manquant' });
+
+    console.log(`Webhook Inflow reçu: paymentId=${paymentId}, status=${status}`);
+
+    const orders = readOrders();
+    const order = orders.find(o => o.paymentId === paymentId);
+
+    if (!order) {
+      console.log(`Webhook: aucune commande trouvée pour paymentId=${paymentId}`);
+      return res.json({ received: true });
+    }
+
+    if (status === 'PAYMENT_SUCCESS' || status === 'PAYMENT_RECEIVED') {
+      await confirmOrderById(order.id);
+    } else if (status === 'PAYMENT_FAILED') {
+      const idx = orders.findIndex(o => o.id === order.id);
+      if (idx !== -1) {
+        orders[idx].status = 'failed';
+        orders[idx].failedAt = new Date().toISOString();
+        writeOrders(orders);
+      }
+    } else if (status === 'PARTIAL_REFUNDED' || status === 'FULLY_REFUNDED') {
+      const idx = orders.findIndex(o => o.id === order.id);
+      if (idx !== -1) {
+        orders[idx].status = 'refunded';
+        orders[idx].refundedAt = new Date().toISOString();
+        orders[idx].refundStatus = status;
+        writeOrders(orders);
+      }
+    }
+
+    res.json({ received: true });
+  } catch (err) {
+    console.error('Erreur webhook Inflow:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
 });
 
 // =====================
@@ -1275,7 +1452,29 @@ app.get('/confidentialite', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'confidentialite.html'));
 });
 
+// Auto-expiration des commandes pending > 15 minutes
+function expireOldPendingOrders() {
+  const orders = readOrders();
+  const now = Date.now();
+  let changed = false;
+  for (const order of orders) {
+    if (order.status === 'pending' && order.createdAt) {
+      const age = now - new Date(order.createdAt).getTime();
+      if (age > 15 * 60 * 1000) {
+        order.status = 'expired';
+        order.expiredAt = new Date().toISOString();
+        changed = true;
+      }
+    }
+  }
+  if (changed) writeOrders(orders);
+}
+
+// Vérifier toutes les 5 minutes
+setInterval(expireOldPendingOrders, 5 * 60 * 1000);
+
 app.listen(PORT, () => {
   console.log(`ViteTonBillet — Serveur démarré sur http://localhost:${PORT}`);
   console.log(`Admin : http://localhost:${PORT}/admin.html`);
+  expireOldPendingOrders(); // Nettoyage au démarrage
 });

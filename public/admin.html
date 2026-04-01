@@ -73,6 +73,9 @@
     .order-row { cursor: pointer; }
     .status-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
     .status-completed { background: rgba(34,197,94,0.1); color: var(--success); }
+    .status-refunded { background: rgba(248,113,113,0.1); color: #f87171; }
+    .status-failed { background: rgba(248,113,113,0.1); color: #ef4444; }
+    .status-expired { background: rgba(148,163,184,0.1); color: #94a3b8; }
     .status-pending { background: rgba(234,179,8,0.1); color: #ca8a04; }
 
     /* MODAL */
@@ -932,19 +935,23 @@
       if (!allOrders.length) { el.innerHTML = '<div class="empty-state">Aucune commande</div>'; return; }
 
       el.innerHTML = `<table class="orders-table"><thead><tr><th>#</th><th>Client</th><th>Email</th><th>Montant</th><th>Date</th><th>Statut</th></tr></thead><tbody>
-        ${allOrders.map(o => `<tr class="order-row" onclick="openOrderModal(${o.id})">
+        ${allOrders.map(o => {
+          const statusLabels = { completed: 'Payé', refunded: 'Remboursé', pending: 'En attente', failed: 'Échoué', expired: 'Expiré' };
+          return `<tr class="order-row" onclick="openOrderModal(${o.id})">
           <td>#${o.id}</td><td>${o.customerName || 'N/A'}</td><td>${o.customerEmail || 'N/A'}</td>
           <td>${(o.amount / 100).toFixed(2)} EUR</td>
           <td>${new Date(o.createdAt).toLocaleDateString('fr-FR')}</td>
-          <td><span class="status-badge status-${o.status}">${o.status === 'completed' ? 'Paye' : 'En attente'}</span></td>
-        </tr>`).join('')}
+          <td><span class="status-badge status-${o.status}">${statusLabels[o.status] || o.status}</span></td>
+        </tr>`;
+        }).join('')}
       </tbody></table>`;
     }
 
     function openOrderModal(id) {
       const o = allOrders.find(x => x.id === id);
       if (!o) return;
-      document.getElementById('orderModalBody').innerHTML = `
+      const statusLabels = { completed: 'Payé', refunded: 'Remboursé', pending: 'En attente', failed: 'Échoué', expired: 'Expiré' };
+      let html = `
         <p><strong>Client:</strong> ${o.customerName || 'N/A'}</p>
         <p><strong>Email:</strong> ${o.customerEmail || 'N/A'}</p>
         <p><strong>Tel:</strong> ${o.customerPhone || 'N/A'}</p>
@@ -952,10 +959,89 @@
         <p style="margin-top:12px"><strong>Produits:</strong></p>
         ${(o.products || []).map(p => `<p>- ${p.name} x${p.quantity}</p>`).join('')}
         <p style="margin-top:12px"><strong>Date:</strong> ${new Date(o.createdAt).toLocaleString('fr-FR')}</p>
-        <p><strong>Statut:</strong> <span class="status-badge status-${o.status}">${o.status === 'completed' ? 'Paye' : 'En attente'}</span></p>
+        <p><strong>Statut:</strong> <span class="status-badge status-${o.status}">${statusLabels[o.status] || o.status}</span></p>
         <p><strong>Payment ID:</strong> ${o.paymentId || 'N/A'}</p>
       `;
+
+      if (o.invoiceUrl) {
+        html += `<p style="margin-top:8px"><a href="${o.invoiceUrl}" target="_blank" style="color:#3b82f6;text-decoration:underline;">📄 Voir la facture</a></p>`;
+      }
+
+      if (o.refundedAt) {
+        html += `<p style="margin-top:8px;color:#f87171;"><strong>Remboursé le:</strong> ${new Date(o.refundedAt).toLocaleString('fr-FR')}</p>`;
+        if (o.refundReason) html += `<p style="color:#f87171;"><strong>Raison:</strong> ${o.refundReason}</p>`;
+      }
+
+      // Bouton remboursement (seulement pour commandes payées)
+      if (o.status === 'completed' && o.paymentId) {
+        html += `<div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.1);">
+          <button onclick="refundOrder(${o.id})" style="background:#dc2626;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">Rembourser cette commande</button>
+        </div>`;
+      }
+
+      // Bouton détails paiement
+      if (o.paymentId) {
+        html += `<div style="margin-top:12px;">
+          <button onclick="loadPaymentDetails(${o.id})" style="background:#6366f1;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">Voir détails paiement</button>
+          <div id="paymentDetails-${o.id}" style="margin-top:12px;"></div>
+        </div>`;
+      }
+
+      document.getElementById('orderModalBody').innerHTML = html;
       document.getElementById('orderModal').classList.add('visible');
+    }
+
+    async function refundOrder(id) {
+      const reason = prompt('Raison du remboursement :');
+      if (reason === null) return;
+      try {
+        const res = await fetch(`/api/admin/orders/${id}/refund`, {
+          method: 'POST',
+          headers: { ...authH(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason: reason || 'Remboursement admin' })
+        });
+        const data = await res.json();
+        if (!res.ok) return alert('Erreur: ' + (data.error || 'Erreur'));
+        alert('Commande remboursée avec succès !');
+        loadOrders();
+        closeOrderModal();
+      } catch(e) { alert('Erreur: ' + e.message); }
+    }
+
+    async function loadPaymentDetails(id) {
+      const container = document.getElementById(`paymentDetails-${id}`);
+      container.innerHTML = '<p style="color:#94a3b8;">Chargement...</p>';
+      try {
+        const res = await fetch(`/api/admin/orders/${id}/payment-details`, { headers: authH() });
+        const data = await res.json();
+        if (!res.ok) { container.innerHTML = `<p style="color:#f87171;">${data.error || 'Erreur'}</p>`; return; }
+
+        let detailsHtml = `<div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:12px;font-size:13px;">
+          <p><strong>Statut Inflow:</strong> ${data.status || 'N/A'}</p>
+          <p><strong>Montant:</strong> ${data.amount ? (data.amount / 100).toFixed(2) + ' ' + (data.currency || 'EUR') : 'N/A'}</p>`;
+
+        if (data.invoiceUrl) {
+          detailsHtml += `<p><a href="${data.invoiceUrl}" target="_blank" style="color:#3b82f6;text-decoration:underline;">📄 Facture</a></p>`;
+        }
+
+        // Timeline / tentatives de dépôt
+        if (data.depositAttempts && data.depositAttempts.length > 0) {
+          detailsHtml += `<p style="margin-top:8px;"><strong>Tentatives de dépôt:</strong></p>`;
+          for (const attempt of data.depositAttempts) {
+            detailsHtml += `<p style="padding-left:8px;color:#94a3b8;">• ${attempt.status || 'N/A'} — ${attempt.date ? new Date(attempt.date).toLocaleString('fr-FR') : ''} ${attempt.amount ? '(' + (attempt.amount / 100).toFixed(2) + ' EUR)' : ''}</p>`;
+          }
+        }
+
+        if (data.timeline && data.timeline.length > 0) {
+          detailsHtml += `<p style="margin-top:8px;"><strong>Historique:</strong></p>`;
+          for (const event of data.timeline) {
+            detailsHtml += `<p style="padding-left:8px;color:#94a3b8;">• ${event.status || event.type || 'N/A'} — ${event.date ? new Date(event.date).toLocaleString('fr-FR') : ''}</p>`;
+          }
+        }
+
+        detailsHtml += `</div>`;
+        container.innerHTML = detailsHtml;
+      } catch(e) { container.innerHTML = `<p style="color:#f87171;">Erreur: ${e.message}</p>`; }
     }
 
     function closeOrderModal() { document.getElementById('orderModal').classList.remove('visible'); }

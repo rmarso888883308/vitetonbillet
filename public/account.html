@@ -228,6 +228,10 @@
       background: rgba(234,179,8,0.15);
       color: #facc15;
     }
+    .order-status.refunded {
+      background: rgba(248,113,113,0.15);
+      color: #f87171;
+    }
     .order-status-dot {
       width: 6px;
       height: 6px;
@@ -567,8 +571,8 @@
       for (var i = 0; i < orders.length; i++) {
         var o = orders[i];
         var date = new Date(o.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-        var statusClass = o.status === 'completed' ? 'completed' : 'pending';
-        var statusLabel = o.status === 'completed' ? 'Confirme' : 'En attente';
+        var statusClass = o.status === 'refunded' ? 'refunded' : (o.status === 'completed' ? 'completed' : 'pending');
+        var statusLabel = o.status === 'refunded' ? 'Rembours\u00e9' : (o.status === 'completed' ? 'Confirme' : 'En attente');
         var products = o.products || [];
         var productsHtml = '';
         for (var p = 0; p < products.length; p++) {
@@ -590,6 +594,21 @@
               'Paiement en attente de confirmation' +
             '</div>';
 
+        var invoiceHtml = '';
+        if (o.invoiceUrl) {
+          invoiceHtml = '<div style="text-align:center;margin-top:8px;">' +
+            '<a href="' + o.invoiceUrl + '" target="_blank" style="color:#3b82f6;font-size:13px;text-decoration:underline;">T\u00e9l\u00e9charger ma facture</a>' +
+          '</div>';
+        }
+
+        var refundHtml = '';
+        if (o.status === 'refunded') {
+          refundHtml = '<div class="order-delivery" style="border-color:rgba(248,113,113,0.2);color:#f87171;background:rgba(248,113,113,0.06);">' +
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>' +
+            'Commande rembours\u00e9e' +
+          '</div>';
+        }
+
         html += '<div class="order-card">' +
           '<div class="order-top">' +
             '<div>' +
@@ -603,7 +622,8 @@
             '<span>Total</span>' +
             '<span>' + total + ' &euro;</span>' +
           '</div>' +
-          deliveryHtml +
+          (o.status === 'refunded' ? refundHtml : deliveryHtml) +
+          invoiceHtml +
         '</div>';
       }
       container.innerHTML = html;
