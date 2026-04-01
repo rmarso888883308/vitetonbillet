@@ -470,8 +470,57 @@ function updateCartCount() {
   } catch (e) {}
 }
 
+// ─── PROMO BANNER ───
+function loadPromoBanner() {
+  fetch('/api/settings')
+    .then(function(res) { return res.json(); })
+    .then(function(settings) {
+      var banner = settings.promoBanner;
+      var el = document.getElementById('promoBanner');
+      if (!el || !banner || !banner.enabled) {
+        if (el) el.style.display = 'none';
+        // Reset header/mobile-nav position when no banner
+        var header = document.getElementById('header');
+        if (header) header.style.top = '0';
+        var mobileNav = document.getElementById('mobileNav');
+        if (mobileNav) mobileNav.style.top = '56px';
+        return;
+      }
+      var textEl = document.getElementById('promoText');
+      var linkEl = document.getElementById('promoLink');
+      if (textEl) textEl.innerHTML = '<strong>' + (banner.text || '') + '</strong>' + (banner.subtitle ? ' — ' + banner.subtitle : '');
+      if (linkEl) {
+        linkEl.textContent = (banner.linkText || 'Voir les places') + ' \u2192';
+        var query = banner.searchQuery || banner.text || '';
+        linkEl.onclick = function(e) {
+          e.preventDefault();
+          var input = document.getElementById('searchInput');
+          if (input) { input.value = query; input.dispatchEvent(new Event('input')); }
+          var eventsEl = document.getElementById('events');
+          if (eventsEl) eventsEl.scrollIntoView({ behavior: 'smooth' });
+          vt('promo_banner_click', { text: banner.text });
+        };
+      }
+      el.style.display = 'block';
+      // Décaler header et mobile-nav sous la bannière
+      var bannerHeight = el.offsetHeight || 36;
+      var header = document.getElementById('header');
+      if (header) header.style.top = bannerHeight + 'px';
+      var mobileNav = document.getElementById('mobileNav');
+      if (mobileNav) mobileNav.style.top = (bannerHeight + 56) + 'px';
+      vt('promo_banner_viewed', { text: banner.text });
+    })
+    .catch(function() {
+      var el = document.getElementById('promoBanner');
+      if (el) el.style.display = 'none';
+      var header = document.getElementById('header');
+      if (header) header.style.top = '0';
+    });
+}
+
 // ─── INIT ───
 identifyUser();
 updateCartCount();
+loadPromoBanner();
 loadEvents();
 initCarousel();

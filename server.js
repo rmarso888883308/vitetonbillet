@@ -25,6 +25,24 @@ const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
+
+// Settings (bannière promo, etc.)
+function readSettings() {
+  try {
+    if (!fs.existsSync(SETTINGS_FILE)) {
+      const defaults = { promoBanner: { enabled: true, text: 'Celine Dion', subtitle: 'Places disponibles !', linkText: 'Voir les places', searchQuery: 'Celine Dion' } };
+      fs.writeFileSync(SETTINGS_FILE, JSON.stringify(defaults, null, 2), 'utf-8');
+      return defaults;
+    }
+    return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf-8'));
+  } catch(e) { return { promoBanner: { enabled: false } }; }
+}
+
+function writeSettings(settings) {
+  fs.mkdirSync(path.dirname(SETTINGS_FILE), { recursive: true });
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
+}
 
 // Envoyer un email via Resend HTTP API (pas de SMTP, pas de port bloqué)
 async function sendEmail({ to, subject, html }) {
@@ -85,13 +103,13 @@ app.use(helmet({
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 
-// Cache-Control pour les assets statiques (1 an)
+// Cache-Control pour les assets statiques
 app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: '1y',
   immutable: true,
   setHeaders: function(res, filePath) {
-    // Pas de cache sur les HTML (ils changent)
-    if (filePath.endsWith('.html')) {
+    // Pas de cache long sur HTML, JS, CSS (ils changent souvent)
+    if (filePath.endsWith('.html') || filePath.endsWith('.js') || filePath.endsWith('.css')) {
       res.setHeader('Cache-Control', 'no-cache');
     }
   }
@@ -724,6 +742,25 @@ app.post('/api/admin/events/reorder-featured', requireAdmin, (req, res) => {
 
   writeEvents(events);
   res.json({ success: true });
+});
+
+// GET /api/settings — settings publiques (bannière, etc.)
+app.get('/api/settings', (req, res) => {
+  const settings = readSettings();
+  res.json(settings);
+});
+
+// GET /api/admin/settings — settings complètes
+app.get('/api/admin/settings', requireAdmin, (req, res) => {
+  res.json(readSettings());
+});
+
+// PUT /api/admin/settings — modifier les settings
+app.put('/api/admin/settings', requireAdmin, (req, res) => {
+  const current = readSettings();
+  const updated = { ...current, ...req.body };
+  writeSettings(updated);
+  res.json(updated);
 });
 
 // DELETE /api/admin/events/:id — supprimer

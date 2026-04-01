@@ -22,7 +22,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=2" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -63,6 +63,15 @@
       </button>
     </div>
   </header>
+
+  <!-- PROMO BANNER (dynamique via API) -->
+  <div class="promo-banner" id="promoBanner" style="display:none">
+    <div class="promo-banner-inner">
+      <span class="promo-pulse"></span>
+      <span class="promo-text" id="promoText"></span>
+      <a href="#events" class="promo-link" id="promoLink">Voir les places &rarr;</a>
+    </div>
+  </div>
 
   <!-- MOBILE NAV -->
   <nav class="mobile-nav" id="mobileNav">
@@ -381,6 +390,6 @@
     <span class="floating-contact-label">Nous contacter</span>
   </a>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=2"></script>
 </body>
 </html>
