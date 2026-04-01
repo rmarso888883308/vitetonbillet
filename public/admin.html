@@ -470,18 +470,38 @@
     function renderEventsList() {
       const el = document.getElementById('eventsList');
       if (!allEvents.length) { el.innerHTML = '<div class="empty-state">Aucun evenement</div>'; return; }
-      el.innerHTML = allEvents.map(ev => `
-        <div class="event-item">
+      // Trier : featured d'abord
+      const sorted = [...allEvents].sort((a, b) => {
+        if (a.featured && !b.featured) return -1;
+        if (!a.featured && b.featured) return 1;
+        if (a.featured && b.featured) return (a.featuredOrder || 0) - (b.featuredOrder || 0);
+        return 0;
+      });
+      el.innerHTML = sorted.map(ev => `
+        <div class="event-item" style="${ev.featured ? 'border-left:4px solid #f59e0b;background:#fffbeb;' : ''}">
           <div class="event-info">
-            <h3>${ev.name}</h3>
-            <p>${ev.location} - ${ev.date}${ev.dates && ev.dates.length > 1 ? ' (' + ev.dates.length + ' dates)' : ''}</p>
+            <h3>${ev.featured ? '&#9733; ' : ''}${ev.name}</h3>
+            <p>${ev.location} - ${ev.date}${ev.dates && ev.dates.length > 1 ? ' (' + ev.dates.length + ' dates)' : ''}${ev.featured ? ' — <strong style="color:#f59e0b">A la une</strong>' : ''}</p>
           </div>
           <div class="event-actions">
+            <button class="btn btn-sm" style="background:${ev.featured ? '#f59e0b' : '#e2e8f0'};color:${ev.featured ? 'white' : '#64748b'};" onclick="toggleFeatured(${ev.id})" title="${ev.featured ? 'Retirer de la une' : 'Mettre a la une'}">&#9733;</button>
             <button class="btn btn-outline btn-sm" onclick="editEvent(${ev.id})">Modifier</button>
             <button class="btn btn-danger btn-sm" onclick="deleteEvent(${ev.id})">Supprimer</button>
           </div>
         </div>
       `).join('');
+    }
+
+    async function toggleFeatured(id) {
+      try {
+        const res = await fetch('/api/admin/events/' + id + '/featured', { method: 'POST', headers: authH() });
+        if (res.ok) {
+          const updated = await res.json();
+          const idx = allEvents.findIndex(e => e.id === id);
+          if (idx !== -1) allEvents[idx] = { ...allEvents[idx], ...updated };
+          renderEventsList();
+        }
+      } catch(e) { alert('Erreur: ' + e.message); }
     }
 
     // ========== PRESETS ==========

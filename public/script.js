@@ -134,12 +134,14 @@ function renderEvents(events) {
     var locText = ev.dates && ev.dates.length > 1 ? (ev.dates[0].location || ev.location) : ev.location;
 
     var cardUrl = '/concert-' + slug;
-    html += '<a href="' + cardUrl + '" class="card-link' + (ev.available ? '' : ' sold-out') + '">' +
+    var featuredClass = ev.featured ? ' is-featured' : '';
+    html += '<a href="' + cardUrl + '" class="card-link' + (ev.available ? '' : ' sold-out') + featuredClass + '">' +
       '<div class="card">' +
       '<div class="card-img-wrap">' +
         '<img class="card-img" src="' + ev.image + '" alt="Affiche du concert de ' + (ev.artist || ev.name) + '" loading="lazy" />' +
         '<div class="card-img-overlay"></div>' +
         '<span class="card-cat">' + ev.category + '</span>' +
+        (ev.featured ? '<span class="card-featured-badge">&#9733; A la une</span>' : '') +
         (!ev.available ? '<div class="sold-out-label">Complet</div>' : '') +
         '<div class="card-img-info"><h3 class="card-title">' + ev.name + '</h3>' +
         (ev.artist ? '<span class="card-artist">' + ev.artist + '</span>' : '') +

@@ -331,10 +331,17 @@ async function sendOrderConfirmationEmail(order) {
 // PUBLIC API
 // =====================
 
-// GET /api/events — liste publique
+// GET /api/events — liste publique (featured en premier)
 app.get('/api/events', (req, res) => {
   const events = readEvents();
   const eventsWithSlugs = events.map(e => ({ ...e, slug: e.slug || generateEventSlug(e) }));
+  // Trier : featured d'abord (par ordre de featuredOrder), puis les autres
+  eventsWithSlugs.sort((a, b) => {
+    if (a.featured && !b.featured) return -1;
+    if (!a.featured && b.featured) return 1;
+    if (a.featured && b.featured) return (a.featuredOrder || 0) - (b.featuredOrder || 0);
+    return 0;
+  });
   res.json(eventsWithSlugs);
 });
 
@@ -601,7 +608,7 @@ app.post('/api/admin/upload', requireAdmin, upload.single('image'), (req, res) =
 // POST /api/admin/events — créer un événement
 app.post('/api/admin/events', requireAdmin, (req, res) => {
   const events = readEvents();
-  const { name, artist, date, time, location, image, category, description, tickets, available, dates } = req.body;
+  const { name, artist, date, time, location, image, category, description, tickets, available, dates, featured, featuredOrder } = req.body;
 
   if (!name || !date || !location || !category || !tickets || tickets.length === 0) {
     return res.status(400).json({ error: 'Champs obligatoires manquants' });
@@ -623,7 +630,9 @@ app.post('/api/admin/events', requireAdmin, (req, res) => {
       currency: t.currency || 'EUR',
       maxQuantity: t.maxQuantity ? parseInt(t.maxQuantity) : 10
     })),
-    available: available !== false
+    available: available !== false,
+    featured: featured || false,
+    featuredOrder: featuredOrder || 0
   };
 
   if (dates && Array.isArray(dates) && dates.length > 0) {
@@ -681,6 +690,40 @@ app.put('/api/admin/events/:id', requireAdmin, (req, res) => {
   events[idx] = updated;
   writeEvents(events);
   res.json(updated);
+});
+
+// POST /api/admin/events/:id/featured — toggle mise en avant
+app.post('/api/admin/events/:id/featured', requireAdmin, (req, res) => {
+  const events = readEvents();
+  const idx = events.findIndex(e => e.id === parseInt(req.params.id));
+  if (idx === -1) return res.status(404).json({ error: 'Événement introuvable' });
+
+  events[idx].featured = !events[idx].featured;
+  if (events[idx].featured) {
+    // Donner le plus petit order (sera en premier)
+    const maxOrder = Math.max(0, ...events.filter(e => e.featured).map(e => e.featuredOrder || 0));
+    events[idx].featuredOrder = maxOrder + 1;
+  } else {
+    events[idx].featuredOrder = 0;
+  }
+
+  writeEvents(events);
+  res.json(events[idx]);
+});
+
+// POST /api/admin/events/reorder-featured — réordonner les événements à la une
+app.post('/api/admin/events/reorder-featured', requireAdmin, (req, res) => {
+  const { orderedIds } = req.body;
+  if (!orderedIds || !Array.isArray(orderedIds)) return res.status(400).json({ error: 'orderedIds requis' });
+
+  const events = readEvents();
+  orderedIds.forEach((id, index) => {
+    const ev = events.find(e => e.id === id);
+    if (ev) ev.featuredOrder = index + 1;
+  });
+
+  writeEvents(events);
+  res.json({ success: true });
 });
 
 // DELETE /api/admin/events/:id — supprimer
