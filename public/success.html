@@ -29,14 +29,16 @@
     }
     .check {
       width: 64px; height: 64px;
-      background: #dcfce7;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       margin: 0 auto 20px;
     }
-    .check svg { color: #22c55e; }
+    .check.success { background: #dcfce7; }
+    .check.success svg { color: #22c55e; }
+    .check.waiting { background: #fef9c3; }
+    .check.waiting svg { color: #eab308; }
     h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: 8px; }
     .sub { color: #64748b; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.6; }
     .event-name {
@@ -48,6 +50,16 @@
       padding: 14px 16px;
       margin-bottom: 24px;
       font-size: 0.95rem;
+    }
+    .delivery-info {
+      background: #eff6ff;
+      border: 1px solid #dbeafe;
+      color: #1e40af;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 24px;
+      font-size: 0.85rem;
+      line-height: 1.6;
     }
     .info { color: #94a3b8; font-size: 0.85rem; margin-bottom: 28px; line-height: 1.6; }
     .btn {
@@ -64,39 +76,101 @@
       transition: all 0.2s;
     }
     .btn:hover { background: #1e7a9e; box-shadow: 0 4px 16px rgba(42,140,181,0.3); }
+    .spinner {
+      display: inline-block;
+      width: 20px; height: 20px;
+      border: 2.5px solid #e2e8f0;
+      border-top-color: #2a8cb5;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="check">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  <div class="card" id="card">
+    <div class="check waiting" id="checkIcon">
+      <svg id="iconWaiting" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <svg id="iconSuccess" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
     </div>
-    <h1>Paiement confirmé !</h1>
-    <p class="sub">Merci pour votre achat sur ViteTonBillet.</p>
+    <h1 id="title">Confirmation en cours...</h1>
+    <p class="sub" id="subtitle"><span class="spinner"></span>Nous attendons la confirmation de votre paiement.</p>
     <div class="event-name" id="eventName" style="display:none"></div>
-    <p class="info">Votre billet a été enregistré. Un email de confirmation vous sera envoyé si vous avez fourni votre adresse.</p>
+    <div class="delivery-info" id="deliveryInfo" style="display:none"></div>
+    <p class="info" id="infoText"></p>
     <a href="/" class="btn">Retour aux événements</a>
   </div>
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const name = params.get('event');
-    if (name) {
-      const el = document.getElementById('eventName');
-      el.textContent = name;
+    var params = new URLSearchParams(window.location.search);
+    var orderId = params.get('orderId');
+    var eventName = params.get('event');
+
+    if (eventName) {
+      var el = document.getElementById('eventName');
+      el.textContent = eventName;
       el.style.display = 'block';
     }
 
-    // Confirmer la commande côté serveur (notif Pushover + statut completed)
-    const orderId = params.get('orderId');
+    // Vider le panier
+    try { localStorage.removeItem('vtbCart'); } catch(e) {}
+
+    function showConfirmed(deliveryInfo) {
+      document.getElementById('checkIcon').className = 'check success';
+      document.getElementById('iconWaiting').style.display = 'none';
+      document.getElementById('iconSuccess').style.display = '';
+      document.getElementById('title').textContent = 'Paiement confirm\u00e9 !';
+      document.getElementById('subtitle').textContent = 'Merci pour votre achat sur ViteTonBillet.';
+
+      var deliveryEl = document.getElementById('deliveryInfo');
+      if (deliveryInfo === 'avant-event') {
+        deliveryEl.innerHTML = '<strong>Livraison :</strong> Vos billets \u00e9lectroniques vous seront envoy\u00e9s par email \u00e0 l\u2019approche de l\u2019\u00e9v\u00e9nement.';
+      } else {
+        deliveryEl.innerHTML = '<strong>Livraison :</strong> Vos billets \u00e9lectroniques vous seront envoy\u00e9s par email sous 24h. Pensez \u00e0 v\u00e9rifier vos spams.';
+      }
+      deliveryEl.style.display = 'block';
+
+      document.getElementById('infoText').textContent = 'Un email de confirmation vous a \u00e9t\u00e9 envoy\u00e9.';
+    }
+
     if (orderId) {
+      // D'abord tenter de confirmer la commande (cas redirect direct)
       fetch('/api/confirm-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId: parseInt(orderId) })
-      }).catch(() => {});
+      }).then(function(res) {
+        return res.json();
+      }).then(function(data) {
+        if (data.success) {
+          // Confirmé, récupérer le deliveryInfo
+          fetch('/api/order-status/' + orderId).then(function(r) { return r.json(); }).then(function(d) {
+            showConfirmed(d.deliveryInfo);
+          }).catch(function() { showConfirmed('24h'); });
+        }
+      }).catch(function() {});
 
-      // Vider le panier
-      try { localStorage.removeItem('vtbCart'); } catch {}
+      // Polling : si le webhook confirme la commande avant le redirect
+      var pollCount = 0;
+      var pollInterval = setInterval(function() {
+        pollCount++;
+        if (pollCount > 60) { // Stop après 5 min (60 x 5s)
+          clearInterval(pollInterval);
+          return;
+        }
+        fetch('/api/order-status/' + orderId).then(function(res) {
+          return res.json();
+        }).then(function(data) {
+          if (data.status === 'completed') {
+            clearInterval(pollInterval);
+            showConfirmed(data.deliveryInfo);
+          }
+        }).catch(function() {});
+      }, 5000);
+    } else {
+      // Pas d'orderId, afficher directement comme confirmé
+      showConfirmed('24h');
     }
   </script>
 </body>

@@ -307,7 +307,7 @@ function buildOrderEmailHtml(order) {
             <!-- Info box -->
             <div style="background:#eff6ff;border:1px solid #dbeafe;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
               <p style="margin:0;font-size:13px;color:#1e40af;line-height:1.6;">
-                <strong>Livraison de vos billets :</strong> Vos billets electroniques vous seront envoyes par email sous 24h. Pensez a verifier vos spams.
+                <strong>Livraison de vos billets :</strong> ${order.deliveryInfo === 'avant-event' ? 'Vos billets electroniques vous seront envoyes par email a l\'approche de l\'evenement. Pensez a verifier vos spams.' : 'Vos billets electroniques vous seront envoyes par email sous 24h. Pensez a verifier vos spams.'}
               </p>
             </div>
 
@@ -448,6 +448,7 @@ app.post('/api/checkout', async (req, res) => {
     products: orderProducts,
     amount: totalAmount,
     currency: ticket.currency,
+    deliveryInfo: event.deliveryInfo || '24h',
     createdAt: new Date().toISOString()
   };
   orders.push(newOrder);
@@ -885,6 +886,7 @@ app.post('/api/cart-checkout', async (req, res) => {
   const orderProducts = [];
   let currency = 'EUR';
   let totalAmount = 0;
+  let hasAvantEvent = false;
 
   for (const item of items) {
     const event = events.find(e => e.id === parseInt(item.eventId));
@@ -908,6 +910,8 @@ app.post('/api/cart-checkout', async (req, res) => {
     if (parseInt(item.quantity) > maxQty) {
       return res.status(400).json({ error: `Maximum ${maxQty} billets pour ${event.name}` });
     }
+
+    if (event.deliveryInfo === 'avant-event') hasAvantEvent = true;
 
     let cartProductName = `${event.name} — ${ticket.type}`;
     if (dateLabel) {
@@ -946,6 +950,7 @@ app.post('/api/cart-checkout', async (req, res) => {
     products: orderProducts,
     amount: totalAmount,
     currency,
+    deliveryInfo: hasAvantEvent ? 'avant-event' : '24h',
     createdAt: new Date().toISOString()
   };
   orders.push(newOrder);
@@ -1078,6 +1083,14 @@ async function confirmOrderById(orderId) {
 
   return { success: true };
 }
+
+// GET /api/order-status/:id — vérifier le statut d'une commande (pour polling success page)
+app.get('/api/order-status/:id', (req, res) => {
+  const orders = readOrders();
+  const order = orders.find(o => o.id === parseInt(req.params.id));
+  if (!order) return res.status(404).json({ error: 'Commande introuvable' });
+  res.json({ status: order.status, deliveryInfo: order.deliveryInfo || '24h' });
+});
 
 // POST /api/confirm-order — appelé par success.html après paiement
 app.post('/api/confirm-order', async (req, res) => {
@@ -1285,7 +1298,7 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
 app.get('/api/auth/orders', requireAuth, (req, res) => {
   const orders = readOrders();
   const userOrders = orders.filter(o => {
-    if (o.status !== 'completed') return false; // Uniquement les commandes payées
+    if (o.status !== 'completed' && o.status !== 'refunded') return false;
     // Par orderIds lies au compte
     if (req.user.orderIds && req.user.orderIds.includes(o.id)) return true;
     // Ou par email correspondant

@@ -584,10 +584,13 @@
           '</div>';
         }
         var total = ((o.amount || 0) / 100).toFixed(2);
+        var deliveryMsg = o.deliveryInfo === 'avant-event'
+          ? 'Billets envoy\u00e9s \u00e0 l\u2019approche de l\u2019\u00e9v\u00e9nement'
+          : 'Billets envoy\u00e9s par email sous 24h — V\u00e9rifiez vos spams';
         var deliveryHtml = o.status === 'completed'
           ? '<div class="order-delivery">' +
               '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
-              'Billets envoyes par email — Verifiez vos spams si besoin' +
+              deliveryMsg +
             '</div>'
           : '<div class="order-delivery" style="border-color:rgba(234,179,8,0.2);color:#facc15;background:rgba(234,179,8,0.06);">' +
               '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' +
