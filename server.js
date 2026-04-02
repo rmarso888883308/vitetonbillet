@@ -712,7 +712,7 @@ app.post('/api/admin/upload', requireAdmin, upload.single('image'), (req, res) =
 // POST /api/admin/events — créer un événement
 app.post('/api/admin/events', requireAdmin, (req, res) => {
   const events = readEvents();
-  const { name, artist, date, time, location, image, category, description, tickets, available, dates, featured, featuredOrder } = req.body;
+  const { name, artist, date, time, location, image, venueMap, category, description, deliveryInfo, tickets, available, dates, featured, featuredOrder } = req.body;
 
   if (!name || !date || !location || !category || !tickets || tickets.length === 0) {
     return res.status(400).json({ error: 'Champs obligatoires manquants' });
@@ -734,6 +734,8 @@ app.post('/api/admin/events', requireAdmin, (req, res) => {
       currency: t.currency || 'EUR',
       maxQuantity: t.maxQuantity ? parseInt(t.maxQuantity) : 10
     })),
+    venueMap: venueMap || '',
+    deliveryInfo: deliveryInfo || '24h',
     available: available !== false,
     featured: featured || false,
     featuredOrder: featuredOrder || 0
