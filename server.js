@@ -148,7 +148,7 @@ function getNextId(events) {
 
 // Générer un slug SEO depuis un événement
 function generateEventSlug(event) {
-  const text = (event.artist || event.name) + '-' + event.location;
+  const text = event.artist || event.name;
   return text
     .toLowerCase()
     .normalize('NFD')
@@ -356,7 +356,7 @@ async function sendOrderConfirmationEmail(order) {
 // GET /api/events — liste publique (featured en premier)
 app.get('/api/events', (req, res) => {
   const events = readEvents();
-  const eventsWithSlugs = events.map(e => ({ ...e, slug: e.slug || generateEventSlug(e) }));
+  const eventsWithSlugs = events.map(e => ({ ...e, slug: generateEventSlug(e) }));
   // Trier : featured d'abord (par ordre de featuredOrder), puis les autres
   eventsWithSlugs.sort((a, b) => {
     if (a.featured && !b.featured) return -1;
@@ -374,7 +374,7 @@ app.get('/api/events/by-slug/:slug', (req, res) => {
   let event = events.find(e => e.slug === slug);
   if (!event) event = events.find(e => generateEventSlug(e) === slug);
   if (!event) return res.status(404).json({ error: 'Événement introuvable' });
-  res.json({ ...event, slug: event.slug || generateEventSlug(event) });
+  res.json({ ...event, slug: generateEventSlug(event) });
 });
 
 // GET /api/events/:id
@@ -382,7 +382,7 @@ app.get('/api/events/:id', (req, res) => {
   const events = readEvents();
   const event = events.find(e => e.id === parseInt(req.params.id));
   if (!event) return res.status(404).json({ error: 'Événement introuvable' });
-  res.json({ ...event, slug: event.slug || generateEventSlug(event) });
+  res.json({ ...event, slug: generateEventSlug(event) });
 });
 
 // POST /api/checkout — paiement Inflow
@@ -1383,13 +1383,22 @@ app.get('/concert-:slug', (req, res) => {
   var slug = req.params.slug;
   var event = events.find(function(e) { return e.slug === slug; });
   if (!event) event = events.find(function(e) { return generateEventSlug(e) === slug; });
+  // Fallback: ancien format slug avec location
+  if (!event) {
+    event = events.find(function(e) {
+      var oldSlug = ((e.artist || e.name) + '-' + e.location)
+        .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      return oldSlug === slug;
+    });
+  }
 
   // Si pas d'evenement, renvoyer le template client-side quand meme
   if (!event) {
     return res.sendFile(path.join(__dirname, 'public', 'event.html'));
   }
 
-  var eventSlug = event.slug || generateEventSlug(event);
+  var eventSlug = generateEventSlug(event);
   var eventUrl = BASE_URL + '/concert-' + eventSlug;
   var title = event.name + ' — Billets | ViteTonBillet';
   var description = (event.description || ('Achetez vos billets pour ' + event.name + ' a ' + event.location)).substring(0, 160);
