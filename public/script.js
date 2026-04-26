@@ -126,25 +126,6 @@ function renderEvents(events) {
   var hasMore = events.length > visibleCount;
   var html = '';
 
-  function totalStock(event) {
-    var total = 0;
-    if (event.tickets) {
-      for (var i = 0; i < event.tickets.length; i++) {
-        total += Number(event.tickets[i].stock || 0);
-      }
-    }
-    if (event.dates && event.dates.length > 0) {
-      for (var d = 0; d < event.dates.length; d++) {
-        if (event.dates[d].tickets) {
-          for (var t = 0; t < event.dates[d].tickets.length; t++) {
-            total += Number(event.dates[d].tickets[t].stock || 0);
-          }
-        }
-      }
-    }
-    return total;
-  }
-
   for (var i = 0; i < eventsToShow.length; i++) {
     var ev = eventsToShow[i];
     var slug = ev.slug || ev.id;
@@ -155,15 +136,12 @@ function renderEvents(events) {
     var cardUrl = '/concert-' + slug;
     var featuredClass = ev.featured ? ' is-featured' : '';
     var isAvailable = ev.available !== false;
-    var stock = totalStock(ev);
-    var showUrgency = isAvailable && stock > 0 && stock <= 10;
     html += '<a href="' + cardUrl + '" class="card-link' + (isAvailable ? '' : ' coming-soon') + featuredClass + '">' +
       '<div class="card">' +
       '<div class="card-img-wrap">' +
         '<img class="card-img" src="' + ev.image + '" alt="Affiche du concert de ' + (ev.artist || ev.name) + '" loading="lazy" />' +
         '<div class="card-img-overlay"></div>' +
         '<span class="card-cat">' + ev.category + '</span>' +
-        (showUrgency ? '<span class="card-urgency">Derni&egrave;res places</span>' : '') +
         (ev.featured ? '<span class="card-featured-badge">&#9733; A la une</span>' : '') +
         (!isAvailable ? '<div class="coming-soon-label">Bientot disponible</div>' : '') +
         '<div class="card-img-info"><h3 class="card-title">' + ev.name + '</h3>' +
