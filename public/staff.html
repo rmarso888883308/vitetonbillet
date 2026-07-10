@@ -50,6 +50,25 @@
     .card h2 { font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; color: var(--gray-900); }
     .card-sub { color: var(--gray-500); font-size: 0.85rem; margin-bottom: 20px; }
 
+    .summary-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .stat-card { background: white; border: 1px solid var(--gray-200); border-radius: 12px; padding: 20px; }
+    .stat-card.stat-earned { background: linear-gradient(135deg, #dcfce7, #f0fdf4); border-color: #86efac; }
+    .stat-card.stat-pending { background: linear-gradient(135deg, #fef3c7, #fefce8); border-color: #fcd34d; }
+    .stat-label { color: var(--gray-500); font-size: 0.8rem; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+    .stat-card.stat-earned .stat-label { color: #166534; }
+    .stat-card.stat-pending .stat-label { color: #92400e; }
+    .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--gray-900); line-height: 1.15; }
+    .stat-card.stat-earned .stat-value { color: #15803d; }
+    .stat-card.stat-pending .stat-value { color: #b45309; }
+    .stat-sub { color: var(--gray-500); font-size: 0.8rem; margin-top: 4px; }
+
+    .month-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--gray-100); font-size: 0.9rem; }
+    .month-row:last-child { border-bottom: none; }
+    .month-row strong { color: var(--gray-900); font-weight: 700; }
+    .month-empty { color: var(--gray-400); text-align: center; padding: 20px 0; font-size: 0.9rem; }
+
+    .margin-tag { display: inline-block; background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #166534; font-size: 0.72rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; margin-left: 8px; }
+
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
     .form-group { margin-bottom: 12px; }
     .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.82rem; color: var(--gray-700); }
@@ -140,6 +159,7 @@
         <button class="tab-btn active" onclick="switchTab('new', this)">Nouvelle demande</button>
         <button class="tab-btn" onclick="switchTab('requests', this)">Mes demandes <span class="tab-badge" id="badgeRequests" style="display:none">0</span></button>
         <button class="tab-btn" onclick="switchTab('sales', this)">Ventes</button>
+        <button class="tab-btn" onclick="switchTab('summary', this)">R&eacute;cap</button>
       </div>
 
       <!-- NEW REQUEST -->
@@ -183,10 +203,17 @@
                 <input type="number" name="quantity" min="1" value="1" required />
               </div>
             </div>
-            <div class="form-group">
-              <label>Budget max (par place)</label>
-              <input type="number" name="budgetMax" min="0" step="1" placeholder="Ex: 200" />
-              <div class="form-hint">Laisser vide si le client n'a pas donn&eacute; de budget</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Budget max (par place)</label>
+                <input type="number" name="budgetMax" min="0" step="1" placeholder="Ex: 200" />
+                <div class="form-hint">Vide si non pr&eacute;cis&eacute;</div>
+              </div>
+              <div class="form-group">
+                <label>Ma marge (&euro; / place)</label>
+                <input type="number" name="staffMargin" min="0" step="1" placeholder="Ex: 20" />
+                <div class="form-hint">Ton b&eacute;n&eacute;fice par place</div>
+              </div>
             </div>
             <div class="form-group">
               <label>Message / notes</label>
@@ -200,6 +227,32 @@
       <!-- REQUESTS LIST -->
       <div id="requests" class="tab-content">
         <div id="requestsContainer"></div>
+      </div>
+
+      <!-- SUMMARY -->
+      <div id="summary" class="tab-content">
+        <div class="summary-stats" id="summaryStats">
+          <div class="stat-card stat-earned">
+            <div class="stat-label">Gagn&eacute; (livr&eacute;)</div>
+            <div class="stat-value" id="statEarned">0 &euro;</div>
+            <div class="stat-sub" id="statEarnedSub">0 vente</div>
+          </div>
+          <div class="stat-card stat-pending">
+            <div class="stat-label">Potentiel en attente</div>
+            <div class="stat-value" id="statPending">0 &euro;</div>
+            <div class="stat-sub" id="statPendingSub">0 en cours</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Demandes accept&eacute;es</div>
+            <div class="stat-value" id="statAccepted">0</div>
+            <div class="stat-sub" id="statRequestsSub">0 en attente, 0 refus&eacute;es</div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Par mois</h2>
+          <p class="card-sub">B&eacute;n&eacute;fices sur les ventes livr&eacute;es</p>
+          <div id="monthlyList"></div>
+        </div>
       </div>
 
       <!-- SALES -->
@@ -258,9 +311,15 @@
             <input type="number" name="quantity" min="1" value="1" />
           </div>
         </div>
-        <div class="form-group">
-          <label>Montant total (en &euro;) *</label>
-          <input type="number" name="amount" min="0" step="0.01" required placeholder="Ex: 150" />
+        <div class="form-row">
+          <div class="form-group">
+            <label>Montant total (en &euro;) *</label>
+            <input type="number" name="amount" min="0" step="0.01" required placeholder="Ex: 150" />
+          </div>
+          <div class="form-group">
+            <label>Ma marge (&euro; / place)</label>
+            <input type="number" name="staffMargin" min="0" step="1" placeholder="Ex: 20" />
+          </div>
         </div>
         <div class="form-group">
           <label>Notes</label>
@@ -347,6 +406,33 @@
       document.getElementById(name).classList.add('active');
       if (name === 'requests') loadRequests();
       if (name === 'sales') loadSales();
+      if (name === 'summary') loadSummary();
+    }
+
+    function loadSummary() {
+      api('/api/staff/summary').then(function(r) {
+        if (!r.ok) return;
+        var d = r.data || {};
+        document.getElementById('statEarned').textContent = (d.totalEarned || 0).toLocaleString('fr-FR') + ' €';
+        document.getElementById('statPending').textContent = (d.pending || 0).toLocaleString('fr-FR') + ' €';
+        var c = d.counts || {};
+        document.getElementById('statEarnedSub').textContent = (c.salesDelivered || 0) + ' vente' + ((c.salesDelivered || 0) > 1 ? 's' : '') + ' livrée' + ((c.salesDelivered || 0) > 1 ? 's' : '');
+        document.getElementById('statPendingSub').textContent = (c.salesPending || 0) + ' vente + ' + (c.requestsAccepted || 0) + ' demande' + ((c.requestsAccepted || 0) > 1 ? 's' : '') + ' accept.';
+        document.getElementById('statAccepted').textContent = c.requestsAccepted || 0;
+        document.getElementById('statRequestsSub').textContent = (c.requestsPending || 0) + ' en attente, ' + (c.requestsRefused || 0) + ' refusées';
+        var months = d.byMonth || [];
+        var monthsHtml = '';
+        if (months.length === 0) {
+          monthsHtml = '<div class="month-empty">Aucune vente livrée pour le moment</div>';
+        } else {
+          monthsHtml = months.map(function(m) {
+            var d = new Date(m.month + '-01');
+            var label = d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+            return '<div class="month-row"><span>' + label + '</span><strong>' + (m.amount || 0).toLocaleString('fr-FR') + ' €</strong></div>';
+          }).join('');
+        }
+        document.getElementById('monthlyList').innerHTML = monthsHtml;
+      });
     }
 
     function initDashboard() {
@@ -447,9 +533,11 @@
         response = '<div class="response-box"><strong>R&eacute;ponse admin' + (r.adminPrice ? ' — ' + r.adminPrice + ' &euro;/place' : '') + '</strong>' +
           (r.adminResponse ? escapeHtml(r.adminResponse) : '') + '</div>';
       }
+      var marginTotal = Number(r.staffMargin || 0) * Number(r.quantity || 1);
+      var marginTag = r.staffMargin ? '<span class="margin-tag">+' + r.staffMargin + ' &euro;/place (total ' + marginTotal + ' &euro;)</span>' : '';
       return '<div class="req-item">' +
         '<div class="req-header">' +
-          '<div><div class="req-title">' + escapeHtml(r.clientName) + (r.clientHandle ? ' <span style="color:#94a3b8;font-weight:500;">(' + escapeHtml(r.clientHandle) + ')</span>' : '') + '</div>' +
+          '<div><div class="req-title">' + escapeHtml(r.clientName) + (r.clientHandle ? ' <span style="color:#94a3b8;font-weight:500;">(' + escapeHtml(r.clientHandle) + ')</span>' : '') + marginTag + '</div>' +
           '<div class="req-sub">' + escapeHtml(r.clientSource || '—') + ' &bull; ' + formatDate(r.createdAt) + '</div></div>' +
           '<span class="status-badge status-' + r.status + '">' + statusLabel + '</span>' +
         '</div>' +
@@ -503,9 +591,11 @@
       var kindBadge = s.kind === 'manual' ? '<span style="background:#e0e7ff;color:#4338ca;font-size:0.68rem;padding:2px 8px;border-radius:20px;font-weight:700;margin-left:8px;">MANUEL</span>' :
                                              '<span style="background:#dcfce7;color:#166534;font-size:0.68rem;padding:2px 8px;border-radius:20px;font-weight:700;margin-left:8px;">SITE</span>';
       var euros = (s.amount / 100).toFixed(2);
+      var marginTotal = Number(s.staffMargin || 0) * Number(s.quantity || 1);
+      var marginTag = s.staffMargin ? '<span class="margin-tag">+' + s.staffMargin + ' &euro;/place (' + marginTotal + ' &euro;)</span>' : '';
       return '<div class="sale-item">' +
         '<div class="sale-header">' +
-          '<div><div class="req-title">' + escapeHtml(s.clientName || '—') + kindBadge + '</div>' +
+          '<div><div class="req-title">' + escapeHtml(s.clientName || '—') + kindBadge + marginTag + '</div>' +
             '<div class="req-sub">' + escapeHtml(s.clientSource || '') + (s.clientContact ? ' &bull; ' + escapeHtml(s.clientContact) : '') + ' &bull; ' + formatDate(s.createdAt) + '</div></div>' +
           '<span class="status-badge status-' + (s.deliveryStatus === 'delivered' ? 'delivered' : (s.deliveryStatus === 'in_progress' ? 'in_progress' : 'pending')) + '">' + statusLabel + '</span>' +
         '</div>' +

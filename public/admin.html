@@ -546,6 +546,7 @@
           <div><strong style="color:var(--gray-800);">Cat&eacute;gorie:</strong> ${escapeHtml(r.category || '—')}</div>
           <div><strong style="color:var(--gray-800);">Qt&eacute;:</strong> ${r.quantity}</div>
           <div><strong style="color:var(--gray-800);">Budget:</strong> ${budget}</div>
+          ${r.staffMargin ? `<div style="color:#166534;"><strong>Marge staff:</strong> +${r.staffMargin} &euro;/place (${(r.staffMargin || 0) * (r.quantity || 1)} &euro;)</div>` : ''}
         </div>
         ${r.message ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9;font-size:0.85rem;color:var(--gray-600);">${escapeHtml(r.message)}</div>` : ''}
         ${responseHtml}

@@ -1706,7 +1706,7 @@ app.get('/api/staff/events', requireStaff, (req, res) => {
 });
 
 app.post('/api/staff/requests', requireStaff, async (req, res) => {
-  const { clientName, clientSource, clientHandle, eventName, category, quantity, budgetMax, message } = req.body || {};
+  const { clientName, clientSource, clientHandle, eventName, category, quantity, budgetMax, staffMargin, message } = req.body || {};
   if (!clientName || !eventName) {
     return res.status(400).json({ error: 'Nom client et événement requis' });
   }
@@ -1721,6 +1721,7 @@ app.post('/api/staff/requests', requireStaff, async (req, res) => {
     category: String(category || '').trim(),
     quantity: Number(quantity) || 1,
     budgetMax: budgetMax ? Number(budgetMax) : null,
+    staffMargin: staffMargin ? Number(staffMargin) : 0,
     message: String(message || '').trim(),
     status: 'pending',
     adminResponse: null,
@@ -1749,7 +1750,7 @@ app.get('/api/staff/requests', requireStaff, (req, res) => {
 });
 
 app.post('/api/staff/sales', requireStaff, (req, res) => {
-  const { clientName, clientSource, clientContact, eventName, category, quantity, amount, notes } = req.body || {};
+  const { clientName, clientSource, clientContact, eventName, category, quantity, amount, staffMargin, notes } = req.body || {};
   if (!clientName || !eventName || !amount) {
     return res.status(400).json({ error: 'Nom client, événement et montant requis' });
   }
@@ -1765,6 +1766,7 @@ app.post('/api/staff/sales', requireStaff, (req, res) => {
     category: String(category || '').trim(),
     quantity: Number(quantity) || 1,
     amount: amountCents,
+    staffMargin: staffMargin ? Number(staffMargin) : 0,
     notes: String(notes || '').trim(),
     deliveryStatus: 'pending',
     deliveredAt: null
@@ -1793,12 +1795,67 @@ app.get('/api/staff/sales', requireStaff, (req, res) => {
       category: (o.products && o.products[0] && o.products[0].ticketType) || '',
       quantity: (o.products || []).reduce((s, p) => s + (p.quantity || 0), 0),
       amount: o.amount || 0,
+      staffMargin: 0,
       notes: '',
       deliveryStatus: o.deliveryStatus || 'pending',
       deliveredAt: o.deliveredAt || null
     }));
   const all = [...manual, ...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   res.json(all);
+});
+
+// GET /api/staff/summary — r&eacute;capitulatif des b&eacute;n&eacute;fices du staff
+app.get('/api/staff/summary', requireStaff, (req, res) => {
+  const requests = readJsonArray(REQUESTS_FILE);
+  const manualSales = readJsonArray(MANUAL_SALES_FILE);
+
+  // Marge gagn&eacute;e sur les ventes manuelles livr&eacute;es
+  let earnedFromSales = 0;
+  let pendingFromSales = 0;
+  let deliveredCount = 0;
+  let pendingSalesCount = 0;
+  const byMonth = {};
+
+  manualSales.forEach(s => {
+    const margin = Number(s.staffMargin || 0) * Number(s.quantity || 1);
+    if (s.deliveryStatus === 'delivered') {
+      earnedFromSales += margin;
+      deliveredCount++;
+      const key = (s.deliveredAt || s.createdAt || '').slice(0, 7);
+      if (key) byMonth[key] = (byMonth[key] || 0) + margin;
+    } else {
+      pendingFromSales += margin;
+      pendingSalesCount++;
+    }
+  });
+
+  // Demandes accept&eacute;es non encore livr&eacute;es = potentiel
+  let potentialFromRequests = 0;
+  let requestsPending = 0;
+  let requestsAccepted = 0;
+  let requestsRefused = 0;
+
+  requests.forEach(r => {
+    const margin = Number(r.staffMargin || 0) * Number(r.quantity || 1);
+    if (r.status === 'pending') { requestsPending++; potentialFromRequests += margin; }
+    else if (r.status === 'accepted') { requestsAccepted++; potentialFromRequests += margin; }
+    else if (r.status === 'refused') { requestsRefused++; }
+  });
+
+  const months = Object.keys(byMonth).sort().reverse().map(k => ({ month: k, amount: byMonth[k] }));
+
+  res.json({
+    totalEarned: earnedFromSales,
+    pending: pendingFromSales + potentialFromRequests,
+    counts: {
+      salesDelivered: deliveredCount,
+      salesPending: pendingSalesCount,
+      requestsPending,
+      requestsAccepted,
+      requestsRefused
+    },
+    byMonth: months
+  });
 });
 
 // ─── ADMIN ENDPOINTS pour demandes / ventes ───
