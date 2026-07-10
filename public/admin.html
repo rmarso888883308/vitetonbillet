@@ -51,6 +51,7 @@
     .btn-danger { background: var(--danger); color: white; font-size: 0.8rem; padding: 6px 12px; }
     .btn-outline { background: white; color: var(--gray-600); border: 1.5px solid var(--gray-200); }
     .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-outline.active-filter { background: var(--primary); color: white; border-color: var(--primary); }
     .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
 
     /* EVENTS LIST */
@@ -176,6 +177,7 @@
 
       <div class="tab-nav">
         <button class="tab-btn active" onclick="switchTab('events', this)">&Eacute;v&eacute;nements</button>
+        <button class="tab-btn" onclick="switchTab('requests', this)">Demandes <span id="requestsBadge" style="display:none;background:#ef4444;color:white;font-size:0.65rem;padding:2px 7px;border-radius:10px;margin-left:6px;font-weight:700;">0</span></button>
         <button class="tab-btn" onclick="switchTab('orders', this)">Commandes</button>
         <button class="tab-btn" onclick="switchTab('users', this)">Utilisateurs</button>
         <button class="tab-btn" onclick="switchTab('tests', this)">Tests</button>
@@ -186,6 +188,23 @@
       <div id="events" class="tab-content active">
         <button class="btn btn-primary" onclick="openEventModal()" style="margin-bottom: 16px;">+ Nouvel evenement</button>
         <div id="eventsList"></div>
+      </div>
+
+      <!-- REQUESTS TAB (demandes staff) -->
+      <div id="requests" class="tab-content">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h3 style="font-size:1.05rem;font-weight:700;color:var(--gray-900);">Demandes clients (staff)</h3>
+            <p style="color:var(--gray-500);font-size:0.85rem;">Demandes envoy&eacute;es par ton employ&eacute; via le dashboard staff.</p>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-outline btn-sm" onclick="setRequestFilter('all', this)">Toutes</button>
+            <button class="btn btn-outline btn-sm active-filter" onclick="setRequestFilter('pending', this)">En attente</button>
+            <button class="btn btn-outline btn-sm" onclick="setRequestFilter('accepted', this)">Accept&eacute;es</button>
+            <button class="btn btn-outline btn-sm" onclick="setRequestFilter('refused', this)">Refus&eacute;es</button>
+          </div>
+        </div>
+        <div id="requestsContainer"></div>
       </div>
 
       <!-- ORDERS TAB -->
@@ -233,6 +252,23 @@
       <!-- SETTINGS TAB -->
       <div id="settings" class="tab-content">
         <div style="max-width:600px;">
+
+          <!-- MAINTENANCE MODE -->
+          <div style="background:white;border:1px solid var(--gray-200);border-radius:12px;padding:20px 24px;margin-bottom:28px;">
+            <h3 style="margin-bottom:6px;font-size:1.1rem;">Mode maintenance</h3>
+            <p style="color:var(--gray-500);font-size:0.85rem;margin-bottom:16px;">Quand activ&eacute;, le site public affiche une page de maintenance. Les acc&egrave;s <strong>/admin</strong> et <strong>/staff</strong> restent op&eacute;rationnels.</p>
+            <div class="toggle-row" style="margin-bottom:14px;">
+              <input type="checkbox" id="maintenanceEnabled" style="width:18px;height:18px;cursor:pointer;" />
+              <label for="maintenanceEnabled" style="font-weight:700;font-size:0.95rem;">Activer le mode maintenance</label>
+            </div>
+            <div class="form-group">
+              <label>Message affich&eacute; aux visiteurs (optionnel)</label>
+              <textarea id="maintenanceMessage" rows="2" placeholder="Ex: Nous revenons tr&egrave;s vite avec de nouvelles places !"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="saveMaintenance()" id="saveMaintenanceBtn">Enregistrer</button>
+            <span id="maintenanceSaveResult" style="margin-left:12px;font-size:0.9rem;color:var(--success);"></span>
+          </div>
+
           <h3 style="margin-bottom:20px;font-size:1.2rem;">Banniere promotionnelle</h3>
           <p style="color:var(--gray-500);font-size:0.85rem;margin-bottom:20px;">Cette banniere s'affiche en haut du site pour mettre en avant un evenement.</p>
 
@@ -438,6 +474,146 @@
       document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
       document.getElementById(name).classList.add('active');
       btn.classList.add('active');
+      if (name === 'requests') loadRequests();
+    }
+
+    // ========== REQUESTS (staff) ==========
+    let allRequests = [];
+    let requestFilter = 'pending';
+
+    async function loadRequests() {
+      try {
+        const res = await fetch('/api/admin/requests', { headers: authH() });
+        if (!res.ok) return;
+        allRequests = await res.json();
+        renderRequests();
+        updateRequestsBadge();
+      } catch {
+        document.getElementById('requestsContainer').innerHTML = '<div class="empty-state">Erreur de chargement</div>';
+      }
+    }
+
+    function updateRequestsBadge() {
+      const pending = allRequests.filter(r => r.status === 'pending').length;
+      const b = document.getElementById('requestsBadge');
+      if (pending > 0) { b.style.display = 'inline-block'; b.textContent = pending; }
+      else { b.style.display = 'none'; }
+    }
+
+    function setRequestFilter(f, btn) {
+      requestFilter = f;
+      document.querySelectorAll('#requests .active-filter').forEach(b => b.classList.remove('active-filter'));
+      if (btn) btn.classList.add('active-filter');
+      renderRequests();
+    }
+
+    function renderRequests() {
+      const c = document.getElementById('requestsContainer');
+      let list = allRequests;
+      if (requestFilter !== 'all') list = list.filter(r => r.status === requestFilter);
+      if (list.length === 0) {
+        c.innerHTML = '<div class="empty-state">Aucune demande dans cette cat&eacute;gorie</div>';
+        return;
+      }
+      c.innerHTML = list.map(renderRequestCard).join('');
+    }
+
+    function renderRequestCard(r) {
+      const statusLabel = { pending: 'En attente', accepted: 'Accept&eacute;e', refused: 'Refus&eacute;e', delivered: 'Livr&eacute;e' }[r.status] || r.status;
+      const statusClass = 'status-' + (r.status === 'accepted' ? 'completed' : (r.status === 'refused' ? 'failed' : (r.status === 'delivered' ? 'completed' : 'pending')));
+      const budget = r.budgetMax ? (r.budgetMax + ' &euro; max') : 'Non pr&eacute;cis&eacute;';
+      const isPending = r.status === 'pending';
+      const responseHtml = (r.status === 'accepted' || r.status === 'refused')
+        ? `<div style="background:#eef8fc;border-left:3px solid var(--primary);padding:10px 14px;border-radius:0 8px 8px 0;margin-top:10px;font-size:0.85rem;color:#334155;">
+             <strong style="color:var(--primary-dark);font-size:0.75rem;text-transform:uppercase;">R&eacute;ponse${r.adminPrice ? ' — ' + r.adminPrice + ' &euro;/place' : ''}</strong>
+             <div style="margin-top:4px;">${escapeHtml(r.adminResponse || '')}</div>
+           </div>` : '';
+      const actions = isPending
+        ? `<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+             <button class="btn btn-primary btn-sm" onclick="openRespondModal(${r.id}, 'accept')">Accepter</button>
+             <button class="btn btn-danger btn-sm" onclick="openRespondModal(${r.id}, 'refuse')">Refuser</button>
+           </div>` : '';
+      return `<div style="background:white;border:1px solid var(--gray-200);border-radius:12px;padding:16px 20px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px;">
+          <div>
+            <div style="font-weight:700;font-size:1rem;">#${r.id} — ${escapeHtml(r.clientName)} ${r.clientHandle ? `<span style="color:#94a3b8;font-weight:500;font-size:0.85rem;">(${escapeHtml(r.clientHandle)})</span>` : ''}</div>
+            <div style="font-size:0.8rem;color:var(--gray-500);">${escapeHtml(r.clientSource || '')} &bull; ${formatDateShort(r.createdAt)}</div>
+          </div>
+          <span class="status-badge ${statusClass}">${statusLabel}</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px 18px;font-size:0.85rem;color:var(--gray-600);margin-top:6px;">
+          <div><strong style="color:var(--gray-800);">&Eacute;v&eacute;nement:</strong> ${escapeHtml(r.eventName)}</div>
+          <div><strong style="color:var(--gray-800);">Cat&eacute;gorie:</strong> ${escapeHtml(r.category || '—')}</div>
+          <div><strong style="color:var(--gray-800);">Qt&eacute;:</strong> ${r.quantity}</div>
+          <div><strong style="color:var(--gray-800);">Budget:</strong> ${budget}</div>
+        </div>
+        ${r.message ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9;font-size:0.85rem;color:var(--gray-600);">${escapeHtml(r.message)}</div>` : ''}
+        ${responseHtml}
+        ${actions}
+      </div>`;
+    }
+
+    function openRespondModal(id, action) {
+      const r = allRequests.find(x => x.id === id);
+      if (!r) return;
+      const isAccept = action === 'accept';
+      const priceField = isAccept ? `<div class="form-group"><label>Prix propos&eacute; (&euro; / place)</label><input type="number" id="respPrice" min="0" step="1" placeholder="Ex: 180" /></div>` : '';
+      const msgPlaceholder = isAccept ? 'Message optionnel (dispo, disp gauche/droit, etc.)' : 'Raison du refus (rupture, hors budget...)';
+      const modalHtml = `<div class="modal visible" id="respondModal" onclick="if(event.target===this)closeRespondModal()">
+        <div class="modal-content" style="max-width:500px;" onclick="event.stopPropagation()">
+          <div class="modal-header">
+            <h2>${isAccept ? 'Accepter' : 'Refuser'} la demande #${id}</h2>
+            <button class="modal-close" onclick="closeRespondModal()">&times;</button>
+          </div>
+          <div style="background:var(--gray-50);padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:0.85rem;">
+            <strong>${escapeHtml(r.clientName)}</strong> — ${escapeHtml(r.eventName)} — ${escapeHtml(r.category || '')} × ${r.quantity}
+          </div>
+          ${priceField}
+          <div class="form-group">
+            <label>Message au staff</label>
+            <textarea id="respMsg" rows="3" placeholder="${msgPlaceholder}"></textarea>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px;">
+            <button class="btn btn-outline" onclick="closeRespondModal()">Annuler</button>
+            <button class="btn ${isAccept ? 'btn-primary' : 'btn-danger'}" onclick="submitRespond(${id}, '${action}')">${isAccept ? 'Confirmer accept.' : 'Confirmer refus'}</button>
+          </div>
+        </div>
+      </div>`;
+      const wrap = document.createElement('div');
+      wrap.innerHTML = modalHtml;
+      document.body.appendChild(wrap.firstElementChild);
+    }
+
+    function closeRespondModal() {
+      const m = document.getElementById('respondModal');
+      if (m) m.remove();
+    }
+
+    async function submitRespond(id, action) {
+      const message = (document.getElementById('respMsg') || {}).value || '';
+      const price = action === 'accept' ? Number((document.getElementById('respPrice') || {}).value || 0) : null;
+      try {
+        const res = await fetch(`/api/admin/requests/${id}/respond`, {
+          method: 'POST',
+          headers: { ...authH(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, price, message })
+        });
+        const data = await res.json();
+        if (!res.ok) { alert(data.error || 'Erreur'); return; }
+        closeRespondModal();
+        loadRequests();
+      } catch (e) { alert('Erreur r&eacute;seau'); }
+    }
+
+    function escapeHtml(str) {
+      if (str == null) return '';
+      return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function formatDateShort(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     }
 
     // ========== STATS ==========
@@ -562,7 +738,30 @@
         var colorRadio = document.querySelector('input[name="bannerColor"][value="' + colorVal + '"]');
         if (colorRadio) colorRadio.checked = true;
         updateBannerPreview();
+        // Maintenance mode
+        const m = settings.maintenance || {};
+        document.getElementById('maintenanceEnabled').checked = !!m.enabled;
+        document.getElementById('maintenanceMessage').value = m.message || '';
       } catch(e) {}
+    }
+
+    async function saveMaintenance() {
+      const btn = document.getElementById('saveMaintenanceBtn');
+      btn.disabled = true; btn.textContent = 'Enregistrement...';
+      try {
+        const payload = { maintenance: {
+          enabled: document.getElementById('maintenanceEnabled').checked,
+          message: document.getElementById('maintenanceMessage').value.trim()
+        } };
+        const res = await fetch('/api/admin/settings', { method: 'PUT', headers: { ...authH(), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (res.ok) {
+          document.getElementById('maintenanceSaveResult').textContent = 'Enregistr&eacute; !';
+          setTimeout(() => { document.getElementById('maintenanceSaveResult').textContent = ''; }, 3000);
+        } else {
+          alert('Erreur enregistrement');
+        }
+      } catch(e) { alert('Erreur: ' + e.message); }
+      btn.disabled = false; btn.textContent = 'Enregistrer';
     }
 
     function updateBannerPreview() {

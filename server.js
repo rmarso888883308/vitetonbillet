@@ -17,6 +17,8 @@ const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const INFLOW_API_KEY = process.env.INFLOW_API_KEY;
 const INFLOW_API_BASE = 'https://api.inflowpay.xyz';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'vitetonbillet2026';
+const STAFF_PASSWORD = process.env.STAFF_PASSWORD || 'staff2026';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'romainmarsollier2008@gmail.com';
 const PUSHOVER_USER_KEY = process.env.PUSHOVER_USER_KEY;
 const PUSHOVER_API_TOKEN = process.env.PUSHOVER_API_TOKEN;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
@@ -27,6 +29,9 @@ const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
+const REQUESTS_FILE = path.join(DATA_DIR, 'requests.json');
+const MANUAL_SALES_FILE = path.join(DATA_DIR, 'manual-sales.json');
+const STAFF_FILE = path.join(DATA_DIR, 'staff.json');
 
 // Settings (bannière promo, etc.)
 function readSettings() {
@@ -103,6 +108,38 @@ app.use(helmet({
 }));
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
+
+// ─── MAINTENANCE MODE ───
+// Si activ&eacute; dans les settings, sert maintenance.html sur les routes publiques.
+// /admin, /staff et les assets restent accessibles.
+app.use((req, res, next) => {
+  const settings = readSettings();
+  if (!settings.maintenance || !settings.maintenance.enabled) return next();
+  const p = req.path;
+  // Whitelist : admin, staff, api admin/staff, assets, la page maintenance elle-même
+  const allowed =
+    p === '/maintenance.html' ||
+    p.startsWith('/admin') ||
+    p.startsWith('/staff') ||
+    p.startsWith('/api/admin') ||
+    p.startsWith('/api/staff') ||
+    p === '/api/settings' ||
+    p.startsWith('/api/maintenance') ||
+    p.startsWith('/images/') ||
+    p.startsWith('/uploads/') ||
+    p.startsWith('/assets/') ||
+    /\.(css|js|png|jpg|jpeg|webp|gif|svg|ico|woff2?|ttf|json|webmanifest)$/i.test(p);
+  if (allowed) return next();
+  // Servir la page maintenance
+  return res.sendFile(path.join(__dirname, 'public', 'maintenance.html'));
+});
+
+// GET /api/maintenance-status — permet au front de savoir si le site est en maintenance
+app.get('/api/maintenance-status', (req, res) => {
+  const s = readSettings();
+  const m = s.maintenance || {};
+  res.json({ enabled: !!m.enabled, message: m.message || '' });
+});
 
 // Cache-Control pour les assets statiques
 app.use(express.static(path.join(__dirname, 'public'), {
@@ -1504,6 +1541,348 @@ function expireOldPendingOrders() {
 
 // Vérifier toutes les 5 minutes
 setInterval(expireOldPendingOrders, 5 * 60 * 1000);
+
+// =====================
+// STAFF API — Dashboard employé (demandes clients + ventes manuelles)
+// =====================
+
+function readJsonArray(file) {
+  if (!fs.existsSync(file)) {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, '[]', 'utf-8');
+    return [];
+  }
+  try { return JSON.parse(fs.readFileSync(file, 'utf-8')); } catch { return []; }
+}
+function writeJsonArray(file, arr) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(arr, null, 2), 'utf-8');
+}
+function nextId(arr) {
+  if (arr.length === 0) return 1;
+  return Math.max(...arr.map(x => x.id || 0)) + 1;
+}
+
+function readStaffConfig() {
+  if (!fs.existsSync(STAFF_FILE)) {
+    fs.mkdirSync(path.dirname(STAFF_FILE), { recursive: true });
+    fs.writeFileSync(STAFF_FILE, JSON.stringify({ email: '' }, null, 2), 'utf-8');
+    return { email: '' };
+  }
+  try { return JSON.parse(fs.readFileSync(STAFF_FILE, 'utf-8')); } catch { return { email: '' }; }
+}
+function writeStaffConfig(cfg) {
+  fs.mkdirSync(path.dirname(STAFF_FILE), { recursive: true });
+  fs.writeFileSync(STAFF_FILE, JSON.stringify(cfg, null, 2), 'utf-8');
+}
+
+function requireStaff(req, res, next) {
+  const password = req.headers['x-staff-password'];
+  if (password !== STAFF_PASSWORD) {
+    return res.status(401).json({ error: 'Mot de passe staff incorrect' });
+  }
+  next();
+}
+
+// ─── EMAIL TEMPLATES ───
+function buildStaffEmailShell(title, contentHtml) {
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.06);">
+        <tr><td style="background:linear-gradient(135deg,#050033,#0e0847);padding:28px 40px;text-align:center;">
+          <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:800;">ViteTonBillet</h1>
+          <p style="margin:6px 0 0;color:rgba(255,255,255,0.6);font-size:12px;">${title}</p>
+        </td></tr>
+        <tr><td style="padding:32px 40px;">${contentHtml}</td></tr>
+        <tr><td style="background:#f8fafc;padding:16px 40px;text-align:center;border-top:1px solid #eef2f7;">
+          <p style="margin:0;color:#94a3b8;font-size:11px;">&copy; 2026 ViteTonBillet</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table></body></html>`;
+}
+
+function buildRequestEmailHtml(request) {
+  const budget = request.budgetMax ? `${request.budgetMax} &euro; max` : 'Non précisé';
+  const inner = `
+    <h2 style="margin:0 0 16px;font-size:20px;color:#0f172a;font-weight:800;">Nouvelle demande client</h2>
+    <p style="color:#64748b;font-size:14px;margin:0 0 24px;">Ton employé a enregistré une nouvelle demande via le dashboard staff.</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eef2f7;border-radius:10px;overflow:hidden;">
+      <tr><td style="padding:12px 16px;background:#f8fafc;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;">Client</td>
+          <td style="padding:12px 16px;background:#f8fafc;font-size:14px;color:#0f172a;">${request.clientName || '—'} ${request.clientHandle ? `(${request.clientHandle})` : ''}</td></tr>
+      <tr><td style="padding:12px 16px;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;">Source</td>
+          <td style="padding:12px 16px;font-size:14px;color:#334155;">${request.clientSource || '—'}</td></tr>
+      <tr><td style="padding:12px 16px;background:#f8fafc;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;">&Eacute;v&eacute;nement</td>
+          <td style="padding:12px 16px;background:#f8fafc;font-size:14px;color:#0f172a;font-weight:600;">${request.eventName || '—'}</td></tr>
+      <tr><td style="padding:12px 16px;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;">Cat&eacute;gorie</td>
+          <td style="padding:12px 16px;font-size:14px;color:#334155;">${request.category || '—'}</td></tr>
+      <tr><td style="padding:12px 16px;background:#f8fafc;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;">Quantit&eacute;</td>
+          <td style="padding:12px 16px;background:#f8fafc;font-size:14px;color:#334155;">${request.quantity || '—'}</td></tr>
+      <tr><td style="padding:12px 16px;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;">Budget</td>
+          <td style="padding:12px 16px;font-size:14px;color:#334155;">${budget}</td></tr>
+      ${request.message ? `<tr><td style="padding:12px 16px;background:#f8fafc;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;vertical-align:top;">Message</td>
+          <td style="padding:12px 16px;background:#f8fafc;font-size:14px;color:#334155;line-height:1.6;">${(request.message || '').replace(/\n/g,'<br>')}</td></tr>` : ''}
+    </table>
+    <div style="text-align:center;margin-top:24px;">
+      <a href="${BASE_URL}/admin.html" style="display:inline-block;padding:12px 28px;background:#3b82f6;color:#ffffff;font-weight:700;font-size:14px;border-radius:10px;text-decoration:none;">R&eacute;pondre depuis l'admin</a>
+    </div>`;
+  return buildStaffEmailShell('Notification admin — nouvelle demande', inner);
+}
+
+function buildResponseEmailHtml(request) {
+  const isAccepted = request.status === 'accepted';
+  const color = isAccepted ? '#22c55e' : '#ef4444';
+  const title = isAccepted ? 'Demande accept&eacute;e' : 'Demande refus&eacute;e';
+  const priceLine = isAccepted && request.adminPrice
+    ? `<p style="margin:0 0 12px;font-size:14px;color:#0f172a;"><strong>Prix propos&eacute; :</strong> ${request.adminPrice} &euro; ${request.quantity > 1 ? 'par place' : ''}</p>` : '';
+  const inner = `
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="display:inline-block;width:52px;height:52px;background:${color}20;border-radius:50%;line-height:52px;font-size:26px;color:${color};font-weight:900;">${isAccepted ? '✓' : '✗'}</div>
+    </div>
+    <h2 style="margin:0 0 12px;font-size:20px;color:#0f172a;font-weight:800;text-align:center;">${title}</h2>
+    <p style="color:#64748b;font-size:14px;margin:0 0 20px;text-align:center;">Demande #${request.id} pour <strong>${request.clientName || 'un client'}</strong></p>
+    <div style="background:#f8fafc;border:1px solid #eef2f7;border-radius:10px;padding:16px 20px;margin-bottom:20px;">
+      <p style="margin:0 0 6px;font-size:13px;color:#64748b;">&Eacute;v&eacute;nement</p>
+      <p style="margin:0;font-size:15px;color:#0f172a;font-weight:600;">${request.eventName || '—'} — ${request.category || ''} × ${request.quantity || 1}</p>
+    </div>
+    ${priceLine}
+    ${request.adminResponse ? `<p style="margin:12px 0 0;padding:14px 18px;background:#eff6ff;border-left:3px solid #3b82f6;font-size:14px;color:#1e40af;line-height:1.6;">${(request.adminResponse || '').replace(/\n/g,'<br>')}</p>` : ''}
+    <div style="text-align:center;margin-top:24px;">
+      <a href="${BASE_URL}/staff.html" style="display:inline-block;padding:12px 28px;background:#0f172a;color:#ffffff;font-weight:700;font-size:14px;border-radius:10px;text-decoration:none;">Voir dans le dashboard</a>
+    </div>`;
+  return buildStaffEmailShell('Réponse à ta demande', inner);
+}
+
+function buildDeliveredEmailHtml(sale) {
+  const inner = `
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="display:inline-block;width:52px;height:52px;background:#22c55e20;border-radius:50%;line-height:52px;font-size:26px;color:#22c55e;font-weight:900;">📧</div>
+    </div>
+    <h2 style="margin:0 0 12px;font-size:20px;color:#0f172a;font-weight:800;text-align:center;">Vente livr&eacute;e</h2>
+    <p style="color:#64748b;font-size:14px;margin:0 0 20px;text-align:center;">Les billets ont &eacute;t&eacute; transf&eacute;r&eacute;s au client</p>
+    <div style="background:#f8fafc;border:1px solid #eef2f7;border-radius:10px;padding:16px 20px;">
+      <p style="margin:0 0 6px;font-size:13px;color:#64748b;">Client</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#0f172a;font-weight:600;">${sale.clientName || '—'}</p>
+      <p style="margin:0 0 6px;font-size:13px;color:#64748b;">&Eacute;v&eacute;nement</p>
+      <p style="margin:0;font-size:15px;color:#0f172a;font-weight:600;">${sale.eventName || '—'} — ${sale.category || ''} × ${sale.quantity || 1}</p>
+    </div>`;
+  return buildStaffEmailShell('Vente livrée', inner);
+}
+
+// ─── STAFF ENDPOINTS ───
+app.post('/api/staff/login', (req, res) => {
+  const { password } = req.body || {};
+  if (password === STAFF_PASSWORD) return res.json({ success: true });
+  res.status(401).json({ error: 'Mot de passe incorrect' });
+});
+
+app.get('/api/staff/profile', requireStaff, (req, res) => {
+  res.json(readStaffConfig());
+});
+
+app.post('/api/staff/profile', requireStaff, (req, res) => {
+  const { email } = req.body || {};
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'Email invalide' });
+  }
+  writeStaffConfig({ email: String(email).trim().toLowerCase() });
+  res.json({ success: true });
+});
+
+app.get('/api/staff/events', requireStaff, (req, res) => {
+  try {
+    const events = fs.existsSync(EVENTS_FILE) ? JSON.parse(fs.readFileSync(EVENTS_FILE, 'utf-8')) : [];
+    res.json(events.map(e => ({
+      id: e.id,
+      name: e.name,
+      artist: e.artist,
+      location: e.location,
+      date: e.date,
+      tickets: (e.tickets || []).map(t => ({ type: t.type, price: t.price, stock: t.stock }))
+    })));
+  } catch { res.json([]); }
+});
+
+app.post('/api/staff/requests', requireStaff, async (req, res) => {
+  const { clientName, clientSource, clientHandle, eventName, category, quantity, budgetMax, message } = req.body || {};
+  if (!clientName || !eventName) {
+    return res.status(400).json({ error: 'Nom client et événement requis' });
+  }
+  const requests = readJsonArray(REQUESTS_FILE);
+  const request = {
+    id: nextId(requests),
+    createdAt: new Date().toISOString(),
+    clientName: String(clientName).trim(),
+    clientSource: String(clientSource || '').trim(),
+    clientHandle: String(clientHandle || '').trim(),
+    eventName: String(eventName).trim(),
+    category: String(category || '').trim(),
+    quantity: Number(quantity) || 1,
+    budgetMax: budgetMax ? Number(budgetMax) : null,
+    message: String(message || '').trim(),
+    status: 'pending',
+    adminResponse: null,
+    adminPrice: null,
+    respondedAt: null,
+    deliveredAt: null
+  };
+  requests.unshift(request);
+  writeJsonArray(REQUESTS_FILE, requests);
+  // Email admin
+  sendEmail({
+    to: ADMIN_EMAIL,
+    subject: `[Demande #${request.id}] ${request.clientName} — ${request.eventName}`,
+    html: buildRequestEmailHtml(request)
+  }).catch(() => {});
+  // Pushover notif admin
+  sendPushoverNotification(
+    `Nouvelle demande #${request.id}`,
+    `${request.clientName} — ${request.eventName} × ${request.quantity}`
+  ).catch(() => {});
+  res.json({ success: true, request });
+});
+
+app.get('/api/staff/requests', requireStaff, (req, res) => {
+  res.json(readJsonArray(REQUESTS_FILE));
+});
+
+app.post('/api/staff/sales', requireStaff, (req, res) => {
+  const { clientName, clientSource, clientContact, eventName, category, quantity, amount, notes } = req.body || {};
+  if (!clientName || !eventName || !amount) {
+    return res.status(400).json({ error: 'Nom client, événement et montant requis' });
+  }
+  const sales = readJsonArray(MANUAL_SALES_FILE);
+  const amountCents = Math.round(Number(amount) * 100);
+  const sale = {
+    id: nextId(sales),
+    createdAt: new Date().toISOString(),
+    clientName: String(clientName).trim(),
+    clientSource: String(clientSource || '').trim(),
+    clientContact: String(clientContact || '').trim(),
+    eventName: String(eventName).trim(),
+    category: String(category || '').trim(),
+    quantity: Number(quantity) || 1,
+    amount: amountCents,
+    notes: String(notes || '').trim(),
+    deliveryStatus: 'pending',
+    deliveredAt: null
+  };
+  sales.unshift(sale);
+  writeJsonArray(MANUAL_SALES_FILE, sales);
+  res.json({ success: true, sale });
+});
+
+// GET /api/staff/sales — retourne ventes manuelles + commandes settled du site
+app.get('/api/staff/sales', requireStaff, (req, res) => {
+  const manual = readJsonArray(MANUAL_SALES_FILE).map(s => ({
+    ...s,
+    kind: 'manual'
+  }));
+  const orders = readOrders()
+    .filter(o => o.status === 'completed' || o.status === 'settled')
+    .map(o => ({
+      id: o.id,
+      kind: 'site',
+      createdAt: o.createdAt,
+      clientName: o.customerName || '',
+      clientSource: 'Site web',
+      clientContact: o.customerEmail || '',
+      eventName: (o.products && o.products[0] && o.products[0].eventName) || (o.products && o.products[0] && o.products[0].name) || '',
+      category: (o.products && o.products[0] && o.products[0].ticketType) || '',
+      quantity: (o.products || []).reduce((s, p) => s + (p.quantity || 0), 0),
+      amount: o.amount || 0,
+      notes: '',
+      deliveryStatus: o.deliveryStatus || 'pending',
+      deliveredAt: o.deliveredAt || null
+    }));
+  const all = [...manual, ...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  res.json(all);
+});
+
+// ─── ADMIN ENDPOINTS pour demandes / ventes ───
+app.get('/api/admin/requests', requireAdmin, (req, res) => {
+  res.json(readJsonArray(REQUESTS_FILE));
+});
+
+app.post('/api/admin/requests/:id/respond', requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  const { action, price, message } = req.body || {};
+  if (!['accept', 'refuse'].includes(action)) {
+    return res.status(400).json({ error: 'Action invalide (accept ou refuse)' });
+  }
+  const requests = readJsonArray(REQUESTS_FILE);
+  const idx = requests.findIndex(r => r.id === id);
+  if (idx === -1) return res.status(404).json({ error: 'Demande introuvable' });
+  const request = requests[idx];
+  request.status = action === 'accept' ? 'accepted' : 'refused';
+  request.adminResponse = String(message || '').trim();
+  request.adminPrice = action === 'accept' && price ? Number(price) : null;
+  request.respondedAt = new Date().toISOString();
+  requests[idx] = request;
+  writeJsonArray(REQUESTS_FILE, requests);
+  // Notif email staff
+  const staff = readStaffConfig();
+  if (staff.email) {
+    sendEmail({
+      to: staff.email,
+      subject: `[Demande #${request.id}] ${action === 'accept' ? 'Accept&eacute;e' : 'Refus&eacute;e'} — ${request.clientName}`,
+      html: buildResponseEmailHtml(request)
+    }).catch(() => {});
+  }
+  res.json({ success: true, request });
+});
+
+app.post('/api/admin/sales/:kind/:id/delivery', requireAdmin, async (req, res) => {
+  const kind = req.params.kind;
+  const id = Number(req.params.id);
+  const { status } = req.body || {};
+  if (!['pending', 'in_progress', 'delivered'].includes(status)) {
+    return res.status(400).json({ error: 'Statut invalide' });
+  }
+  if (kind === 'manual') {
+    const sales = readJsonArray(MANUAL_SALES_FILE);
+    const idx = sales.findIndex(s => s.id === id);
+    if (idx === -1) return res.status(404).json({ error: 'Vente introuvable' });
+    sales[idx].deliveryStatus = status;
+    sales[idx].deliveredAt = status === 'delivered' ? new Date().toISOString() : null;
+    writeJsonArray(MANUAL_SALES_FILE, sales);
+    if (status === 'delivered') {
+      const staff = readStaffConfig();
+      if (staff.email) sendEmail({
+        to: staff.email,
+        subject: `Vente #${id} livrée — ${sales[idx].clientName}`,
+        html: buildDeliveredEmailHtml(sales[idx])
+      }).catch(() => {});
+    }
+    return res.json({ success: true, sale: sales[idx] });
+  }
+  if (kind === 'site') {
+    const orders = readOrders();
+    const idx = orders.findIndex(o => o.id === id);
+    if (idx === -1) return res.status(404).json({ error: 'Commande introuvable' });
+    orders[idx].deliveryStatus = status;
+    orders[idx].deliveredAt = status === 'delivered' ? new Date().toISOString() : null;
+    writeOrders(orders);
+    if (status === 'delivered') {
+      const staff = readStaffConfig();
+      const o = orders[idx];
+      if (staff.email) sendEmail({
+        to: staff.email,
+        subject: `Commande #${id} livrée — ${o.customerName || ''}`,
+        html: buildDeliveredEmailHtml({
+          clientName: o.customerName || '',
+          eventName: (o.products && o.products[0] && o.products[0].name) || '',
+          category: (o.products && o.products[0] && o.products[0].ticketType) || '',
+          quantity: (o.products || []).reduce((s, p) => s + (p.quantity || 0), 0)
+        })
+      }).catch(() => {});
+    }
+    return res.json({ success: true, order: orders[idx] });
+  }
+  res.status(400).json({ error: 'Type inconnu' });
+});
 
 app.listen(PORT, () => {
   console.log(`ViteTonBillet — Serveur démarré sur http://localhost:${PORT}`);

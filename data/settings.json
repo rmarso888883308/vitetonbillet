@@ -5,5 +5,9 @@
     "subtitle": "Places disponibles !",
     "linkText": "Voir les places",
     "searchQuery": "Celine Dion"
+  },
+  "maintenance": {
+    "enabled": false,
+    "message": ""
   }
 }

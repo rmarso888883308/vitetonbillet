@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Staff — ViteTonBillet</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #2a8cb5; --primary-dark: #1e7a9e; --primary-50: #eef8fc;
+      --gray-50: #f8fafc; --gray-100: #f1f5f9; --gray-200: #e2e8f0;
+      --gray-400: #94a3b8; --gray-500: #64748b; --gray-600: #475569;
+      --gray-700: #334155; --gray-800: #1e293b; --gray-900: #0f172a;
+      --danger: #ef4444; --success: #22c55e; --warning: #f59e0b;
+      --radius: 12px; --shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--gray-50); color: var(--gray-800); line-height: 1.6; }
+
+    .login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .login-card { background: white; border: 1px solid var(--gray-200); border-radius: 16px; padding: 40px; width: 100%; max-width: 400px; box-shadow: var(--shadow); text-align: center; }
+    .login-card h1 { font-size: 1.3rem; font-weight: 800; margin-bottom: 4px; }
+    .login-card p { color: var(--gray-500); font-size: 0.9rem; margin-bottom: 24px; }
+    .login-card input { width: 100%; padding: 12px 14px; border: 1.5px solid var(--gray-200); border-radius: 10px; font-size: 0.9rem; font-family: inherit; margin-bottom: 16px; outline: none; }
+    .login-card input:focus { border-color: var(--primary); }
+    .login-card button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
+    .login-card button:hover { background: var(--primary-dark); }
+    .login-error { color: var(--danger); font-size: 0.85rem; margin-top: 8px; min-height: 20px; }
+
+    .dashboard { display: none; }
+    .dashboard.visible { display: block; }
+    .top-bar { background: var(--primary); color: white; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; }
+    .top-bar h1 { font-size: 1.2rem; font-weight: 700; }
+    .top-bar .top-actions { display: flex; align-items: center; gap: 12px; }
+    .top-bar .staff-email { font-size: 0.8rem; opacity: 0.85; }
+    .top-bar button { background: rgba(255,255,255,0.15); color: white; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
+    .top-bar button:hover { background: rgba(255,255,255,0.25); }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+    .tab-nav { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid var(--gray-200); overflow-x: auto; }
+    .tab-btn { padding: 12px 20px; background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-weight: 600; color: var(--gray-400); font-size: 0.95rem; white-space: nowrap; font-family: inherit; }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-badge { display: inline-block; background: var(--danger); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; margin-left: 6px; font-weight: 700; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .card { background: white; border: 1px solid var(--gray-200); border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: var(--shadow); }
+    .card h2 { font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; color: var(--gray-900); }
+    .card-sub { color: var(--gray-500); font-size: 0.85rem; margin-bottom: 20px; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.82rem; color: var(--gray-700); }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%; padding: 10px 12px; border: 1.5px solid var(--gray-200);
+      border-radius: 8px; font-family: inherit; font-size: 0.9rem; outline: none;
+      background: white; color: var(--gray-800);
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--primary); }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+    .form-hint { font-size: 0.75rem; color: var(--gray-400); margin-top: 4px; }
+
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.9rem; font-family: inherit; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-primary:disabled { opacity: 0.6; cursor: wait; }
+    .btn-outline { background: white; color: var(--gray-600); border: 1.5px solid var(--gray-200); }
+    .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-sm { padding: 7px 12px; font-size: 0.8rem; }
+
+    .toast { position: fixed; bottom: 20px; right: 20px; background: var(--gray-900); color: white; padding: 12px 20px; border-radius: 10px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    .toast.visible { opacity: 1; }
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--danger); }
+
+    .req-list, .sales-list { display: flex; flex-direction: column; gap: 12px; }
+    .req-item, .sale-item { background: white; border: 1px solid var(--gray-200); border-radius: 12px; padding: 18px; }
+    .req-header, .sale-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+    .req-title { font-weight: 700; font-size: 1rem; color: var(--gray-900); }
+    .req-sub { font-size: 0.82rem; color: var(--gray-500); margin-top: 2px; }
+    .req-meta { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 0.85rem; color: var(--gray-600); margin-bottom: 10px; }
+    .req-meta strong { color: var(--gray-800); }
+
+    .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+    .status-pending { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .status-accepted { background: rgba(34,197,94,0.15); color: var(--success); }
+    .status-refused { background: rgba(239,68,68,0.15); color: var(--danger); }
+    .status-delivered { background: rgba(59,130,246,0.15); color: #3b82f6; }
+    .status-in_progress { background: rgba(139,92,246,0.15); color: #8b5cf6; }
+
+    .response-box { background: var(--primary-50); border-left: 3px solid var(--primary); padding: 12px 14px; border-radius: 0 8px 8px 0; margin-top: 10px; font-size: 0.88rem; color: var(--gray-700); }
+    .response-box strong { color: var(--primary-dark); display: block; margin-bottom: 4px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--gray-400); background: white; border-radius: 12px; border: 1px dashed var(--gray-200); }
+    .empty-state svg { margin: 0 auto 12px; }
+
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+    .modal.visible { display: flex; }
+    .modal-content { background: white; border-radius: 16px; padding: 28px; max-width: 500px; width: 100%; box-shadow: var(--shadow); }
+    .modal-content h2 { font-size: 1.1rem; margin-bottom: 6px; }
+    .modal-content .m-sub { color: var(--gray-500); font-size: 0.85rem; margin-bottom: 18px; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 16px; justify-content: flex-end; }
+
+    @media (max-width: 640px) {
+      .form-row { grid-template-columns: 1fr; }
+      .top-bar .staff-email { display: none; }
+      .container { padding: 16px; }
+      .req-header, .sale-header { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div id="loginPage" class="login-page">
+    <div class="login-card">
+      <h1>Espace staff</h1>
+      <p>Dashboard de gestion des demandes clients</p>
+      <input type="password" id="staffPassword" placeholder="Mot de passe" onkeydown="if(event.key==='Enter')login()" autofocus />
+      <button onclick="login()">Se connecter</button>
+      <div id="loginError" class="login-error"></div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" class="dashboard">
+    <div class="top-bar">
+      <h1>ViteTonBillet — Staff</h1>
+      <div class="top-actions">
+        <span class="staff-email" id="staffEmailDisplay"></span>
+        <button onclick="openEmailModal()">Mon email</button>
+        <button onclick="logout()">D&eacute;connexion</button>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('new', this)">Nouvelle demande</button>
+        <button class="tab-btn" onclick="switchTab('requests', this)">Mes demandes <span class="tab-badge" id="badgeRequests" style="display:none">0</span></button>
+        <button class="tab-btn" onclick="switchTab('sales', this)">Ventes</button>
+      </div>
+
+      <!-- NEW REQUEST -->
+      <div id="new" class="tab-content active">
+        <div class="card">
+          <h2>Nouvelle demande client</h2>
+          <p class="card-sub">Enregistre ici la demande d'un client. Romain re&ccedil;oit un email et te r&eacute;pond dans son admin.</p>
+          <form id="requestForm" onsubmit="return submitRequest(event)">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Nom du client *</label>
+                <input type="text" name="clientName" required placeholder="Ex: Marie Dupont" />
+              </div>
+              <div class="form-group">
+                <label>Source du contact</label>
+                <select name="clientSource">
+                  <option value="Twitter">Twitter / X</option>
+                  <option value="Instagram">Instagram</option>
+                  <option value="DM">Message direct</option>
+                  <option value="WhatsApp">WhatsApp</option>
+                  <option value="Autre">Autre</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Handle / contact du client</label>
+              <input type="text" name="clientHandle" placeholder="Ex: @marie_dupont ou email" />
+            </div>
+            <div class="form-group">
+              <label>&Eacute;v&eacute;nement recherch&eacute; *</label>
+              <input type="text" name="eventName" id="eventNameInput" list="eventsList" required placeholder="Ex: C&eacute;line Dion Paris" />
+              <datalist id="eventsList"></datalist>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Cat&eacute;gorie souhait&eacute;e</label>
+                <input type="text" name="category" placeholder="Fosse Or, Cat 1..." />
+              </div>
+              <div class="form-group">
+                <label>Quantit&eacute; *</label>
+                <input type="number" name="quantity" min="1" value="1" required />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Budget max (par place)</label>
+              <input type="number" name="budgetMax" min="0" step="1" placeholder="Ex: 200" />
+              <div class="form-hint">Laisser vide si le client n'a pas donn&eacute; de budget</div>
+            </div>
+            <div class="form-group">
+              <label>Message / notes</label>
+              <textarea name="message" placeholder="Contexte, urgence, pr&eacute;f&eacute;rences..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" id="submitRequestBtn">Envoyer la demande</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- REQUESTS LIST -->
+      <div id="requests" class="tab-content">
+        <div id="requestsContainer"></div>
+      </div>
+
+      <!-- SALES -->
+      <div id="sales" class="tab-content">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:10px;">
+            <div>
+              <h2 style="margin-bottom:2px;">Ventes r&eacute;centes</h2>
+              <p class="card-sub" style="margin-bottom:0;">Ventes du site + ventes que tu ajoutes manuellement</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="openManualSaleModal()">+ Vente manuelle</button>
+          </div>
+        </div>
+        <div id="salesContainer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANUAL SALE MODAL -->
+  <div id="manualSaleModal" class="modal">
+    <div class="modal-content">
+      <h2>Ajouter une vente manuelle</h2>
+      <p class="m-sub">Pour les deals conclus hors du site (Twitter, DM...)</p>
+      <form id="manualSaleForm" onsubmit="return submitManualSale(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Client *</label>
+            <input type="text" name="clientName" required placeholder="Nom" />
+          </div>
+          <div class="form-group">
+            <label>Source</label>
+            <select name="clientSource">
+              <option value="Twitter">Twitter / X</option>
+              <option value="Instagram">Instagram</option>
+              <option value="DM">Message direct</option>
+              <option value="WhatsApp">WhatsApp</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Contact du client</label>
+          <input type="text" name="clientContact" placeholder="@handle ou email" />
+        </div>
+        <div class="form-group">
+          <label>&Eacute;v&eacute;nement *</label>
+          <input type="text" name="eventName" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Cat&eacute;gorie</label>
+            <input type="text" name="category" />
+          </div>
+          <div class="form-group">
+            <label>Quantit&eacute;</label>
+            <input type="number" name="quantity" min="1" value="1" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Montant total (en &euro;) *</label>
+          <input type="number" name="amount" min="0" step="0.01" required placeholder="Ex: 150" />
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea name="notes" placeholder="Moyen de paiement, remarques..."></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeManualSaleModal()">Annuler</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- EMAIL MODAL -->
+  <div id="emailModal" class="modal">
+    <div class="modal-content">
+      <h2>Ton email de notification</h2>
+      <p class="m-sub">Tu recevras les r&eacute;ponses de Romain et les confirmations de livraison sur cette adresse.</p>
+      <div class="form-group">
+        <label>Adresse email</label>
+        <input type="email" id="emailInput" placeholder="ton@email.com" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeEmailModal()">Annuler</button>
+        <button type="button" class="btn btn-primary" onclick="saveEmail()">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    var STAFF_PASSWORD = null;
+
+    function api(url, opts) {
+      opts = opts || {};
+      opts.headers = opts.headers || {};
+      if (STAFF_PASSWORD) opts.headers['x-staff-password'] = STAFF_PASSWORD;
+      if (opts.body && typeof opts.body !== 'string') {
+        opts.headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(opts.body);
+      }
+      return fetch(url, opts).then(function(r) {
+        return r.json().then(function(d) { return { ok: r.ok, status: r.status, data: d }; });
+      });
+    }
+
+    function showToast(msg, kind) {
+      var t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast visible' + (kind ? ' ' + kind : '');
+      setTimeout(function() { t.className = 'toast'; }, 3000);
+    }
+
+    function login() {
+      var pwd = document.getElementById('staffPassword').value;
+      if (!pwd) return;
+      fetch('/api/staff/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pwd })
+      }).then(function(r) {
+        if (!r.ok) throw new Error('Mot de passe incorrect');
+        STAFF_PASSWORD = pwd;
+        try { sessionStorage.setItem('staff_pwd', pwd); } catch(e) {}
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('dashboard').classList.add('visible');
+        initDashboard();
+      }).catch(function(e) {
+        document.getElementById('loginError').textContent = e.message;
+      });
+    }
+
+    function logout() {
+      STAFF_PASSWORD = null;
+      try { sessionStorage.removeItem('staff_pwd'); } catch(e) {}
+      location.reload();
+    }
+
+    function switchTab(name, btn) {
+      document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+      document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById(name).classList.add('active');
+      if (name === 'requests') loadRequests();
+      if (name === 'sales') loadSales();
+    }
+
+    function initDashboard() {
+      loadProfile();
+      loadEvents();
+      loadRequests();
+    }
+
+    function loadProfile() {
+      api('/api/staff/profile').then(function(r) {
+        if (!r.ok) return;
+        var email = (r.data && r.data.email) || '';
+        document.getElementById('staffEmailDisplay').textContent = email || 'Pas d\'email';
+        document.getElementById('emailInput').value = email;
+        if (!email) openEmailModal();
+      });
+    }
+
+    function openEmailModal() { document.getElementById('emailModal').classList.add('visible'); }
+    function closeEmailModal() { document.getElementById('emailModal').classList.remove('visible'); }
+
+    function saveEmail() {
+      var email = document.getElementById('emailInput').value.trim();
+      if (!email) return showToast('Email requis', 'error');
+      api('/api/staff/profile', { method: 'POST', body: { email: email } }).then(function(r) {
+        if (r.ok) {
+          showToast('Email enregistr&eacute;', 'success');
+          document.getElementById('staffEmailDisplay').textContent = email;
+          closeEmailModal();
+        } else {
+          showToast(r.data.error || 'Erreur', 'error');
+        }
+      });
+    }
+
+    function loadEvents() {
+      api('/api/staff/events').then(function(r) {
+        if (!r.ok) return;
+        var list = document.getElementById('eventsList');
+        list.innerHTML = '';
+        (r.data || []).forEach(function(e) {
+          var opt = document.createElement('option');
+          var label = (e.artist ? e.artist + ' — ' : '') + e.name;
+          if (e.location) label += ' — ' + e.location;
+          if (e.date) label += ' (' + e.date + ')';
+          opt.value = label;
+          list.appendChild(opt);
+        });
+      });
+    }
+
+    function submitRequest(e) {
+      e.preventDefault();
+      var f = e.target;
+      var data = {};
+      new FormData(f).forEach(function(v, k) { data[k] = v; });
+      var btn = document.getElementById('submitRequestBtn');
+      btn.disabled = true; btn.textContent = 'Envoi...';
+      api('/api/staff/requests', { method: 'POST', body: data }).then(function(r) {
+        btn.disabled = false; btn.textContent = 'Envoyer la demande';
+        if (r.ok) {
+          showToast('Demande envoy&eacute;e', 'success');
+          f.reset();
+          f.quantity.value = 1;
+          loadRequests();
+        } else {
+          showToast(r.data.error || 'Erreur', 'error');
+        }
+      });
+      return false;
+    }
+
+    function loadRequests() {
+      api('/api/staff/requests').then(function(r) {
+        var c = document.getElementById('requestsContainer');
+        var badge = document.getElementById('badgeRequests');
+        if (!r.ok) {
+          c.innerHTML = '<div class="empty-state">Erreur de chargement</div>';
+          return;
+        }
+        var list = r.data || [];
+        var pendingCount = list.filter(function(x) { return x.status === 'pending'; }).length;
+        if (pendingCount > 0) { badge.style.display = 'inline-block'; badge.textContent = pendingCount; }
+        else { badge.style.display = 'none'; }
+        if (list.length === 0) {
+          c.innerHTML = '<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>Aucune demande pour l\'instant</p></div>';
+          return;
+        }
+        c.innerHTML = '<div class="req-list">' + list.map(renderRequest).join('') + '</div>';
+      });
+    }
+
+    function renderRequest(r) {
+      var statusLabel = { pending: 'En attente', accepted: 'Accept&eacute;e', refused: 'Refus&eacute;e', delivered: 'Livr&eacute;e' }[r.status] || r.status;
+      var budget = r.budgetMax ? (r.budgetMax + ' &euro; max') : 'Non pr&eacute;cis&eacute;';
+      var response = '';
+      if (r.status === 'accepted' || r.status === 'refused') {
+        response = '<div class="response-box"><strong>R&eacute;ponse admin' + (r.adminPrice ? ' — ' + r.adminPrice + ' &euro;/place' : '') + '</strong>' +
+          (r.adminResponse ? escapeHtml(r.adminResponse) : '') + '</div>';
+      }
+      return '<div class="req-item">' +
+        '<div class="req-header">' +
+          '<div><div class="req-title">' + escapeHtml(r.clientName) + (r.clientHandle ? ' <span style="color:#94a3b8;font-weight:500;">(' + escapeHtml(r.clientHandle) + ')</span>' : '') + '</div>' +
+          '<div class="req-sub">' + escapeHtml(r.clientSource || '—') + ' &bull; ' + formatDate(r.createdAt) + '</div></div>' +
+          '<span class="status-badge status-' + r.status + '">' + statusLabel + '</span>' +
+        '</div>' +
+        '<div class="req-meta">' +
+          '<div><strong>&Eacute;v&eacute;nement:</strong> ' + escapeHtml(r.eventName) + '</div>' +
+          '<div><strong>Cat&eacute;gorie:</strong> ' + escapeHtml(r.category || '—') + '</div>' +
+          '<div><strong>Quantit&eacute;:</strong> ' + r.quantity + '</div>' +
+          '<div><strong>Budget:</strong> ' + budget + '</div>' +
+        '</div>' +
+        (r.message ? '<div style="font-size:0.85rem;color:#64748b;padding-top:8px;border-top:1px solid #f1f5f9;">' + escapeHtml(r.message) + '</div>' : '') +
+        response +
+      '</div>';
+    }
+
+    function openManualSaleModal() { document.getElementById('manualSaleModal').classList.add('visible'); }
+    function closeManualSaleModal() { document.getElementById('manualSaleModal').classList.remove('visible'); }
+
+    function submitManualSale(e) {
+      e.preventDefault();
+      var f = e.target;
+      var data = {};
+      new FormData(f).forEach(function(v, k) { data[k] = v; });
+      api('/api/staff/sales', { method: 'POST', body: data }).then(function(r) {
+        if (r.ok) {
+          showToast('Vente enregistr&eacute;e', 'success');
+          closeManualSaleModal();
+          f.reset();
+          loadSales();
+        } else {
+          showToast(r.data.error || 'Erreur', 'error');
+        }
+      });
+      return false;
+    }
+
+    function loadSales() {
+      api('/api/staff/sales').then(function(r) {
+        var c = document.getElementById('salesContainer');
+        if (!r.ok) { c.innerHTML = '<div class="empty-state">Erreur</div>'; return; }
+        var list = r.data || [];
+        if (list.length === 0) {
+          c.innerHTML = '<div class="empty-state"><p>Aucune vente encore</p></div>';
+          return;
+        }
+        c.innerHTML = '<div class="sales-list">' + list.map(renderSale).join('') + '</div>';
+      });
+    }
+
+    function renderSale(s) {
+      var statusLabel = { pending: 'En attente transfert', in_progress: 'Transfert en cours', delivered: 'Livr&eacute;' }[s.deliveryStatus || 'pending'] || 'En attente';
+      var kindBadge = s.kind === 'manual' ? '<span style="background:#e0e7ff;color:#4338ca;font-size:0.68rem;padding:2px 8px;border-radius:20px;font-weight:700;margin-left:8px;">MANUEL</span>' :
+                                             '<span style="background:#dcfce7;color:#166534;font-size:0.68rem;padding:2px 8px;border-radius:20px;font-weight:700;margin-left:8px;">SITE</span>';
+      var euros = (s.amount / 100).toFixed(2);
+      return '<div class="sale-item">' +
+        '<div class="sale-header">' +
+          '<div><div class="req-title">' + escapeHtml(s.clientName || '—') + kindBadge + '</div>' +
+            '<div class="req-sub">' + escapeHtml(s.clientSource || '') + (s.clientContact ? ' &bull; ' + escapeHtml(s.clientContact) : '') + ' &bull; ' + formatDate(s.createdAt) + '</div></div>' +
+          '<span class="status-badge status-' + (s.deliveryStatus === 'delivered' ? 'delivered' : (s.deliveryStatus === 'in_progress' ? 'in_progress' : 'pending')) + '">' + statusLabel + '</span>' +
+        '</div>' +
+        '<div class="req-meta">' +
+          '<div><strong>&Eacute;v&eacute;nement:</strong> ' + escapeHtml(s.eventName || '—') + '</div>' +
+          '<div><strong>Cat&eacute;gorie:</strong> ' + escapeHtml(s.category || '—') + '</div>' +
+          '<div><strong>Quantit&eacute;:</strong> ' + (s.quantity || 1) + '</div>' +
+          '<div><strong>Montant:</strong> ' + euros + ' &euro;</div>' +
+        '</div>' +
+        (s.notes ? '<div style="font-size:0.85rem;color:#64748b;padding-top:8px;border-top:1px solid #f1f5f9;">' + escapeHtml(s.notes) + '</div>' : '') +
+      '</div>';
+    }
+
+    function escapeHtml(str) {
+      if (str == null) return '';
+      return String(str).replace(/[&<>"']/g, function(c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '';
+      var d = new Date(iso);
+      return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' +
+             d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // Auto-login on page load if session has password
+    try {
+      var saved = sessionStorage.getItem('staff_pwd');
+      if (saved) {
+        STAFF_PASSWORD = saved;
+        fetch('/api/staff/profile', { headers: { 'x-staff-password': saved } }).then(function(r) {
+          if (r.ok) {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('dashboard').classList.add('visible');
+            initDashboard();
+          } else {
+            STAFF_PASSWORD = null;
+            sessionStorage.removeItem('staff_pwd');
+          }
+        });
+      }
+    } catch(e) {}
+  </script>
+</body>
+</html>
