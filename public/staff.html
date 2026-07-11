@@ -230,6 +230,12 @@
 
       <!-- REQUESTS LIST -->
       <div id="requests" class="tab-content">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+          <button class="btn btn-primary btn-sm" onclick="openWtbModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            G&eacute;n&eacute;rer un WTB
+          </button>
+        </div>
         <div id="requestsContainer"></div>
       </div>
 
@@ -334,6 +340,27 @@
           <button type="submit" class="btn btn-primary">Enregistrer</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- WTB MODAL -->
+  <div id="wtbModal" class="modal">
+    <div class="modal-content" style="max-width:560px;">
+      <h2>WTB Listing</h2>
+      <p class="m-sub">Coche les demandes &agrave; inclure, le texte se g&eacute;n&egrave;re tout seul.</p>
+      <div id="wtbList" style="max-height:240px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:10px;padding:8px;margin-bottom:14px;"></div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="wtbSelectAll(true)">Tout</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="wtbSelectAll(false)">Aucun</button>
+      </div>
+      <div class="form-group">
+        <label>Texte g&eacute;n&eacute;r&eacute;</label>
+        <textarea id="wtbOutput" rows="8" style="font-family:ui-monospace,Menlo,monospace;font-size:0.85rem;white-space:pre;" readonly></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeWtbModal()">Fermer</button>
+        <button type="button" class="btn btn-primary" onclick="copyWtb()" id="copyWtbBtn">Copier le WTB</button>
+      </div>
     </div>
   </div>
 
@@ -553,6 +580,8 @@
       return false;
     }
 
+    var staffRequests = [];
+
     function loadRequests() {
       api('/api/staff/requests').then(function(r) {
         var c = document.getElementById('requestsContainer');
@@ -562,6 +591,7 @@
           return;
         }
         var list = r.data || [];
+        staffRequests = list;
         var pendingCount = list.filter(function(x) { return x.status === 'pending'; }).length;
         if (pendingCount > 0) { badge.style.display = 'inline-block'; badge.textContent = pendingCount; }
         else { badge.style.display = 'none'; }
@@ -598,6 +628,79 @@
         (r.message ? '<div style="font-size:0.85rem;color:#64748b;padding-top:8px;border-top:1px solid #f1f5f9;">' + escapeHtml(r.message) + '</div>' : '') +
         response +
       '</div>';
+    }
+
+    // ─── WTB GENERATOR ───
+    function openWtbModal() {
+      var pending = staffRequests.filter(function(r) { return r.status === 'pending'; });
+      var listEl = document.getElementById('wtbList');
+      if (pending.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center;color:var(--gray-400);padding:20px;font-size:0.9rem;">Aucune demande en attente</div>';
+      } else {
+        listEl.innerHTML = pending.map(function(r) {
+          return '<label style="display:flex;align-items:flex-start;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;" onmouseover="this.style.background=\'var(--gray-50)\'" onmouseout="this.style.background=\'\'">' +
+            '<input type="checkbox" class="wtb-check" data-id="' + r.id + '" checked onchange="buildWtbText()" style="width:16px;height:16px;margin-top:2px;flex-shrink:0;cursor:pointer;accent-color:var(--primary);" />' +
+            '<span style="font-size:0.86rem;line-height:1.4;"><strong>' + escapeHtml(r.eventName) + '</strong><br>' +
+            '<span style="color:var(--gray-500);">x' + r.quantity + ' ' + escapeHtml(r.category || 'Toute cat&eacute;gorie') + ' &bull; ' + escapeHtml(r.clientName) + '</span></span>' +
+          '</label>';
+        }).join('');
+      }
+      buildWtbText();
+      document.getElementById('wtbModal').classList.add('visible');
+    }
+    function closeWtbModal() { document.getElementById('wtbModal').classList.remove('visible'); }
+
+    function wtbSelectAll(checked) {
+      document.querySelectorAll('.wtb-check').forEach(function(c) { c.checked = checked; });
+      buildWtbText();
+    }
+
+    function buildWtbText() {
+      var selectedIds = [];
+      document.querySelectorAll('.wtb-check:checked').forEach(function(c) { selectedIds.push(Number(c.getAttribute('data-id'))); });
+      var selected = staffRequests.filter(function(r) { return selectedIds.indexOf(r.id) !== -1; });
+
+      // Grouper par événement (même nom = même bloc)
+      var groups = {};
+      var order = [];
+      selected.forEach(function(r) {
+        var key = r.eventName.trim().toUpperCase();
+        if (!groups[key]) { groups[key] = []; order.push(key); }
+        groups[key].push(r);
+      });
+
+      var blocks = order.map(function(key) {
+        var lines = groups[key].map(function(r) {
+          return 'x' + r.quantity + ' ' + (r.category || 'Toute catégorie');
+        });
+        return 'WTB ' + key + '\n' + lines.join('\n');
+      });
+
+      document.getElementById('wtbOutput').value = blocks.join('\n\n');
+    }
+
+    function copyWtb() {
+      var text = document.getElementById('wtbOutput').value;
+      if (!text) return showToast('Rien &agrave; copier', 'error');
+      var done = function() {
+        var btn = document.getElementById('copyWtbBtn');
+        btn.textContent = 'Copi&eacute; !';
+        setTimeout(function() { btn.textContent = 'Copier le WTB'; }, 2000);
+        showToast('WTB copi&eacute; dans le presse-papier', 'success');
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function() { fallbackCopy(text); done(); });
+      } else {
+        fallbackCopy(text); done();
+      }
+    }
+    function fallbackCopy(text) {
+      var ta = document.getElementById('wtbOutput');
+      ta.removeAttribute('readonly');
+      ta.select();
+      document.execCommand('copy');
+      ta.setAttribute('readonly', '');
+      window.getSelection().removeAllRanges();
     }
 
     function openManualSaleModal() { document.getElementById('manualSaleModal').classList.add('visible'); }
