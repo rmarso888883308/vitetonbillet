@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const fetch = require('node-fetch');
+const nodemailer = require('nodemailer');
 const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
@@ -22,6 +23,11 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'romainmarsollier2008@gmail.com';
 const PUSHOVER_USER_KEY = process.env.PUSHOVER_USER_KEY;
 const PUSHOVER_API_TOKEN = process.env.PUSHOVER_API_TOKEN;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const SMTP_HOST = process.env.SMTP_HOST || 'smtp.hostinger.com';
+const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
+const SMTP_USER = process.env.SMTP_USER;
+const SMTP_PASSWORD = process.env.SMTP_PASSWORD;
+const SMTP_FROM = process.env.SMTP_FROM || (SMTP_USER ? `ViteTonBillet <${SMTP_USER}>` : null);
 const INFLOW_WEBHOOK_SECRET = process.env.INFLOW_WEBHOOK_SECRET;
 const DATA_DIR = path.join(__dirname, 'data');
 const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
@@ -50,9 +56,39 @@ function writeSettings(settings) {
   fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
 }
 
-// Envoyer un email via Resend HTTP API (pas de SMTP, pas de port bloqué)
+// SMTP transporter Hostinger (lazy init)
+let smtpTransporter = null;
+function getSmtpTransporter() {
+  if (!SMTP_USER || !SMTP_PASSWORD) return null;
+  if (smtpTransporter) return smtpTransporter;
+  smtpTransporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465, // 465 = SSL, 587 = STARTTLS
+    auth: { user: SMTP_USER, pass: SMTP_PASSWORD }
+  });
+  return smtpTransporter;
+}
+
+// Envoyer un email — SMTP Hostinger d'abord, Resend en fallback
 async function sendEmail({ to, subject, html }) {
-  if (!RESEND_API_KEY) { console.log('RESEND_API_KEY manquant, email non envoyé'); return false; }
+  const transporter = getSmtpTransporter();
+  if (transporter) {
+    try {
+      const info = await transporter.sendMail({
+        from: SMTP_FROM,
+        to,
+        subject,
+        html
+      });
+      console.log(`Email envoyé via SMTP à ${to} (messageId: ${info.messageId})`);
+      return true;
+    } catch (err) {
+      console.error('Erreur SMTP:', err && err.message ? err.message : err);
+      // Continue vers fallback Resend si dispo
+    }
+  }
+  if (!RESEND_API_KEY) { console.log('SMTP non configuré et RESEND_API_KEY manquant, email non envoyé'); return false; }
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -70,7 +106,7 @@ async function sendEmail({ to, subject, html }) {
     const data = await res.json();
     console.log('Resend response status:', res.status, 'data:', JSON.stringify(data));
     if (!res.ok) { console.error('Resend error:', res.status, JSON.stringify(data)); return false; }
-    console.log(`Email envoyé à ${to} (id: ${data.id})`);
+    console.log(`Email envoyé via Resend à ${to} (id: ${data.id})`);
     return true;
   } catch (err) {
     console.error('Erreur envoi email:', err);
@@ -569,28 +605,48 @@ app.post('/api/admin/login', (req, res) => {
   }
 });
 
-// POST /api/admin/test-email — tester l'envoi d'email
+// POST /api/admin/test-email — tester l'envoi d'email (SMTP prioritaire, Resend fallback)
 app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
-  if (!RESEND_API_KEY) return res.status(500).json({ error: 'RESEND_API_KEY non configuré' });
   const { to } = req.body;
   if (!to) return res.status(400).json({ error: 'Adresse email requise' });
+
+  const hasSmtp = !!(SMTP_USER && SMTP_PASSWORD);
+  const hasResend = !!RESEND_API_KEY;
+  if (!hasSmtp && !hasResend) return res.status(500).json({ error: 'Aucun service email configuré (SMTP ou Resend)' });
+
+  const testOrder = {
+    id: 9999,
+    customerName: 'Test Client',
+    customerEmail: to,
+    products: [{ name: 'Concert Test — Fosse Or', price: 4500, quantity: 2 }],
+    amount: 9000,
+    currency: 'EUR',
+    createdAt: new Date().toISOString()
+  };
+
+  // Essai SMTP d'abord avec message d'erreur explicite
+  if (hasSmtp) {
+    try {
+      const transporter = getSmtpTransporter();
+      const info = await transporter.sendMail({
+        from: SMTP_FROM,
+        to,
+        subject: '[TEST] Commande #9999 confirmée — ViteTonBillet',
+        html: buildOrderEmailHtml(testOrder)
+      });
+      return res.json({ success: true, message: `Email test envoyé via SMTP à ${to} (${info.messageId})`, transport: 'smtp' });
+    } catch (err) {
+      console.error('Test SMTP error:', err && err.message);
+      if (!hasResend) return res.status(500).json({ error: `SMTP: ${err.message}` });
+      // sinon on tente Resend
+    }
+  }
+
+  // Fallback Resend
   try {
-    const testOrder = {
-      id: 9999,
-      customerName: 'Test Client',
-      customerEmail: to,
-      products: [{ name: 'Concert Test — Fosse Or', price: 4500, quantity: 2 }],
-      amount: 9000,
-      currency: 'EUR',
-      createdAt: new Date().toISOString()
-    };
-    // Appel direct pour avoir l'erreur exacte
     const emailRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         from: 'ViteTonBillet <contact@vitetonbillet.com>',
         to: [to],
@@ -599,12 +655,8 @@ app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
       })
     });
     const emailData = await emailRes.json();
-    console.log('Test email Resend response:', emailRes.status, JSON.stringify(emailData));
-    if (emailRes.ok) {
-      res.json({ success: true, message: `Email test envoyé à ${to} (id: ${emailData.id})` });
-    } else {
-      res.status(500).json({ error: `Resend: ${emailData.message || JSON.stringify(emailData)}` });
-    }
+    if (emailRes.ok) return res.json({ success: true, message: `Email test envoyé via Resend à ${to} (id: ${emailData.id})`, transport: 'resend' });
+    return res.status(500).json({ error: `Resend: ${emailData.message || JSON.stringify(emailData)}` });
   } catch (err) {
     console.error('Erreur test email:', err);
     res.status(500).json({ error: err.message });
