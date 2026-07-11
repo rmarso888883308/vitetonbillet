@@ -271,6 +271,10 @@ function getNextOrderId(orders) {
 }
 
 // ─── TELEGRAM & DISCORD notifications ───
+// Escape pour parse_mode HTML de Telegram (seuls <, >, & sont interdits)
+function tgEsc(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 async function sendTelegramMessage(chatId, text) {
   if (!TELEGRAM_BOT_TOKEN || !chatId) return false;
   try {
@@ -1887,10 +1891,10 @@ app.post('/api/staff/requests', requireStaff, async (req, res) => {
   const marginStr = request.staffMargin ? ` (marge ${request.staffMargin} €/place)` : '';
   const budgetStr = request.budgetMax ? ` — budget ${request.budgetMax} €` : '';
   const tgMsg = `🎫 <b>Nouvelle demande #${request.id}</b>\n\n` +
-    `👤 ${request.clientName}${request.clientHandle ? ' ('+request.clientHandle+')' : ''}\n` +
-    `📅 ${request.eventName}\n` +
-    `🎟 ${request.category || 'Toute cat.'} × ${request.quantity}${budgetStr}${marginStr}\n\n` +
-    (request.message ? `💬 ${request.message}\n\n` : '') +
+    `👤 ${tgEsc(request.clientName)}${request.clientHandle ? ' ('+tgEsc(request.clientHandle)+')' : ''}\n` +
+    `📅 ${tgEsc(request.eventName)}\n` +
+    `🎟 ${tgEsc(request.category || 'Toute cat.')} × ${request.quantity}${budgetStr}${marginStr}\n\n` +
+    (request.message ? `💬 ${tgEsc(request.message)}\n\n` : '') +
     `👉 ${BASE_URL}/admin.html`;
   const dsMsg = `🎫 **Nouvelle demande #${request.id}**\n` +
     `**Client:** ${request.clientName}${request.clientHandle ? ' ('+request.clientHandle+')' : ''}\n` +
@@ -1984,9 +1988,9 @@ app.post('/api/telegram/webhook', async (req, res) => {
       if (text.startsWith('/start')) {
         reply = `👋 Bienvenue sur ViteTonBillet !\n\n` +
           `Ton chat ID : <b>${chatId}</b>\n\n` +
-          `Copie ce num&eacute;ro et colle-le dans ton dashboard :\n` +
+          `Copie ce numéro et colle-le dans ton dashboard :\n` +
           `• Staff : ${BASE_URL}/staff.html (bouton "Notifs Telegram")\n` +
-          `• Admin : ${BASE_URL}/admin.html (onglet Param&egrave;tres)`;
+          `• Admin : ${BASE_URL}/admin.html (onglet Paramètres)`;
       } else {
         reply = `Ton chat ID : <b>${chatId}</b>\n\nColle-le dans ton dashboard ViteTonBillet.`;
       }
@@ -2085,9 +2089,9 @@ app.post('/api/admin/requests/:id/respond', requireAdmin, async (req, res) => {
   if (staff.telegramChatId) {
     const emoji = action === 'accept' ? '✅' : '❌';
     const priceLine = request.adminPrice ? `\n💰 Prix : <b>${request.adminPrice} €/place</b>` : '';
-    const msgLine = request.adminResponse ? `\n\n💬 ${request.adminResponse}` : '';
+    const msgLine = request.adminResponse ? `\n\n💬 ${tgEsc(request.adminResponse)}` : '';
     const tg = `${emoji} <b>Demande #${request.id} ${action === 'accept' ? 'acceptée' : 'refusée'}</b>\n\n` +
-      `👤 ${request.clientName}\n📅 ${request.eventName}\n🎟 ${request.category || ''} × ${request.quantity}${priceLine}${msgLine}\n\n` +
+      `👤 ${tgEsc(request.clientName)}\n📅 ${tgEsc(request.eventName)}\n🎟 ${tgEsc(request.category || '')} × ${request.quantity}${priceLine}${msgLine}\n\n` +
       `👉 ${BASE_URL}/staff.html`;
     sendTelegramMessage(staff.telegramChatId, tg).catch(() => {});
   }
@@ -2116,7 +2120,7 @@ app.post('/api/admin/sales/:kind/:id/delivery', requireAdmin, async (req, res) =
         html: buildDeliveredEmailHtml(sales[idx])
       }).catch(() => {});
       if (staff.telegramChatId) sendTelegramMessage(staff.telegramChatId,
-        `📧 <b>Vente #${id} livrée</b>\n\n👤 ${sales[idx].clientName}\n📅 ${sales[idx].eventName}\n🎟 ${sales[idx].category || ''} × ${sales[idx].quantity}`
+        `📧 <b>Vente #${id} livrée</b>\n\n👤 ${tgEsc(sales[idx].clientName)}\n📅 ${tgEsc(sales[idx].eventName)}\n🎟 ${tgEsc(sales[idx].category || '')} × ${sales[idx].quantity}`
       ).catch(() => {});
     }
     return res.json({ success: true, sale: sales[idx] });
@@ -2143,7 +2147,7 @@ app.post('/api/admin/sales/:kind/:id/delivery', requireAdmin, async (req, res) =
         html: buildDeliveredEmailHtml(summary)
       }).catch(() => {});
       if (staff.telegramChatId) sendTelegramMessage(staff.telegramChatId,
-        `📧 <b>Commande #${id} livrée</b>\n\n👤 ${summary.clientName}\n📅 ${summary.eventName}\n🎟 ${summary.category} × ${summary.quantity}`
+        `📧 <b>Commande #${id} livrée</b>\n\n👤 ${tgEsc(summary.clientName)}\n📅 ${tgEsc(summary.eventName)}\n🎟 ${tgEsc(summary.category)} × ${summary.quantity}`
       ).catch(() => {});
     }
     return res.json({ success: true, order: orders[idx] });
