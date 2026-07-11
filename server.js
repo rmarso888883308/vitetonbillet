@@ -271,26 +271,36 @@ function getNextOrderId(orders) {
 }
 
 // ─── TELEGRAM & DISCORD notifications ───
+// Buffer de debug en m&eacute;moire pour diagnostiquer depuis l'admin
+const telegramDebugLog = [];
+function tgLog(entry) {
+  telegramDebugLog.unshift({ time: new Date().toISOString(), ...entry });
+  if (telegramDebugLog.length > 50) telegramDebugLog.length = 50;
+  console.log('[Telegram]', JSON.stringify(entry));
+}
+
 // Escape pour parse_mode HTML de Telegram (seuls <, >, & sont interdits)
 function tgEsc(s) {
   return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 async function sendTelegramMessage(chatId, text) {
-  if (!TELEGRAM_BOT_TOKEN || !chatId) return false;
+  if (!TELEGRAM_BOT_TOKEN) { tgLog({ event: 'send_skipped', reason: 'TELEGRAM_BOT_TOKEN missing' }); return false; }
+  if (!chatId) { tgLog({ event: 'send_skipped', reason: 'chatId empty' }); return false; }
   try {
     const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML', disable_web_page_preview: true })
     });
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      console.error('Telegram error:', res.status, data);
+      tgLog({ event: 'send_error', status: res.status, chatId, apiResponse: data, textPreview: text.slice(0, 100) });
       return false;
     }
+    tgLog({ event: 'send_success', chatId, messageId: data && data.result && data.result.message_id, textPreview: text.slice(0, 100) });
     return true;
   } catch (err) {
-    console.error('Telegram exception:', err.message);
+    tgLog({ event: 'send_exception', chatId, error: err.message });
     return false;
   }
 }
@@ -1978,28 +1988,39 @@ app.post('/api/staff/telegram-chatid', requireStaff, (req, res) => {
 // POST /api/telegram/webhook — endpoint Telegram appelle sur chaque message re&ccedil;u par le bot
 // R&eacute;pond au /start en donnant le chatId pour que la personne le colle dans son dashboard
 app.post('/api/telegram/webhook', async (req, res) => {
+  tgLog({ event: 'webhook_received', body: req.body });
   try {
     const update = req.body;
     const message = update && update.message;
-    if (message && message.chat && message.chat.id) {
-      const chatId = message.chat.id;
-      const text = (message.text || '').trim();
-      let reply;
-      if (text.startsWith('/start')) {
-        reply = `👋 Bienvenue sur ViteTonBillet !\n\n` +
-          `Ton chat ID : <b>${chatId}</b>\n\n` +
-          `Copie ce numéro et colle-le dans ton dashboard :\n` +
-          `• Staff : ${BASE_URL}/staff.html (bouton "Notifs Telegram")\n` +
-          `• Admin : ${BASE_URL}/admin.html (onglet Paramètres)`;
-      } else {
-        reply = `Ton chat ID : <b>${chatId}</b>\n\nColle-le dans ton dashboard ViteTonBillet.`;
-      }
-      await sendTelegramMessage(chatId, reply);
+    if (!message) { tgLog({ event: 'webhook_no_message' }); return res.sendStatus(200); }
+    if (!message.chat || !message.chat.id) { tgLog({ event: 'webhook_no_chat_id' }); return res.sendStatus(200); }
+    const chatId = message.chat.id;
+    const text = (message.text || '').trim();
+    tgLog({ event: 'webhook_processing', chatId, text });
+    let reply;
+    if (text.startsWith('/start')) {
+      reply = `👋 Bienvenue sur ViteTonBillet !\n\n` +
+        `Ton chat ID : <b>${chatId}</b>\n\n` +
+        `Copie ce numéro et colle-le dans ton dashboard :\n` +
+        `• Staff : ${BASE_URL}/staff.html (bouton "Notifs Telegram")\n` +
+        `• Admin : ${BASE_URL}/admin.html (onglet Paramètres)`;
+    } else {
+      reply = `Ton chat ID : <b>${chatId}</b>\n\nColle-le dans ton dashboard ViteTonBillet.`;
     }
+    await sendTelegramMessage(chatId, reply);
   } catch (err) {
-    console.error('Telegram webhook error:', err.message);
+    tgLog({ event: 'webhook_exception', error: err.message, stack: err.stack });
   }
   res.sendStatus(200);
+});
+
+// GET /api/admin/telegram-debug — consulter les logs Telegram (50 derniers)
+app.get('/api/admin/telegram-debug', requireAdmin, (req, res) => {
+  res.json({
+    tokenConfigured: !!TELEGRAM_BOT_TOKEN,
+    tokenPrefix: TELEGRAM_BOT_TOKEN ? TELEGRAM_BOT_TOKEN.slice(0, 10) + '...' : null,
+    logs: telegramDebugLog
+  });
 });
 
 // GET /api/staff/summary — r&eacute;capitulatif des b&eacute;n&eacute;fices du staff
