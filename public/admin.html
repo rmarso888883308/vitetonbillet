@@ -495,17 +495,37 @@
       try {
         const res = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
         if (!res.ok) return alert('Mot de passe incorrect');
-        document.getElementById('loginPage').style.display = 'none';
-        document.getElementById('dashboard').classList.add('visible');
-        loadEvents(); loadOrders(); loadUsers(); loadStats(); loadSettings();
+        try { localStorage.setItem('vtb_admin_pwd', password); } catch(e) {}
+        showDashboard();
       } catch(e) { alert('Erreur: ' + e.message); }
     }
 
+    function showDashboard() {
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('dashboard').classList.add('visible');
+      loadEvents(); loadOrders(); loadUsers(); loadStats(); loadSettings();
+    }
+
     function logout() {
+      try { localStorage.removeItem('vtb_admin_pwd'); } catch(e) {}
       document.getElementById('loginPage').style.display = 'flex';
       document.getElementById('dashboard').classList.remove('visible');
       document.getElementById('adminPassword').value = '';
     }
+
+    // Auto-login au chargement si mdp d&eacute;j&agrave; en cache
+    (function tryAutoLogin() {
+      try {
+        var saved = localStorage.getItem('vtb_admin_pwd');
+        if (!saved) return;
+        document.getElementById('adminPassword').value = saved;
+        fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: saved }) })
+          .then(function(r) {
+            if (r.ok) { showDashboard(); }
+            else { localStorage.removeItem('vtb_admin_pwd'); document.getElementById('adminPassword').value = ''; }
+          }).catch(function(){});
+      } catch(e) {}
+    })();
 
     // ========== TABS ==========
     function switchTab(name, btn) {

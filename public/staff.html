@@ -410,7 +410,7 @@
       }).then(function(r) {
         if (!r.ok) throw new Error('Mot de passe incorrect');
         STAFF_PASSWORD = pwd;
-        try { sessionStorage.setItem('staff_pwd', pwd); } catch(e) {}
+        try { localStorage.setItem('staff_pwd', pwd); } catch(e) {}
         document.getElementById('loginPage').style.display = 'none';
         document.getElementById('dashboard').classList.add('visible');
         initDashboard();
@@ -421,7 +421,7 @@
 
     function logout() {
       STAFF_PASSWORD = null;
-      try { sessionStorage.removeItem('staff_pwd'); } catch(e) {}
+      try { localStorage.removeItem('staff_pwd'); } catch(e) {}
       location.reload();
     }
 
@@ -673,7 +673,7 @@
 
     // Auto-login on page load if session has password
     try {
-      var saved = sessionStorage.getItem('staff_pwd');
+      var saved = localStorage.getItem('staff_pwd');
       if (saved) {
         STAFF_PASSWORD = saved;
         fetch('/api/staff/profile', { headers: { 'x-staff-password': saved } }).then(function(r) {
@@ -683,7 +683,7 @@
             initDashboard();
           } else {
             STAFF_PASSWORD = null;
-            sessionStorage.removeItem('staff_pwd');
+            localStorage.removeItem('staff_pwd');
           }
         });
       }
