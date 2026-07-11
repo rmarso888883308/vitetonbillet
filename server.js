@@ -24,7 +24,7 @@ const PUSHOVER_USER_KEY = process.env.PUSHOVER_USER_KEY;
 const PUSHOVER_API_TOKEN = process.env.PUSHOVER_API_TOKEN;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp.hostinger.com';
-const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
+const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASSWORD = process.env.SMTP_PASSWORD;
 const SMTP_FROM = process.env.SMTP_FROM || (SMTP_USER ? `ViteTonBillet <${SMTP_USER}>` : null);
@@ -65,7 +65,11 @@ function getSmtpTransporter() {
     host: SMTP_HOST,
     port: SMTP_PORT,
     secure: SMTP_PORT === 465, // 465 = SSL, 587 = STARTTLS
-    auth: { user: SMTP_USER, pass: SMTP_PASSWORD }
+    auth: { user: SMTP_USER, pass: SMTP_PASSWORD },
+    // Timeouts pour éviter que la requête hang si Railway bloque le port SMTP
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000
   });
   return smtpTransporter;
 }
