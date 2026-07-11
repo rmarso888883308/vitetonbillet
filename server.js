@@ -669,6 +669,8 @@ app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
     createdAt: new Date().toISOString()
   };
 
+  let smtpError = null;
+
   // Essai SMTP d'abord avec message d'erreur explicite
   if (hasSmtp) {
     try {
@@ -682,8 +684,8 @@ app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
       return res.json({ success: true, message: `Email test envoyé via SMTP à ${to} (${info.messageId})`, transport: 'smtp' });
     } catch (err) {
       console.error('Test SMTP error:', err && err.message);
-      if (!hasResend) return res.status(500).json({ error: `SMTP: ${err.message}` });
-      // sinon on tente Resend
+      smtpError = err.message || String(err);
+      if (!hasResend) return res.status(500).json({ error: `SMTP: ${smtpError}` });
     }
   }
 
@@ -701,11 +703,31 @@ app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
     });
     const emailData = await emailRes.json();
     if (emailRes.ok) return res.json({ success: true, message: `Email test envoyé via Resend à ${to} (id: ${emailData.id})`, transport: 'resend' });
-    return res.status(500).json({ error: `Resend: ${emailData.message || JSON.stringify(emailData)}` });
+    // Si SMTP a échoué en plus, on montre les deux
+    const resendMsg = emailData.message || JSON.stringify(emailData);
+    if (smtpError) return res.status(500).json({ error: `SMTP: ${smtpError}\n\nResend fallback: ${resendMsg}` });
+    if (!hasSmtp) return res.status(500).json({ error: `SMTP non configuré (variables SMTP_USER + SMTP_PASSWORD manquantes sur Railway).\n\nResend: ${resendMsg}` });
+    return res.status(500).json({ error: `Resend: ${resendMsg}` });
   } catch (err) {
     console.error('Erreur test email:', err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// GET /api/admin/email-config — diagnostic (sans exposer les valeurs)
+app.get('/api/admin/email-config', requireAdmin, (req, res) => {
+  res.json({
+    smtp: {
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      userSet: !!SMTP_USER,
+      passwordSet: !!SMTP_PASSWORD,
+      userMasked: SMTP_USER ? SMTP_USER.replace(/(.{2}).+(@.+)/, '$1***$2') : null
+    },
+    resend: {
+      keySet: !!RESEND_API_KEY
+    }
+  });
 });
 
 // POST /api/admin/test-telegram — tester Telegram avec le chatId admin
