@@ -166,6 +166,8 @@ app.use((req, res, next) => {
     p.startsWith('/api/staff') ||
     p === '/api/settings' ||
     p.startsWith('/api/maintenance') ||
+    p.startsWith('/api/telegram') ||
+    p.startsWith('/api/webhooks') ||
     p.startsWith('/images/') ||
     p.startsWith('/uploads/') ||
     p.startsWith('/assets/') ||
