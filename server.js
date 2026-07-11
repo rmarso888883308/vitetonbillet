@@ -28,6 +28,7 @@ const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASSWORD = process.env.SMTP_PASSWORD;
 const SMTP_FROM = process.env.SMTP_FROM || (SMTP_USER ? `ViteTonBillet <${SMTP_USER}>` : null);
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const INFLOW_WEBHOOK_SECRET = process.env.INFLOW_WEBHOOK_SECRET;
 const DATA_DIR = path.join(__dirname, 'data');
 const EVENTS_FILE = path.join(DATA_DIR, 'events.json');
@@ -267,6 +268,46 @@ function writeOrders(orders) {
 function getNextOrderId(orders) {
   if (orders.length === 0) return 1;
   return Math.max(...orders.map(o => o.id)) + 1;
+}
+
+// ─── TELEGRAM & DISCORD notifications ───
+async function sendTelegramMessage(chatId, text) {
+  if (!TELEGRAM_BOT_TOKEN || !chatId) return false;
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML', disable_web_page_preview: true })
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      console.error('Telegram error:', res.status, data);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Telegram exception:', err.message);
+    return false;
+  }
+}
+
+async function sendDiscordMessage(webhookUrl, content) {
+  if (!webhookUrl) return false;
+  try {
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content })
+    });
+    if (!res.ok) {
+      console.error('Discord webhook error:', res.status);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Discord exception:', err.message);
+    return false;
+  }
 }
 
 // Send Pushover notification
@@ -665,6 +706,25 @@ app.post('/api/admin/test-email', requireAdmin, async (req, res) => {
     console.error('Erreur test email:', err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// POST /api/admin/test-telegram — tester Telegram avec le chatId admin
+app.post('/api/admin/test-telegram', requireAdmin, async (req, res) => {
+  if (!TELEGRAM_BOT_TOKEN) return res.status(500).json({ error: 'TELEGRAM_BOT_TOKEN non configur&eacute; dans Railway' });
+  const chatId = (req.body && req.body.chatId) || (readSettings().notifications || {}).adminTelegramChatId;
+  if (!chatId) return res.status(400).json({ error: 'Chat ID admin requis (r&eacute;cup&egrave;re-le en envoyant /start au bot)' });
+  const ok = await sendTelegramMessage(chatId, `✅ <b>Test Telegram ViteTonBillet</b>\n\nSi tu vois ce message, la config Telegram fonctionne parfaitement !`);
+  if (ok) return res.json({ success: true, message: `Message envoy&eacute; au chat ${chatId}` });
+  res.status(500).json({ error: 'Envoi Telegram &eacute;chou&eacute; (v&eacute;rifie le token et le chatId)' });
+});
+
+// POST /api/admin/test-discord — tester le webhook Discord
+app.post('/api/admin/test-discord', requireAdmin, async (req, res) => {
+  const url = (req.body && req.body.url) || (readSettings().notifications || {}).adminDiscordWebhook;
+  if (!url) return res.status(400).json({ error: 'URL webhook Discord requise' });
+  const ok = await sendDiscordMessage(url, `✅ **Test Discord ViteTonBillet**\n\nSi tu vois ce message, ta config Discord webhook fonctionne parfaitement !`);
+  if (ok) return res.json({ success: true, message: 'Message post&eacute; dans le salon Discord' });
+  res.status(500).json({ error: 'Envoi Discord &eacute;chou&eacute; (v&eacute;rifie l\'URL du webhook)' });
 });
 
 // POST /api/admin/test-pushover — tester la notification Pushover
@@ -1743,7 +1803,9 @@ app.post('/api/staff/profile', requireStaff, (req, res) => {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ error: 'Email invalide' });
   }
-  writeStaffConfig({ email: String(email).trim().toLowerCase() });
+  const cfg = readStaffConfig();
+  cfg.email = String(email).trim().toLowerCase();
+  writeStaffConfig(cfg);
   res.json({ success: true });
 });
 
@@ -1798,6 +1860,24 @@ app.post('/api/staff/requests', requireStaff, async (req, res) => {
     `Nouvelle demande #${request.id}`,
     `${request.clientName} — ${request.eventName} × ${request.quantity}`
   ).catch(() => {});
+  // Telegram + Discord notifs admin
+  const notif = readSettings().notifications || {};
+  const marginStr = request.staffMargin ? ` (marge ${request.staffMargin} €/place)` : '';
+  const budgetStr = request.budgetMax ? ` — budget ${request.budgetMax} €` : '';
+  const tgMsg = `🎫 <b>Nouvelle demande #${request.id}</b>\n\n` +
+    `👤 ${request.clientName}${request.clientHandle ? ' ('+request.clientHandle+')' : ''}\n` +
+    `📅 ${request.eventName}\n` +
+    `🎟 ${request.category || 'Toute cat.'} × ${request.quantity}${budgetStr}${marginStr}\n\n` +
+    (request.message ? `💬 ${request.message}\n\n` : '') +
+    `👉 ${BASE_URL}/admin.html`;
+  const dsMsg = `🎫 **Nouvelle demande #${request.id}**\n` +
+    `**Client:** ${request.clientName}${request.clientHandle ? ' ('+request.clientHandle+')' : ''}\n` +
+    `**Event:** ${request.eventName}\n` +
+    `**Cat/Qté:** ${request.category || '—'} × ${request.quantity}${budgetStr}${marginStr}\n` +
+    (request.message ? `**Note:** ${request.message}\n` : '') +
+    `→ ${BASE_URL}/admin.html`;
+  if (notif.adminTelegramChatId) sendTelegramMessage(notif.adminTelegramChatId, tgMsg).catch(() => {});
+  if (notif.adminDiscordWebhook) sendDiscordMessage(notif.adminDiscordWebhook, dsMsg).catch(() => {});
   res.json({ success: true, request });
 });
 
@@ -1858,6 +1938,42 @@ app.get('/api/staff/sales', requireStaff, (req, res) => {
     }));
   const all = [...manual, ...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   res.json(all);
+});
+
+// POST /api/staff/telegram-chatid — enregistrer le chatId Telegram du staff
+app.post('/api/staff/telegram-chatid', requireStaff, (req, res) => {
+  const { chatId } = req.body || {};
+  const cfg = readStaffConfig();
+  cfg.telegramChatId = chatId ? String(chatId).trim() : '';
+  writeStaffConfig(cfg);
+  res.json({ success: true });
+});
+
+// POST /api/telegram/webhook — endpoint Telegram appelle sur chaque message re&ccedil;u par le bot
+// R&eacute;pond au /start en donnant le chatId pour que la personne le colle dans son dashboard
+app.post('/api/telegram/webhook', async (req, res) => {
+  try {
+    const update = req.body;
+    const message = update && update.message;
+    if (message && message.chat && message.chat.id) {
+      const chatId = message.chat.id;
+      const text = (message.text || '').trim();
+      let reply;
+      if (text.startsWith('/start')) {
+        reply = `👋 Bienvenue sur ViteTonBillet !\n\n` +
+          `Ton chat ID : <b>${chatId}</b>\n\n` +
+          `Copie ce num&eacute;ro et colle-le dans ton dashboard :\n` +
+          `• Staff : ${BASE_URL}/staff.html (bouton "Notifs Telegram")\n` +
+          `• Admin : ${BASE_URL}/admin.html (onglet Param&egrave;tres)`;
+      } else {
+        reply = `Ton chat ID : <b>${chatId}</b>\n\nColle-le dans ton dashboard ViteTonBillet.`;
+      }
+      await sendTelegramMessage(chatId, reply);
+    }
+  } catch (err) {
+    console.error('Telegram webhook error:', err.message);
+  }
+  res.sendStatus(200);
 });
 
 // GET /api/staff/summary — r&eacute;capitulatif des b&eacute;n&eacute;fices du staff
@@ -1935,7 +2051,7 @@ app.post('/api/admin/requests/:id/respond', requireAdmin, async (req, res) => {
   request.respondedAt = new Date().toISOString();
   requests[idx] = request;
   writeJsonArray(REQUESTS_FILE, requests);
-  // Notif email staff
+  // Notif email + Telegram staff
   const staff = readStaffConfig();
   if (staff.email) {
     sendEmail({
@@ -1943,6 +2059,15 @@ app.post('/api/admin/requests/:id/respond', requireAdmin, async (req, res) => {
       subject: `[Demande #${request.id}] ${action === 'accept' ? 'Accept&eacute;e' : 'Refus&eacute;e'} — ${request.clientName}`,
       html: buildResponseEmailHtml(request)
     }).catch(() => {});
+  }
+  if (staff.telegramChatId) {
+    const emoji = action === 'accept' ? '✅' : '❌';
+    const priceLine = request.adminPrice ? `\n💰 Prix : <b>${request.adminPrice} €/place</b>` : '';
+    const msgLine = request.adminResponse ? `\n\n💬 ${request.adminResponse}` : '';
+    const tg = `${emoji} <b>Demande #${request.id} ${action === 'accept' ? 'acceptée' : 'refusée'}</b>\n\n` +
+      `👤 ${request.clientName}\n📅 ${request.eventName}\n🎟 ${request.category || ''} × ${request.quantity}${priceLine}${msgLine}\n\n` +
+      `👉 ${BASE_URL}/staff.html`;
+    sendTelegramMessage(staff.telegramChatId, tg).catch(() => {});
   }
   res.json({ success: true, request });
 });
@@ -1968,6 +2093,9 @@ app.post('/api/admin/sales/:kind/:id/delivery', requireAdmin, async (req, res) =
         subject: `Vente #${id} livrée — ${sales[idx].clientName}`,
         html: buildDeliveredEmailHtml(sales[idx])
       }).catch(() => {});
+      if (staff.telegramChatId) sendTelegramMessage(staff.telegramChatId,
+        `📧 <b>Vente #${id} livrée</b>\n\n👤 ${sales[idx].clientName}\n📅 ${sales[idx].eventName}\n🎟 ${sales[idx].category || ''} × ${sales[idx].quantity}`
+      ).catch(() => {});
     }
     return res.json({ success: true, sale: sales[idx] });
   }
@@ -1981,16 +2109,20 @@ app.post('/api/admin/sales/:kind/:id/delivery', requireAdmin, async (req, res) =
     if (status === 'delivered') {
       const staff = readStaffConfig();
       const o = orders[idx];
+      const summary = {
+        clientName: o.customerName || '',
+        eventName: (o.products && o.products[0] && o.products[0].name) || '',
+        category: (o.products && o.products[0] && o.products[0].ticketType) || '',
+        quantity: (o.products || []).reduce((s, p) => s + (p.quantity || 0), 0)
+      };
       if (staff.email) sendEmail({
         to: staff.email,
         subject: `Commande #${id} livrée — ${o.customerName || ''}`,
-        html: buildDeliveredEmailHtml({
-          clientName: o.customerName || '',
-          eventName: (o.products && o.products[0] && o.products[0].name) || '',
-          category: (o.products && o.products[0] && o.products[0].ticketType) || '',
-          quantity: (o.products || []).reduce((s, p) => s + (p.quantity || 0), 0)
-        })
+        html: buildDeliveredEmailHtml(summary)
       }).catch(() => {});
+      if (staff.telegramChatId) sendTelegramMessage(staff.telegramChatId,
+        `📧 <b>Commande #${id} livrée</b>\n\n👤 ${summary.clientName}\n📅 ${summary.eventName}\n🎟 ${summary.category} × ${summary.quantity}`
+      ).catch(() => {});
     }
     return res.json({ success: true, order: orders[idx] });
   }

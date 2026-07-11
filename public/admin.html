@@ -230,15 +230,29 @@
 
       <!-- TESTS TAB -->
       <div id="tests" class="tab-content">
-        <div style="max-width:500px;">
+        <div style="max-width:520px;">
           <h3 style="margin-bottom:16px;font-size:1.1rem;">Tester l'envoi d'email</h3>
-          <p style="color:var(--gray-500);font-size:0.85rem;margin-bottom:16px;">Envoie un email de confirmation test pour v&eacute;rifier que le SMTP fonctionne.</p>
+          <p style="color:var(--gray-500);font-size:0.85rem;margin-bottom:16px;">V&eacute;rifie que SMTP (ou Resend en fallback) fonctionne.</p>
           <div class="form-group">
             <label>Email destinataire</label>
             <input type="email" id="testEmailTo" placeholder="ton@email.com" />
           </div>
           <button class="btn btn-primary" onclick="testEmail()" id="testEmailBtn">Envoyer email test</button>
           <div id="testEmailResult" style="margin-top:12px;font-size:0.9rem;"></div>
+
+          <hr style="margin:32px 0;border:none;border-top:1px solid var(--gray-200);">
+
+          <h3 style="margin-bottom:16px;font-size:1.1rem;">Tester Telegram</h3>
+          <p style="color:var(--gray-500);font-size:0.85rem;margin-bottom:16px;">Envoie un message test au chat ID admin (voir Param&egrave;tres).</p>
+          <button class="btn btn-primary" onclick="testTelegram()" id="testTelegramBtn">Envoyer test Telegram</button>
+          <div id="testTelegramResult" style="margin-top:12px;font-size:0.9rem;"></div>
+
+          <hr style="margin:32px 0;border:none;border-top:1px solid var(--gray-200);">
+
+          <h3 style="margin-bottom:16px;font-size:1.1rem;">Tester Discord</h3>
+          <p style="color:var(--gray-500);font-size:0.85rem;margin-bottom:16px;">Poste un message test sur ton webhook Discord (voir Param&egrave;tres).</p>
+          <button class="btn btn-primary" onclick="testDiscord()" id="testDiscordBtn">Envoyer test Discord</button>
+          <div id="testDiscordResult" style="margin-top:12px;font-size:0.9rem;"></div>
 
           <hr style="margin:32px 0;border:none;border-top:1px solid var(--gray-200);">
 
@@ -252,6 +266,31 @@
       <!-- SETTINGS TAB -->
       <div id="settings" class="tab-content">
         <div style="max-width:600px;">
+
+          <!-- NOTIFICATIONS -->
+          <div style="background:white;border:1px solid var(--gray-200);border-radius:12px;padding:20px 24px;margin-bottom:28px;">
+            <h3 style="margin-bottom:6px;font-size:1.1rem;">Notifications</h3>
+            <p style="color:var(--gray-500);font-size:0.85rem;margin-bottom:16px;">Re&ccedil;ois les nouvelles demandes staff sur Telegram et/ou Discord.</p>
+
+            <div class="form-group">
+              <label>Ton chat ID Telegram (admin)</label>
+              <input type="text" id="adminTelegramChatId" placeholder="Ex: 123456789" />
+              <p style="font-size:0.75rem;color:var(--gray-400);margin-top:4px;">
+                Ouvre Telegram &rarr; cherche ton bot &rarr; envoie <code>/start</code> &rarr; il te r&eacute;pond avec ton chat ID.
+              </p>
+            </div>
+
+            <div class="form-group">
+              <label>URL webhook Discord (admin)</label>
+              <input type="text" id="adminDiscordWebhook" placeholder="https://discord.com/api/webhooks/..." />
+              <p style="font-size:0.75rem;color:var(--gray-400);margin-top:4px;">
+                Salon Discord &rarr; Param&egrave;tres du salon &rarr; Int&eacute;grations &rarr; Cr&eacute;er webhook &rarr; Copier l'URL.
+              </p>
+            </div>
+
+            <button class="btn btn-primary" onclick="saveNotifSettings()" id="saveNotifSettingsBtn">Enregistrer</button>
+            <span id="notifSettingsSaveResult" style="margin-left:12px;font-size:0.9rem;color:var(--success);"></span>
+          </div>
 
           <!-- MAINTENANCE MODE -->
           <div style="background:white;border:1px solid var(--gray-200);border-radius:12px;padding:20px 24px;margin-bottom:28px;">
@@ -743,7 +782,58 @@
         const m = settings.maintenance || {};
         document.getElementById('maintenanceEnabled').checked = !!m.enabled;
         document.getElementById('maintenanceMessage').value = m.message || '';
+        // Notifications
+        const n = settings.notifications || {};
+        document.getElementById('adminTelegramChatId').value = n.adminTelegramChatId || '';
+        document.getElementById('adminDiscordWebhook').value = n.adminDiscordWebhook || '';
       } catch(e) {}
+    }
+
+    async function saveNotifSettings() {
+      const btn = document.getElementById('saveNotifSettingsBtn');
+      btn.disabled = true; btn.textContent = 'Enregistrement...';
+      try {
+        const payload = { notifications: {
+          adminTelegramChatId: document.getElementById('adminTelegramChatId').value.trim(),
+          adminDiscordWebhook: document.getElementById('adminDiscordWebhook').value.trim()
+        } };
+        const res = await fetch('/api/admin/settings', { method: 'PUT', headers: { ...authH(), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (res.ok) {
+          document.getElementById('notifSettingsSaveResult').textContent = 'Enregistr&eacute; !';
+          setTimeout(() => { document.getElementById('notifSettingsSaveResult').textContent = ''; }, 3000);
+        } else {
+          alert('Erreur enregistrement');
+        }
+      } catch(e) { alert('Erreur: ' + e.message); }
+      btn.disabled = false; btn.textContent = 'Enregistrer';
+    }
+
+    async function testTelegram() {
+      const btn = document.getElementById('testTelegramBtn');
+      const out = document.getElementById('testTelegramResult');
+      out.textContent = ''; out.style.color = '';
+      btn.disabled = true; btn.textContent = 'Envoi...';
+      try {
+        const res = await fetch('/api/admin/test-telegram', { method: 'POST', headers: { ...authH(), 'Content-Type': 'application/json' }, body: '{}' });
+        const data = await res.json();
+        if (res.ok) { out.textContent = '✅ ' + data.message; out.style.color = 'var(--success)'; }
+        else { out.textContent = '❌ ' + data.error; out.style.color = 'var(--danger)'; }
+      } catch (e) { out.textContent = '❌ ' + e.message; out.style.color = 'var(--danger)'; }
+      btn.disabled = false; btn.textContent = 'Envoyer test Telegram';
+    }
+
+    async function testDiscord() {
+      const btn = document.getElementById('testDiscordBtn');
+      const out = document.getElementById('testDiscordResult');
+      out.textContent = ''; out.style.color = '';
+      btn.disabled = true; btn.textContent = 'Envoi...';
+      try {
+        const res = await fetch('/api/admin/test-discord', { method: 'POST', headers: { ...authH(), 'Content-Type': 'application/json' }, body: '{}' });
+        const data = await res.json();
+        if (res.ok) { out.textContent = '✅ ' + data.message; out.style.color = 'var(--success)'; }
+        else { out.textContent = '❌ ' + data.error; out.style.color = 'var(--danger)'; }
+      } catch (e) { out.textContent = '❌ ' + e.message; out.style.color = 'var(--danger)'; }
+      btn.disabled = false; btn.textContent = 'Envoyer test Discord';
     }
 
     async function saveMaintenance() {

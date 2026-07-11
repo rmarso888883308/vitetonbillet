@@ -149,6 +149,10 @@
       <h1>ViteTonBillet — Staff</h1>
       <div class="top-actions">
         <span class="staff-email" id="staffEmailDisplay"></span>
+        <button onclick="openTelegramModal()" title="Notifs Telegram">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px;margin-right:4px;"><path d="M23.91 3.79L20.3 20.84c-.25 1.21-.98 1.5-2 .94l-5.5-4.07-2.66 2.57c-.3.3-.55.56-1.1.56-.72 0-.6-.27-.84-.95L6.3 13.7l-5.45-1.7c-1.18-.35-1.19-1.16.26-1.75l21.26-8.2c.97-.44 1.9.24 1.53 1.73z"/></svg>
+          Telegram
+        </button>
         <button onclick="openEmailModal()">Mon email</button>
         <button onclick="logout()">D&eacute;connexion</button>
       </div>
@@ -333,6 +337,28 @@
     </div>
   </div>
 
+  <!-- TELEGRAM MODAL -->
+  <div id="telegramModal" class="modal">
+    <div class="modal-content">
+      <h2>Notifications Telegram</h2>
+      <p class="m-sub">Recevoir un message instantan&eacute; sur ton mobile d&egrave;s que Romain r&eacute;pond ou livre.</p>
+      <ol style="font-size:0.85rem;color:var(--gray-600);padding-left:20px;margin-bottom:16px;line-height:1.7;">
+        <li>Ouvre Telegram et cherche <strong id="botLink">le bot ViteTonBillet</strong></li>
+        <li>Envoie <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;">/start</code> au bot</li>
+        <li>Il te r&eacute;pondra avec ton chat ID (nombre)</li>
+        <li>Colle-le ci-dessous</li>
+      </ol>
+      <div class="form-group">
+        <label>Ton chat ID Telegram</label>
+        <input type="text" id="telegramChatIdInput" placeholder="Ex: 123456789" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeTelegramModal()">Fermer</button>
+        <button type="button" class="btn btn-primary" onclick="saveTelegramChatId()">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
   <!-- EMAIL MODAL -->
   <div id="emailModal" class="modal">
     <div class="modal-content">
@@ -453,6 +479,28 @@
 
     function openEmailModal() { document.getElementById('emailModal').classList.add('visible'); }
     function closeEmailModal() { document.getElementById('emailModal').classList.remove('visible'); }
+
+    function openTelegramModal() {
+      api('/api/staff/profile').then(function(r) {
+        if (r.ok && r.data) {
+          document.getElementById('telegramChatIdInput').value = r.data.telegramChatId || '';
+        }
+      });
+      document.getElementById('telegramModal').classList.add('visible');
+    }
+    function closeTelegramModal() { document.getElementById('telegramModal').classList.remove('visible'); }
+
+    function saveTelegramChatId() {
+      var v = document.getElementById('telegramChatIdInput').value.trim();
+      api('/api/staff/telegram-chatid', { method: 'POST', body: { chatId: v } }).then(function(r) {
+        if (r.ok) {
+          showToast(v ? 'Notifs Telegram activ&eacute;es' : 'Notifs Telegram d&eacute;sactiv&eacute;es', 'success');
+          closeTelegramModal();
+        } else {
+          showToast(r.data.error || 'Erreur', 'error');
+        }
+      });
+    }
 
     function saveEmail() {
       var email = document.getElementById('emailInput').value.trim();
