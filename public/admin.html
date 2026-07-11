@@ -197,11 +197,15 @@
             <h3 style="font-size:1.05rem;font-weight:700;color:var(--gray-900);">Demandes clients (staff)</h3>
             <p style="color:var(--gray-500);font-size:0.85rem;">Demandes envoy&eacute;es par ton employ&eacute; via le dashboard staff.</p>
           </div>
-          <div style="display:flex;gap:6px;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
             <button class="btn btn-outline btn-sm" onclick="setRequestFilter('all', this)">Toutes</button>
             <button class="btn btn-outline btn-sm active-filter" onclick="setRequestFilter('pending', this)">En attente</button>
             <button class="btn btn-outline btn-sm" onclick="setRequestFilter('accepted', this)">Accept&eacute;es</button>
             <button class="btn btn-outline btn-sm" onclick="setRequestFilter('refused', this)">Refus&eacute;es</button>
+            <button class="btn btn-primary btn-sm" onclick="openWtbModal()" style="margin-left:8px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              G&eacute;n&eacute;rer un WTB
+            </button>
           </div>
         </div>
         <div id="requestsContainer"></div>
@@ -483,6 +487,30 @@
     </div>
   </div>
 
+  <!-- WTB MODAL -->
+  <div id="wtbModal" class="modal" onclick="if(event.target===this)closeWtbModal()">
+    <div class="modal-content" style="max-width:560px;">
+      <div class="modal-header">
+        <h2>WTB Listing</h2>
+        <button class="modal-close" onclick="closeWtbModal()">&times;</button>
+      </div>
+      <p style="color:var(--gray-500);font-size:0.85rem;margin-bottom:16px;">Coche les demandes en attente &agrave; inclure, le texte se g&eacute;n&egrave;re tout seul.</p>
+      <div id="wtbList" style="max-height:240px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:10px;padding:8px;margin-bottom:14px;"></div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="wtbSelectAll(true)">Tout</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="wtbSelectAll(false)">Aucun</button>
+      </div>
+      <div class="form-group">
+        <label>Texte g&eacute;n&eacute;r&eacute;</label>
+        <textarea id="wtbOutput" rows="8" style="font-family:ui-monospace,Menlo,monospace;font-size:0.85rem;white-space:pre;" readonly></textarea>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px;">
+        <button type="button" class="btn btn-outline" onclick="closeWtbModal()">Fermer</button>
+        <button type="button" class="btn btn-primary" onclick="copyWtb()" id="copyWtbBtn">Copier le WTB</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let allEvents = [], allOrders = [], allUsers = [], currentEventId = null;
     const pw = () => document.getElementById('adminPassword').value;
@@ -611,6 +639,77 @@
         ${responseHtml}
         ${actions}
       </div>`;
+    }
+
+    // ========== WTB GENERATOR ==========
+    async function openWtbModal() {
+      if (allRequests.length === 0) await loadRequests();
+      const pending = allRequests.filter(r => r.status === 'pending');
+      const listEl = document.getElementById('wtbList');
+      if (pending.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center;color:var(--gray-400);padding:20px;font-size:0.9rem;">Aucune demande en attente</div>';
+      } else {
+        listEl.innerHTML = pending.map(r =>
+          `<label style="display:flex;align-items:flex-start;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;" onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
+            <input type="checkbox" class="wtb-check" data-id="${r.id}" checked onchange="buildWtbText()" style="width:16px;height:16px;margin-top:2px;flex-shrink:0;cursor:pointer;accent-color:var(--primary);" />
+            <span style="font-size:0.86rem;line-height:1.4;"><strong>${escapeHtml(r.eventName)}</strong><br>
+            <span style="color:var(--gray-500);">x${r.quantity} ${escapeHtml(r.category || 'Toute cat&eacute;gorie')} &bull; ${escapeHtml(r.clientName)}</span></span>
+          </label>`
+        ).join('');
+      }
+      buildWtbText();
+      document.getElementById('wtbModal').classList.add('visible');
+    }
+    function closeWtbModal() { document.getElementById('wtbModal').classList.remove('visible'); }
+
+    function wtbSelectAll(checked) {
+      document.querySelectorAll('.wtb-check').forEach(c => { c.checked = checked; });
+      buildWtbText();
+    }
+
+    function buildWtbText() {
+      const selectedIds = [];
+      document.querySelectorAll('.wtb-check:checked').forEach(c => selectedIds.push(Number(c.getAttribute('data-id'))));
+      const selected = allRequests.filter(r => selectedIds.includes(r.id));
+
+      // Grouper par événement (même nom = même bloc)
+      const groups = {};
+      const order = [];
+      selected.forEach(r => {
+        const key = r.eventName.trim().toUpperCase();
+        if (!groups[key]) { groups[key] = []; order.push(key); }
+        groups[key].push(r);
+      });
+
+      const blocks = order.map(key => {
+        const lines = groups[key].map(r => 'x' + r.quantity + ' ' + (r.category || 'Toute catégorie'));
+        return 'WTB ' + key + '\n' + lines.join('\n');
+      });
+
+      document.getElementById('wtbOutput').value = blocks.join('\n\n');
+    }
+
+    function copyWtb() {
+      const text = document.getElementById('wtbOutput').value;
+      if (!text) return;
+      const done = () => {
+        const btn = document.getElementById('copyWtbBtn');
+        btn.textContent = 'Copié !';
+        setTimeout(() => { btn.textContent = 'Copier le WTB'; }, 2000);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(() => { wtbFallbackCopy(); done(); });
+      } else {
+        wtbFallbackCopy(); done();
+      }
+    }
+    function wtbFallbackCopy() {
+      const ta = document.getElementById('wtbOutput');
+      ta.removeAttribute('readonly');
+      ta.select();
+      document.execCommand('copy');
+      ta.setAttribute('readonly', '');
+      window.getSelection().removeAllRanges();
     }
 
     function openRespondModal(id, action) {
