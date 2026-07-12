@@ -1862,9 +1862,16 @@ app.get('/api/staff/events', requireStaff, (req, res) => {
 });
 
 app.post('/api/staff/requests', requireStaff, async (req, res) => {
-  const { clientName, clientSource, clientHandle, eventName, eventDate, category, quantity, budgetMax, staffMargin, message } = req.body || {};
+  const { clientName, clientSource, clientHandle, eventName, eventDate, eventDates, category, quantity, budgetMax, staffMargin, message } = req.body || {};
   if (!clientName || !eventName) {
     return res.status(400).json({ error: 'Nom client et événement requis' });
+  }
+  // Normalise les dates : array eventDates prioritaire, sinon eventDate simple
+  let datesArr = [];
+  if (Array.isArray(eventDates)) {
+    datesArr = eventDates.map(d => String(d).trim()).filter(Boolean);
+  } else if (eventDate) {
+    datesArr = [String(eventDate).trim()].filter(Boolean);
   }
   const requests = readJsonArray(REQUESTS_FILE);
   const request = {
@@ -1874,7 +1881,8 @@ app.post('/api/staff/requests', requireStaff, async (req, res) => {
     clientSource: String(clientSource || '').trim(),
     clientHandle: String(clientHandle || '').trim(),
     eventName: String(eventName).trim(),
-    eventDate: String(eventDate || '').trim(),
+    eventDates: datesArr,
+    eventDate: datesArr.join(' / '),
     category: String(category || '').trim(),
     quantity: Number(quantity) || 1,
     budgetMax: budgetMax ? Number(budgetMax) : null,

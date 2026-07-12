@@ -668,20 +668,27 @@
       buildWtbText();
     }
 
+    function reqDates(r) {
+      if (Array.isArray(r.eventDates) && r.eventDates.length) return r.eventDates.filter(Boolean);
+      if (r.eventDate) return String(r.eventDate).split(' / ').map(s => s.trim()).filter(Boolean);
+      return [''];
+    }
+
     function buildWtbText() {
       const selectedIds = [];
       document.querySelectorAll('.wtb-check:checked').forEach(c => selectedIds.push(Number(c.getAttribute('data-id'))));
       const selected = allRequests.filter(r => selectedIds.includes(r.id));
 
-      // Grouper par événement + date (même event/date = même bloc)
+      // Grouper par événement + date. Une demande multi-dates apparaît dans chaque bloc.
       const groups = {};
       const order = [];
       selected.forEach(r => {
         const name = r.eventName.trim().toUpperCase();
-        const date = (r.eventDate || '').trim();
-        const key = name + '|' + date;
-        if (!groups[key]) { groups[key] = { name: name, date: date, items: [] }; order.push(key); }
-        groups[key].items.push(r);
+        reqDates(r).forEach(date => {
+          const key = name + '|' + date;
+          if (!groups[key]) { groups[key] = { name: name, date: date, items: [] }; order.push(key); }
+          groups[key].items.push(r);
+        });
       });
 
       const blocks = order.map(key => {

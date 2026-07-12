@@ -80,6 +80,12 @@
     .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--primary); }
     .form-group textarea { resize: vertical; min-height: 80px; }
     .form-hint { font-size: 0.75rem; color: var(--gray-400); margin-top: 4px; }
+    .event-date-row { display: flex; gap: 6px; margin-bottom: 6px; }
+    .event-date-row input { flex: 1; }
+    .remove-date-btn { flex-shrink: 0; width: 36px; border: 1.5px solid var(--gray-200); background: white; color: var(--danger); border-radius: 8px; cursor: pointer; font-size: 1.1rem; line-height: 1; }
+    .remove-date-btn:hover { border-color: var(--danger); background: #fef2f2; }
+    .add-date-btn { background: none; border: none; color: var(--primary); font-size: 0.8rem; font-weight: 600; cursor: pointer; padding: 2px 0; font-family: inherit; }
+    .add-date-btn:hover { text-decoration: underline; }
 
     .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.9rem; font-family: inherit; }
     .btn-primary { background: var(--primary); color: white; }
@@ -199,9 +205,12 @@
             </div>
             <div class="form-row">
               <div class="form-group">
-                <label>Date de l'&eacute;v&eacute;nement</label>
-                <input type="text" name="eventDate" placeholder="Ex: 11/07/2027" />
-                <div class="form-hint">Format libre (jj/mm/aaaa)</div>
+                <label>Date(s) de l'&eacute;v&eacute;nement</label>
+                <div id="eventDatesWrap">
+                  <div class="event-date-row"><input type="text" class="event-date-input" placeholder="Ex: 11/07/2027" /></div>
+                </div>
+                <button type="button" class="add-date-btn" onclick="addDateInput()">+ Ajouter une date</button>
+                <div class="form-hint">Plusieurs dates si le client est flexible</div>
               </div>
               <div class="form-group">
                 <label>Cat&eacute;gorie souhait&eacute;e</label>
@@ -537,11 +546,33 @@
       });
     }
 
+    function addDateInput() {
+      var wrap = document.getElementById('eventDatesWrap');
+      var row = document.createElement('div');
+      row.className = 'event-date-row';
+      row.innerHTML = '<input type="text" class="event-date-input" placeholder="Ex: 12/07/2027" />' +
+        '<button type="button" class="remove-date-btn" onclick="this.parentNode.remove()" title="Retirer">&times;</button>';
+      wrap.appendChild(row);
+      row.querySelector('input').focus();
+    }
+
+    function resetDateInputs() {
+      document.getElementById('eventDatesWrap').innerHTML =
+        '<div class="event-date-row"><input type="text" class="event-date-input" placeholder="Ex: 11/07/2027" /></div>';
+    }
+
     function submitRequest(e) {
       e.preventDefault();
       var f = e.target;
       var data = {};
       new FormData(f).forEach(function(v, k) { data[k] = v; });
+      // Collecte des dates multiples
+      var dates = [];
+      f.querySelectorAll('.event-date-input').forEach(function(inp) {
+        var v = inp.value.trim();
+        if (v) dates.push(v);
+      });
+      data.eventDates = dates;
       var btn = document.getElementById('submitRequestBtn');
       btn.disabled = true; btn.textContent = 'Envoi...';
       api('/api/staff/requests', { method: 'POST', body: data }).then(function(r) {
@@ -550,6 +581,7 @@
           showToast('Demande envoy&eacute;e', 'success');
           f.reset();
           f.quantity.value = 1;
+          resetDateInputs();
           loadRequests();
         } else {
           showToast(r.data.error || 'Erreur', 'error');
