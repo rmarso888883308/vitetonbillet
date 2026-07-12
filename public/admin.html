@@ -630,6 +630,7 @@
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px 18px;font-size:0.85rem;color:var(--gray-600);margin-top:6px;">
           <div><strong style="color:var(--gray-800);">&Eacute;v&eacute;nement:</strong> ${escapeHtml(r.eventName)}</div>
+          ${r.eventDate ? `<div><strong style="color:var(--gray-800);">Date:</strong> ${escapeHtml(r.eventDate)}</div>` : ''}
           <div><strong style="color:var(--gray-800);">Cat&eacute;gorie:</strong> ${escapeHtml(r.category || '—')}</div>
           <div><strong style="color:var(--gray-800);">Qt&eacute;:</strong> ${r.quantity}</div>
           <div><strong style="color:var(--gray-800);">Budget:</strong> ${budget}</div>
@@ -652,7 +653,7 @@
         listEl.innerHTML = pending.map(r =>
           `<label style="display:flex;align-items:flex-start;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;" onmouseover="this.style.background='var(--gray-50)'" onmouseout="this.style.background=''">
             <input type="checkbox" class="wtb-check" data-id="${r.id}" checked onchange="buildWtbText()" style="width:16px;height:16px;margin-top:2px;flex-shrink:0;cursor:pointer;accent-color:var(--primary);" />
-            <span style="font-size:0.86rem;line-height:1.4;"><strong>${escapeHtml(r.eventName)}</strong><br>
+            <span style="font-size:0.86rem;line-height:1.4;"><strong>${escapeHtml(r.eventName)}${r.eventDate ? ' — ' + escapeHtml(r.eventDate) : ''}</strong><br>
             <span style="color:var(--gray-500);">x${r.quantity} ${escapeHtml(r.category || 'Toute cat&eacute;gorie')} &bull; ${escapeHtml(r.clientName)}</span></span>
           </label>`
         ).join('');
@@ -672,18 +673,22 @@
       document.querySelectorAll('.wtb-check:checked').forEach(c => selectedIds.push(Number(c.getAttribute('data-id'))));
       const selected = allRequests.filter(r => selectedIds.includes(r.id));
 
-      // Grouper par événement (même nom = même bloc)
+      // Grouper par événement + date (même event/date = même bloc)
       const groups = {};
       const order = [];
       selected.forEach(r => {
-        const key = r.eventName.trim().toUpperCase();
-        if (!groups[key]) { groups[key] = []; order.push(key); }
-        groups[key].push(r);
+        const name = r.eventName.trim().toUpperCase();
+        const date = (r.eventDate || '').trim();
+        const key = name + '|' + date;
+        if (!groups[key]) { groups[key] = { name: name, date: date, items: [] }; order.push(key); }
+        groups[key].items.push(r);
       });
 
       const blocks = order.map(key => {
-        const lines = groups[key].map(r => 'x' + r.quantity + ' ' + (r.category || 'Toute catégorie'));
-        return 'WTB ' + key + '\n' + lines.join('\n');
+        const g = groups[key];
+        const title = 'WTB ' + g.name + (g.date ? ' ' + g.date : '');
+        const lines = g.items.map(r => 'x' + r.quantity + ' ' + (r.category || 'Toute catégorie'));
+        return title + '\n' + lines.join('\n');
       });
 
       document.getElementById('wtbOutput').value = blocks.join('\n\n');

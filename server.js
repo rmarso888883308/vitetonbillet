@@ -1769,7 +1769,7 @@ function buildRequestEmailHtml(request) {
       <tr><td style="padding:12px 16px;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;">Source</td>
           <td style="padding:12px 16px;font-size:14px;color:#334155;">${request.clientSource || '—'}</td></tr>
       <tr><td style="padding:12px 16px;background:#f8fafc;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;">&Eacute;v&eacute;nement</td>
-          <td style="padding:12px 16px;background:#f8fafc;font-size:14px;color:#0f172a;font-weight:600;">${request.eventName || '—'}</td></tr>
+          <td style="padding:12px 16px;background:#f8fafc;font-size:14px;color:#0f172a;font-weight:600;">${request.eventName || '—'}${request.eventDate ? ` — ${request.eventDate}` : ''}</td></tr>
       <tr><td style="padding:12px 16px;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;">Cat&eacute;gorie</td>
           <td style="padding:12px 16px;font-size:14px;color:#334155;">${request.category || '—'}</td></tr>
       <tr><td style="padding:12px 16px;background:#f8fafc;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;">Quantit&eacute;</td>
@@ -1862,7 +1862,7 @@ app.get('/api/staff/events', requireStaff, (req, res) => {
 });
 
 app.post('/api/staff/requests', requireStaff, async (req, res) => {
-  const { clientName, clientSource, clientHandle, eventName, category, quantity, budgetMax, staffMargin, message } = req.body || {};
+  const { clientName, clientSource, clientHandle, eventName, eventDate, category, quantity, budgetMax, staffMargin, message } = req.body || {};
   if (!clientName || !eventName) {
     return res.status(400).json({ error: 'Nom client et événement requis' });
   }
@@ -1874,6 +1874,7 @@ app.post('/api/staff/requests', requireStaff, async (req, res) => {
     clientSource: String(clientSource || '').trim(),
     clientHandle: String(clientHandle || '').trim(),
     eventName: String(eventName).trim(),
+    eventDate: String(eventDate || '').trim(),
     category: String(category || '').trim(),
     quantity: Number(quantity) || 1,
     budgetMax: budgetMax ? Number(budgetMax) : null,
@@ -1902,15 +1903,16 @@ app.post('/api/staff/requests', requireStaff, async (req, res) => {
   const notif = readSettings().notifications || {};
   const marginStr = request.staffMargin ? ` (marge ${request.staffMargin} €/place)` : '';
   const budgetStr = request.budgetMax ? ` — budget ${request.budgetMax} €` : '';
+  const dateStr = request.eventDate ? ` — ${request.eventDate}` : '';
   const tgMsg = `🎫 <b>Nouvelle demande #${request.id}</b>\n\n` +
     `👤 ${tgEsc(request.clientName)}${request.clientHandle ? ' ('+tgEsc(request.clientHandle)+')' : ''}\n` +
-    `📅 ${tgEsc(request.eventName)}\n` +
+    `📅 ${tgEsc(request.eventName)}${tgEsc(dateStr)}\n` +
     `🎟 ${tgEsc(request.category || 'Toute cat.')} × ${request.quantity}${budgetStr}${marginStr}\n\n` +
     (request.message ? `💬 ${tgEsc(request.message)}\n\n` : '') +
     `👉 ${BASE_URL}/admin.html`;
   const dsMsg = `🎫 **Nouvelle demande #${request.id}**\n` +
     `**Client:** ${request.clientName}${request.clientHandle ? ' ('+request.clientHandle+')' : ''}\n` +
-    `**Event:** ${request.eventName}\n` +
+    `**Event:** ${request.eventName}${dateStr}\n` +
     `**Cat/Qté:** ${request.category || '—'} × ${request.quantity}${budgetStr}${marginStr}\n` +
     (request.message ? `**Note:** ${request.message}\n` : '') +
     `→ ${BASE_URL}/admin.html`;

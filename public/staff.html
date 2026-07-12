@@ -199,25 +199,30 @@
             </div>
             <div class="form-row">
               <div class="form-group">
+                <label>Date de l'&eacute;v&eacute;nement</label>
+                <input type="text" name="eventDate" placeholder="Ex: 11/07/2027" />
+                <div class="form-hint">Format libre (jj/mm/aaaa)</div>
+              </div>
+              <div class="form-group">
                 <label>Cat&eacute;gorie souhait&eacute;e</label>
                 <input type="text" name="category" placeholder="Fosse Or, Cat 1..." />
               </div>
+            </div>
+            <div class="form-row">
               <div class="form-group">
                 <label>Quantit&eacute; *</label>
                 <input type="number" name="quantity" min="1" value="1" required />
               </div>
-            </div>
-            <div class="form-row">
               <div class="form-group">
                 <label>Budget max (par place)</label>
                 <input type="number" name="budgetMax" min="0" step="1" placeholder="Ex: 200" />
                 <div class="form-hint">Vide si non pr&eacute;cis&eacute;</div>
               </div>
-              <div class="form-group">
-                <label>Ma marge (&euro; / place)</label>
-                <input type="number" name="staffMargin" min="0" step="1" placeholder="Ex: 20" />
-                <div class="form-hint">Ton b&eacute;n&eacute;fice par place</div>
-              </div>
+            </div>
+            <div class="form-group">
+              <label>Ma marge (&euro; / place)</label>
+              <input type="number" name="staffMargin" min="0" step="1" placeholder="Ex: 20" />
+              <div class="form-hint">Ton b&eacute;n&eacute;fice par place</div>
             </div>
             <div class="form-group">
               <label>Message / notes</label>
@@ -594,6 +599,7 @@
         '</div>' +
         '<div class="req-meta">' +
           '<div><strong>&Eacute;v&eacute;nement:</strong> ' + escapeHtml(r.eventName) + '</div>' +
+          (r.eventDate ? '<div><strong>Date:</strong> ' + escapeHtml(r.eventDate) + '</div>' : '') +
           '<div><strong>Cat&eacute;gorie:</strong> ' + escapeHtml(r.category || '—') + '</div>' +
           '<div><strong>Quantit&eacute;:</strong> ' + r.quantity + '</div>' +
           '<div><strong>Budget:</strong> ' + budget + '</div>' +
